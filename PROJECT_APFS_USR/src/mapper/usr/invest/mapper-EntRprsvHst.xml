@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EntRprsvHst">
+
+    <sql id="Sql-Column">
+        A.ir_no                                        AS "irNo",
+        A.sn                                           AS "sn",
+        A.bgng_ymd                                     AS "bgngYmd",
+        A.end_ymd                                      AS "endYmd",
+        A.hstry_cn                                     AS "hstryCn",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 대표자이력 목록조회 -->
+    <select id="listEntRprsvHst" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_rprsv_hst A
+         WHERE A.ir_no    = #{irNo}
+         ORDER BY 
+               A.ir_no,
+               A.sn
+    </select>
+
+    <!-- 대표자이력 상세조회 -->
+    <select id="viewEntRprsvHst" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_rprsv_hst A
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </select>
+
+    <!-- 대표자이력 등록 -->
+    <insert id="regiEntRprsvHst" parameterType="business.usr.invest.service.EntVO">
+        INSERT 
+          INTO tb_ent_rprsv_hst 
+             ( ir_no,
+               sn,
+               bgng_ymd,
+               end_ymd,
+               hstry_cn,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{irNo},
+			   NEXTVAL('seq_ent_rprsv_hst'),
+               #{bgngYmd},
+               #{endYmd},
+               #{hstryCn},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 대표자이력 수정 -->
+    <update id="updtEntRprsvHst" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_ent_rprsv_hst 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(bgngYmd             )"> bgng_ymd             = #{bgngYmd             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(endYmd              )"> end_ymd              = #{endYmd              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(hstryCn             )"> hstry_cn             = #{hstryCn             },</if>  
+               mdfcn_ymd = NOW()
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </update>
+
+    <!-- 대표자이력 삭제 -->
+    <delete id="deltEntRprsvHst" parameterType="business.usr.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent_rprsv_hst 
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </delete> 
+
+</mapper>

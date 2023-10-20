@@ -1,0 +1,595 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Ent">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+    	<!-- 업체구분 -->
+        <if test="@common.util.CommUtils@isNotEmpty(bzentySeCd)">
+            AND A.bzenty_se_cd = #{bzentySeCd}
+        </if>
+    	<!-- 정부지원사업 이력포함여부 -->
+        <if test="@common.util.CommUtils@isEqual(entSptHstYn, 'Y')">
+        	AND (
+	        	    EXISTS (
+	        	    SELECT 1
+	        	      FROM tb_ent_othspt_hst
+	        	     WHERE ir_no = A.ir_no
+	        	    )
+	        	 OR EXISTS (
+	        	    SELECT 1
+	        	      FROM tb_sprt_biz
+	        	     WHERE bzenty_no = A.bzenty_no
+	        	       AND rls_yn    = 'Y'
+	        	       AND del_yn    = 'N'
+	        	    )
+        	    )
+        </if>
+    	<!-- 투자희망금액 -->
+        <if test="@common.util.CommUtils@isNotEmpty(invtHopeCd)">
+        	<if test='!"MIN".equals(invtHopeCd) and !"MAX".equals(invtHopeCd)'>
+	        	AND #{invtHopeCd} <![CDATA[>=]]> FN_GET_FUNDRANGE(COALESCE(A.invt_hope_amt, 0), 100)
+        	</if>
+        </if>
+    	<!-- 소재지(코드 -->
+        <if test="@common.util.CommUtils@isNotEmpty(lctnCd)">
+            AND EXISTS (
+                SELECT 1
+                  FROM sys_code
+                 WHERE up_cd_id = 'CT.CTPV_SE'
+                   AND cd_id    = #{lctnCd}
+                   AND (   A.lctn_addr LIKE cd_cn || '%'
+                        OR A.lctn_addr LIKE cd_nm || '%')
+                )
+        </if>
+    	<!-- 투자분야 다중선택 -->
+        <if test="@common.util.CommUtils@isNotEmptyList(invtFldList)">
+        	AND EXISTS (
+        	    SELECT 1
+        	      FROM tb_ent_rlm
+        	     WHERE bzenty_no = A.bzenty_no
+        	       AND fld_se_cd = 'I'
+        	       AND fld_cd IN <foreach item="item" collection="invtFldList" separator="," open="(" close=")">#{item}</foreach>
+        	    )
+        </if>
+    	<!-- 사업분야 다중선택 -->
+        <if test="@common.util.CommUtils@isNotEmptyList(bizFldList)">
+        	AND EXISTS (
+        	    SELECT 1
+        	      FROM tb_ent_rlm
+        	     WHERE bzenty_no = A.bzenty_no
+        	       AND fld_se_cd = 'B'
+        	       AND fld_cd IN <foreach item="item" collection="bizFldList" separator="," open="(" close=")">#{item}</foreach>
+        	    )
+        </if>
+        <!-- 검색박스(경영체명,분야명,대표자) 검색 -->
+        <!-- 2023.08.23 주요사업,핵심아이템,투자요소 검색 추가 -->
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+        	AND (   A.bzenty_nm LIKE '%'|| #{srchText} ||'%' <!-- 경영체명 -->
+        	     OR A.rprsv_nm  LIKE '%'|| #{srchText} ||'%' <!-- 대표자명 -->
+        	     OR EXISTS ( <!-- 사업분야명 -->
+        	        SELECT 1
+        	          FROM tb_ent_rlm         R1
+        	             , sys_code           C1
+        	         WHERE C1.up_cd_id     = 'CT.BIZ_RLM'
+        	           AND C1.cd_id        =  R1.fld_cd
+        	           AND R1.fld_se_cd    = 'B'
+        	           AND R1.bzenty_no    =  A.bzenty_no
+        	           AND C1.cd_nm        LIKE '%'|| #{srchText} ||'%')
+        	     OR EXISTS ( <!-- 투자분야명 -->
+        	        SELECT 1
+        	          FROM tb_ent_rlm         R2
+        	             , tb_invtrlm_code    C2
+        	         WHERE C2.invt_fld_cd  =  R2.fld_cd
+        	           AND R2.fld_se_cd    = 'I'
+        	           AND R2.bzenty_no    =  A.bzenty_no
+        	           AND C2.invt_fld_nm  LIKE '%'|| #{srchText} ||'%')
+        	    )
+        	     OR A.main_biz_cn  LIKE '%'|| #{srchText} ||'%' <!-- 주요사업 -->
+        	     OR A.core_itm_cn  LIKE '%'|| #{srchText} ||'%' <!-- 핵심아이템 -->
+        	     OR A.biz_cn       LIKE '%'|| #{srchText} ||'%' <!-- 투자요소 -->
+        </if>
+        <!-- 매칭설정 조건(투자분야/사업분야/투자희망금액) -->
+        <if test='"M".equals(srchMode)'>
+           AND EXISTS (
+               SELECT  1
+                 FROM  tb_mtchg_stng   M
+                WHERE  M.user_no     = #{gsUserNo}
+                  AND  M.stng_se_cd  = 'SS1'
+                  AND (M.stng_dtl_cd = 'ALL' 
+                   OR  EXISTS (
+                       SELECT 1
+                         FROM tb_ent_rlm R
+                        WHERE R.bzenty_no   = A.bzenty_no
+                          AND R.fld_se_cd   = 'I'
+                          AND R.fld_cd      = M.stng_dtl_cd
+                       )
+                      )
+               )
+           AND EXISTS (
+               SELECT  1
+                 FROM  tb_mtchg_stng   M
+                WHERE  M.user_no     = #{gsUserNo}
+                  AND  M.stng_se_cd  = 'SS2'
+                  AND (M.stng_dtl_cd = 'ALL' 
+                   OR  EXISTS (
+                       SELECT 1
+                         FROM tb_ent_rlm R
+                        WHERE R.bzenty_no   = A.bzenty_no
+                          AND R.fld_se_cd   = 'B'
+                          AND R.fld_cd      = M.stng_dtl_cd
+                       )
+                      )
+               )
+           AND EXISTS (
+               SELECT  1
+                 FROM  tb_mtchg_stng   M
+                WHERE  M.user_no     = #{gsUserNo}
+                  AND  M.stng_se_cd  = 'SS3'
+                  AND (M.stng_dtl_cd = 'ALL' 
+                   OR  M.stng_dtl_cd <![CDATA[>=]]> FN_GET_FUNDRANGE(COALESCE(A.invt_hope_amt, 0), 100)
+                      )
+               )
+        </if>
+    </sql>
+    <sql id="Sql-Column">
+        A.bzenty_no                                    AS "bzentyNo",
+        A.up_bzenty_no                                 AS "upBzentyNo",
+        A.bzenty_se_cd                                 AS "bzentySeCd",
+        FN_GET_CODENM('CT.BZENTY_SE', A.bzenty_se_cd)  AS "bzentySeNm", <!-- 업체구분 -->
+        A.brno                                         AS "brno",
+        A.crno                                         AS "crno",
+        A.bzenty_nm                                    AS "bzentyNm",
+        A.rprsv_nm                                     AS "rprsvNm",
+        A.rmrk4                                        AS "rmrk4", <!-- KODATA에서 입력된 대표자명 2023.09.06 추가 -->
+        A.rprsv_brdt                                   AS "rprsvBrdt",
+        A.rprsv_sexdstn                                AS "rprsvSexdstn",
+        A.fndn_ymd                                     AS "fndnYmd",
+        A.rprs_telno                                   AS "rprsTelno",
+        A.fxno                                         AS "fxno",
+        A.tpbiz_cd                                     AS "tpbizCd",
+        A.tpbiz_nm                                     AS "tpbizNm",
+        A.bzenty_scale_cd                              AS "bzentyScaleCd",
+        FN_GET_CODENM('CT.BZENTY_SCALE', 
+                       A.bzenty_scale_cd)              AS "bzentyScaleNm", <!-- 업체규모 -->
+        A.bzenty_type_cd                               AS "bzentyTypeCd",
+        FN_GET_CODENM('CT.BZENTY_TYPE', 
+                       A.bzenty_type_cd)               AS "bzentyTypeNm", <!-- 업체유형 -->
+        A.bzenty_stle_cd                               AS "bzentyStleCd",
+        FN_GET_CODENM('CT.BZENTY_STLE', 
+                       A.bzenty_stle_cd)               AS "bzentyStleNm", <!-- 업체형태 -->
+        A.invt_hope_amt                                AS "invtHopeAmt",
+        A.eml_addr                                     AS "emlAddr",
+        A.hmpg_addr                                    AS "hmpgAddr",
+        A.zip                                          AS "zip",
+        A.lctn_addr                                    AS "lctnAddr",
+        A.lctn_daddr                                   AS "lctnDaddr",
+        A.emp_cnt                                      AS "empCnt",
+        A.group_cd                                     AS "groupCd", <!-- 그룹코드 (2023.06.14 추가) -->
+        A.kd_cd                                        AS "kdCd",
+        A.direct_inpt_yn                               AS "directInptYn",
+        A.mngr_memo                                    AS "mngrMemo",
+        A.aprv_ymd                                     AS "aprvYmd",
+        A.rjct_ymd                                     AS "rjctYmd",
+        A.use_stts_cd                                  AS "useSttsCd",
+        FN_GET_CODENM('CT.USE_STUS', A.use_stts_cd)    AS "useSttsNm", <!-- 사용상태 -->
+        A.lcinfo                                       AS "lcinfo",
+        ST_X(A.lcinfo)								   AS "lng",
+        ST_Y(A.lcinfo)								   AS "lat",
+		<!-- 여기부터 IR정보 (OUTER JOIN) -->        
+        A.ir_no                                        AS "irNo",
+        A.main_biz_cn                                  AS "mainBizCn",
+        A.core_itm_cn                                  AS "coreItmCn",
+        A.biz_cn                                       AS "bizCn",
+        A.pic_nm                                       AS "picNm",
+        A.pic_telno                                    AS "picTelno",
+        A.rls_yn                                       AS "rlsYn",
+        A.pr_vido_url                                  AS "prVidoUrl",
+        A.inq_cnt                                      AS "inqCnt",
+        A.prgrs_stts_cd                                AS "prgrsSttsCd",
+		<!-- 여기까지 IR정보 (OUTER JOIN) -->        
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate",
+		(SELECT cd_nm
+		   FROM sys_code
+		  WHERE up_cd_id = 'CT.CTPV_SE'
+            AND (   A.lctn_addr LIKE cd_cn || '%'
+                 OR A.lctn_addr LIKE cd_nm || '%')
+          LIMIT 1)                                     AS "lctnNm", <!-- 시도명칭 -->
+		#{srchMode}                                    AS "srchMode", <!-- 검색구분코드 -->
+		(SELECT STRING_AGG(
+		 		FN_GET_CODENM('CT.BIZ_RLM', R1.fld_cd),
+		 		',')
+		   FROM tb_ent_rlm R1
+		  WHERE bzenty_no = A.bzenty_no
+		    AND fld_se_cd = 'B')                       AS "bizFldText", <!-- 사업분야 -->
+		(SELECT STRING_AGG(R1.fld_cd,',')
+		   FROM tb_ent_rlm R1
+		  WHERE bzenty_no = A.bzenty_no
+		    AND fld_se_cd = 'B')                       AS "bizFldCode", <!-- 사업분야 -->
+		(SELECT STRING_AGG(
+		 		FN_GET_INVTFLDNM(R2.fld_cd),
+		 		',')
+		   FROM tb_ent_rlm R2
+		  WHERE bzenty_no = A.bzenty_no
+		    AND fld_se_cd = 'I')                       AS "invtFldText", <!-- 사업분야 -->
+		(SELECT STRING_AGG(R2.fld_cd,',')
+		   FROM tb_ent_rlm R2
+		  WHERE bzenty_no = A.bzenty_no
+		    AND fld_se_cd = 'I')                       AS "invtFldCode", <!-- 투자분야 -->
+		(SELECT COALESCE(MAX(F1.sn),0)
+		   FROM tb_ent_file F1
+		  WHERE bzenty_no = A.bzenty_no
+		    AND doc_se_cd = '00'
+		    AND del_yn    = 'N'
+		    AND rprs_yn   = 'Y')                       AS "rprsFileSn", <!-- 대표이미지 -->
+		(SELECT CASE WHEN COUNT(*) > 0 
+		             THEN 'Y' 
+		             ELSE 'N' 
+		        END
+		   FROM tb_bkmk_info B1
+		  WHERE trgt_bzenty_no = A.bzenty_no
+		    AND bzenty_no      = #{gsBzentyNo}
+		    AND bkmk_se_cd     = 'BM1')                 AS "gsBkmkYn"  <!-- 북마크여부 -->
+    </sql>
+
+    <!-- 업체정보 목록조회 -->
+    <select id="listEnt" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM vw_ent A
+         WHERE A.use_stts_cd = '1'
+               <include refid="Sql-Where"/>
+         ORDER BY 
+        <if test="@common.util.CommUtils@isNotEmpty(ordrField)">
+              <if test="ordrField eq 'A'.toString()"> A.bzenty_nm      ASC, </if><!-- 가나다순 -->
+              <if test="ordrField eq 'B'.toString()"> A.reg_ymd       DESC, </if><!-- 등록일자순 -->
+              <if test="ordrField eq 'C'.toString()"> COALESCE(A.inq_cnt      ,0) DESC, </if><!-- 조회순 -->
+              <if test="ordrField eq 'D'.toString()"> COALESCE(A.invt_hope_amt,0) ASC, </if><!-- 낮은 투자희망금액순 -->
+              <if test="ordrField eq 'E'.toString()"> COALESCE(A.invt_hope_amt,0) DESC, </if><!-- 높은 투자희망금액순 -->
+        </if>
+              "rprsFileSn" DESC,
+              A.bzenty_no ASC
+    </select>
+    <select id="listEntCount" resultType="int" parameterType="business.usr.invest.service.EntVO">
+        SELECT COUNT(1) 
+          FROM vw_ent A
+         WHERE A.use_stts_cd = '1'
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 북마크 업체정보 목록조회 -->
+    <select id="listEntBkmk" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM vw_ent A
+         WHERE A.use_stts_cd = '1'
+           AND EXISTS (
+               SELECT 1
+                 FROM tb_bkmk_info
+                WHERE trgt_bzenty_no = A.bzenty_no
+                  AND bzenty_no      = #{gsBzentyNo}
+                  AND bkmk_se_cd     = #{bkmkSeCd}
+               )
+         ORDER BY 
+               A.bzenty_no ASC
+    </select>
+    <select id="listEntBkmkCount" resultType="int" parameterType="business.usr.invest.service.EntVO">
+        SELECT COUNT(1) 
+          FROM vw_ent A
+         WHERE A.use_stts_cd = '1'
+           AND EXISTS (
+               SELECT 1
+                 FROM tb_bkmk_info
+                WHERE trgt_bzenty_no = A.bzenty_no
+                  AND bzenty_no      = #{gsBzentyNo}
+                  AND bkmk_se_cd     = #{bkmkSeCd}
+               )
+    </select>
+
+    <!-- 업체정보 상세조회 -->
+    <select id="viewEnt" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM vw_ent A
+		<if test="@common.util.CommUtils@isNotEmpty(bzentyNo)">
+		 WHERE A.bzenty_no	= #{bzentyNo}
+		</if>
+		<if test="@common.util.CommUtils@isEmpty(bzentyNo)">
+		 WHERE A.brno = #{brno}
+		</if>
+    </select>
+
+    <!-- IR작성용 업체정보 상세조회 -->
+    <select id="viewEntForIr" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM (SELECT A1.*
+				     , B1.ir_no
+				     , B1.main_biz_cn
+				     , B1.core_itm_cn
+				     , B1.biz_cn
+				     , B1.pic_nm
+				     , B1.pic_telno
+				     , B1.rls_yn
+				     , B1.pr_vido_url
+				     , B1.inq_cnt
+				     , B1.prgrs_stts_cd
+				  FROM tb_ent    A1
+				     , tb_ent_ir B1
+				 WHERE A1.bzenty_no = B1.bzenty_no
+				   AND A1.bzenty_no = #{bzentyNo}
+				   AND B1.ir_no     = #{irNo}
+               ) A
+    </select>
+
+    <!-- 업체정보 등록 -->
+    <insert id="regiEnt" parameterType="business.usr.invest.service.EntVO">
+    	<selectKey keyProperty="bzentyNo" resultType="string" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_ENT')
+    	</selectKey>
+        INSERT 
+          INTO tb_ent 
+             ( bzenty_no,
+               up_bzenty_no,
+               bzenty_se_cd,
+               brno,
+               crno,
+               bzenty_nm,
+               rprsv_nm,
+               rmrk4,
+               rprsv_brdt,
+               rprsv_sexdstn,
+               fndn_ymd,
+               rprs_telno,
+               fxno,
+               tpbiz_cd,
+               tpbiz_nm,
+               bzenty_scale_cd,
+               bzenty_type_cd,
+               bzenty_stle_cd,
+               invt_hope_amt,
+               eml_addr,
+               hmpg_addr,
+               zip,
+               lctn_addr,
+               lctn_daddr,
+               emp_cnt,
+               group_cd,
+               kd_cd,
+               direct_inpt_yn,
+               mngr_memo,
+               aprv_ymd,
+               rjct_ymd,
+               use_stts_cd,
+               lcinfo,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( #{bzentyNo},
+               #{upBzentyNo},
+               #{bzentySeCd},
+               #{brno},
+               #{crno},
+               #{bzentyNm},
+               #{rprsvNm},
+               #{rmrk4},
+               #{rprsvBrdt},
+               #{rprsvSexdstn},
+               #{fndnYmd},
+               #{rprsTelno},
+               #{fxno},
+               #{tpbizCd},
+               #{tpbizNm},
+               #{bzentyScaleCd},
+               #{bzentyTypeCd},
+               #{bzentyStleCd},
+               #{invtHopeAmt},
+               #{emlAddr},
+               #{hmpgAddr},
+               #{zip},
+               #{lctnAddr},
+               #{lctnDaddr},
+               #{empCnt},
+               #{groupCd},
+               #{kdCd},
+               <choose>
+                   <when test="@common.util.CommUtils@isNotEmpty(directInptYn) and @common.util.CommUtils@isEqual(directInptYn, 'Y')">'Y',</when>
+                   <otherwise>'N',</otherwise>
+               </choose>
+               #{mngrMemo},
+               #{aprvYmd},
+               #{rjctYmd},
+               #{useSttsCd},
+               #{lcinfo},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 업체정보 수정 -->
+    <update id="updtEnt" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_ent 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(upBzentyNo          )"> up_bzenty_no         = #{upBzentyNo          },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bzentySeCd          )"> bzenty_se_cd         = #{bzentySeCd          },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(brno                )"> brno                 = #{brno                },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(crno                )"> crno                 = #{crno                },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bzentyNm            )"> bzenty_nm            = #{bzentyNm            },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rprsvNm             )"> rprsv_nm             = #{rprsvNm             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rprsvBrdt           )"> rprsv_brdt           = #{rprsvBrdt           },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rprsvSexdstn        )"> rprsv_sexdstn        = #{rprsvSexdstn        },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fndnYmd             )"> fndn_ymd             = #{fndnYmd             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rprsTelno           )"> rprs_telno           = #{rprsTelno           },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fxno                )"> fxno                 = #{fxno                },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(tpbizCd             )"> tpbiz_cd             = #{tpbizCd             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(tpbizNm             )"> tpbiz_nm             = #{tpbizNm             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bzentyScaleCd       )"> bzenty_scale_cd      = #{bzentyScaleCd       },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bzentyTypeCd        )"> bzenty_type_cd       = #{bzentyTypeCd        },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bzentyStleCd        )"> bzenty_stle_cd       = #{bzentyStleCd        },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(invtHopeAmt         )"> invt_hope_amt        = #{invtHopeAmt         },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(emlAddr             )"> eml_addr             = #{emlAddr             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(hmpgAddr            )"> hmpg_addr            = #{hmpgAddr            },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(zip                 )"> zip                  = #{zip                 },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(lctnAddr            )"> lctn_addr            = #{lctnAddr            },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(lctnDaddr           )"> lctn_daddr           = #{lctnDaddr           },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(empCnt              )"> emp_cnt              = #{empCnt              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(groupCd             )"> group_cd             = #{groupCd             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(kdCd                )"> kd_cd                = #{kdCd                },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(directInptYn        )"> direct_inpt_yn       = #{directInptYn        },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(mngrMemo            )"> mngr_memo            = #{mngrMemo            },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(aprvYmd             )"> aprv_ymd             = #{aprvYmd             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rjctYmd             )"> rjct_ymd             = #{rjctYmd             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(useSttsCd           )"> use_stts_cd          = #{useSttsCd           },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(lcinfo              )"> lcinfo               = #{lcinfo              },</if>  
+               mdfcn_ymd = NOW()
+         WHERE bzenty_no = #{bzentyNo}
+    </update>
+
+    <!-- 업체정보 삭제 -->
+    <delete id="deltEnt" parameterType="business.usr.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent 
+         WHERE bzenty_no = #{bzentyNo}
+    </delete> 
+    
+    <!-- 업체분야정보(투자분야/사업분야) 등록 -->
+    <insert id="regiEntRlm" parameterType="business.usr.invest.service.EntVO">
+        INSERT 
+          INTO tb_ent_rlm
+             ( bzenty_no,
+               fld_se_cd,
+               fld_cd,
+               fld_cn,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( #{bzentyNo},
+               #{fldSeCd},
+               #{fldCd},
+               CASE WHEN #{fldSeCd} = 'B' THEN (SELECT cd_nm       FROM sys_code        WHERE use_yn = 'Y' AND cd_id       = #{fldCd} AND up_cd_id = 'CT.BIZ_RLM')
+                    WHEN #{fldSeCd} = 'I' THEN (SELECT invt_fld_nm FROM tb_invtrlm_code WHERE use_yn = 'Y' AND invt_fld_cd = #{fldCd})
+               END,
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+        	           
+    <!-- 업체분야정보(투자분야/사업분야) 삭제 -->
+    <delete id="deltEntRlm" parameterType="business.usr.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent_rlm 
+         WHERE bzenty_no = #{bzentyNo}
+           AND fld_se_cd = #{fldSeCd}
+    </delete> 
+        	           
+    <!-- 업체분야정보(투자분야/사업분야) 업체번호 기준 삭제 -->
+    <delete id="deltEntRlmByBzentyNo" parameterType="string">
+        DELETE 
+          FROM tb_ent_rlm 
+         WHERE bzenty_no = #{bzentyNo}
+    </delete> 
+
+    <!-- 사업자번호 기준 업체번호/업체유형/대표여부를 조회한다. -->
+    <select id="viewEntByBrno" resultType="hashmap" parameterType="string">
+        SELECT A.bzenty_no                        AS "bzentyNo"
+              ,A.bzenty_se_cd                     AS "bzentySeCd"
+              ,A.bzenty_nm                        AS "bzentyNm"
+              ,A.rprsv_nm                         AS "rprsvNm"
+              ,A.fndn_ymd                         AS "fndnYmd"
+              ,A.rprs_telno                       AS "rprsTelno"
+              ,A.use_stts_cd                      AS "useSttsCd"
+              ,(SELECT CASE WHEN COUNT(*) > 0 
+                            THEN 'N' 
+                            ELSE 'Y' 
+                       END 
+                  FROM tb_user
+                 WHERE use_stts_cd = '1'
+                   AND bzenty_no   = A.bzenty_no) AS "rprsYn"
+          FROM vw_ent A
+         WHERE brno = #{brno}
+    </select>
+    
+    <!-- KODATA 기준/ brno 조건으로 투자지원신청 수정 -->
+    <update id="updtSprtByBrno" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_invtsprt_aply 
+           SET mdfr_no          = #{userNo},
+               aply_bzenty_no   = #{bzentyNo},
+               aply_user_no     = COALESCE(aply_user_no, #{userNo}),
+	  <if test="@common.util.CommUtils@isNotEmpty(bzentyNm     )"> bzenty_nm      = #{bzentyNm     },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(fndnYmd      )"> fndn_ymd       = #{fndnYmd      },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(rprsvNm      )"> rprsv_nm       = #{rprsvNm      },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(empCnt       )"> emp_cnt        = #{empCnt       },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(crno         )"> crno           = #{crno         },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(lctnAddr     )"> lctn_addr      = #{lctnAddr     },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(lctnDaddr    )"> lctn_daddr     = #{lctnDaddr    },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(rprsTelno    )"> rprs_telno     = #{rprsTelno    },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(fxno         )"> fxno           = #{fxno         },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(bzentyTypeCd )"> bzenty_type_cd = #{bzentyTypeCd },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(hmpgAddr     )"> hmpg_addr      = #{hmpgAddr     },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(invtHopeAmt  )"> invt_hope_amt  = #{invtHopeAmt  },</if>
+               mdfcn_ymd       = NOW()
+         WHERE brno            = #{brno}
+    </update>
+    
+    <!-- KODATA 기준/ brno 조건으로 행사참여경영체 수정 -->
+    <update id="updtEventByBrno" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_event_ent
+           SET mdfr_no         = #{userNo},
+               bzenty_no       = #{bzentyNo},
+	  <if test="@common.util.CommUtils@isNotEmpty(bzentyNm     )"> bzenty_nm      = #{bzentyNm     },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(rprsvNm      )"> rprsv_nm       = #{rprsvNm      },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(rprsTelno    )"> telno          = #{rprsTelno    },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(emlAddr      )"> eml_addr       = #{emlAddr      },</if>
+               mdfcn_ymd       = NOW()
+         WHERE brno            = #{brno}
+    </update>
+    
+    <!-- KODATA 기준/ brno 조건으로 펀드투자자 수정 -->
+    <update id="updtFundInvstrByBrno" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_fund_invstr
+           SET mdfr_no         = #{userNo},
+               bzenty_no       = #{bzentyNo},
+               invt_bzenty_nm  = #{bzentyNm},
+               mdfcn_ymd       = NOW()
+         WHERE brno            = #{brno}
+    </update>
+
+    <!-- 업체정보 조회이력 등록 -->
+    <insert id="regiEntInqHst" parameterType="business.usr.invest.service.EntVO">
+        INSERT 
+          INTO tb_ent_inq_hst
+             ( sn,
+               bzenty_no,
+               user_no,
+               inq_ymd,
+               reg_ymd
+             )
+        VALUES
+             ( NEXTVAL('SEQ_ENT_INQ_HST'),
+               #{bzentyNo},
+               #{gsUserNo},
+               TO_CHAR(NOW(),'YYYYMMDD'),
+               NOW()  
+             )
+    </insert>
+    
+    <!-- 반려 업체의 정보 수정 처리 -->
+    <update id="updtEntCmpl" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_ent 
+           SET mdfr_no         = #{gsUserNo},
+               use_stts_cd     = #{useSttsCd},
+	  <if test="@common.util.CommUtils@isNotEmpty(bzentySeCd   )"> bzenty_se_cd   = #{bzentySeCd   },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(invtHopeAmt  )"> invt_hope_amt  = #{invtHopeAmt  },</if>
+               mdfcn_ymd       = NOW()
+         WHERE bzenty_no       = #{bzentyNo}
+    </update>
+
+</mapper>

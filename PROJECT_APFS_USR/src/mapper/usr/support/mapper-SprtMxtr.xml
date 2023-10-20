@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SprtMxtr">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+        A.sn                                           AS "sn",
+        A.sprt_aply_no                                 AS "sprtAplyNo",
+        A.invt_mxtr_nm                                 AS "invtMxtrNm",
+        A.invt_ymd                                     AS "invtYmd",
+        A.invstr_nm                                    AS "invstrNm",
+        A.invt_amt                                     AS "invtAmt",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 투자조합정보 목록조회 -->
+    <select id="listSprtMxtr" resultType="java.util.HashMap" parameterType="business.usr.support.service.SprtVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_invt_mxtr A
+         WHERE sprt_aply_no = #{sprtAplyNo}
+         ORDER BY 
+               A.sn
+    </select>
+
+    <!-- 투자조합정보 등록 -->
+    <insert id="regiSprtMxtr" parameterType="business.usr.support.service.SprtMxtrVO">
+        INSERT 
+          INTO tb_invt_mxtr 
+             ( sn,
+               sprt_aply_no,
+               invt_mxtr_nm,
+               invt_ymd,
+               invstr_nm,
+               invt_amt,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( NEXTVAL('seq_invt_mxtr'),
+               #{sprtAplyNo},
+               #{invtMxtrNm},
+               #{invtYmd},
+               #{invstrNm},
+               #{invtAmt},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 투자조합정보 삭제 -->
+    <delete id="deltSprtMxtr" parameterType="business.usr.support.service.SprtMxtrVO">
+        DELETE 
+          FROM tb_invt_mxtr
+		<if test="@common.util.CommUtils@isNotEmpty(sn)"> WHERE sn = #{sn} </if>
+		<if test="@common.util.CommUtils@isEmpty(sn   )"> WHERE sprt_aply_no = #{sprtAplyNo} </if>
+    </delete> 
+
+</mapper>

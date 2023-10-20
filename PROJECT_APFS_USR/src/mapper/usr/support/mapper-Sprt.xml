@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Sprt">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+        A.sprt_aply_no                                 AS "sprtAplyNo",
+        A.sprt_aply_se_cd                              AS "sprtSeCd",
+        A.prgrm_no                                     AS "prgrmNo",
+        (SELECT prgrm_nm
+           FROM tb_invtsprt_mng     P
+          WHERE P.prgrm_no        = A.prgrm_no
+            AND P.del_yn          = 'N'
+            AND P.use_yn          = 'Y')               AS "prgrmNm",
+        A.aply_bzenty_no                               AS "bzentyNo",
+        A.aply_user_no                                 AS "userNo",
+        A.prvc_clct_agre_yn                            AS "prvcClctAgreYn",
+        A.unity_mng_sys_agre_yn                        AS "unityMngSysAgreYn",
+        A.bzenty_nm                                    AS "bzentyNm",
+        A.brno                                         AS "brno",
+        A.fndn_ymd                                     AS "fndnYmd",
+        A.rprsv_nm                                     AS "rprsvNm",
+        A.emp_cnt                                      AS "empCnt",
+        A.crno                                         AS "crno",
+        A.brdt                                         AS "brdt",
+        A.sexdstn                                      AS "sexdstn",
+        A.lctn_addr                                    AS "lctnAddr",
+        A.lctn_daddr                                   AS "lctnDaddr",
+        A.rprs_telno                                   AS "rprsTelno",
+        A.fxno                                         AS "fxno",
+        A.bzenty_type_cd                               AS "bzentyTypeCd",
+        A.biz_fld                                      AS "bizFld",
+        A.hmpg_addr                                    AS "hmpgAddr",
+        A.invt_hope_amt                                AS "invtHopeAmt",
+        A.main_biz_cn                                  AS "mainBizCn",
+        A.core_itm_cn                                  AS "coreItmCn",
+        A.biz_cn                                       AS "bizCn",
+        A.pic_nm                                       AS "picNm",
+        A.pic_dept_nm                                  AS "picDeptNm",
+        A.pic_telno                                    AS "picTelno",
+        A.pic_eml_addr                                 AS "picEmlAddr",
+        A.fund_link_url                                AS "fundLinkUrl",
+        A.rcpt_ymd                                     AS "rcptYmd",
+        A.prcs_ymd                                     AS "prcsYmd",
+        A.rmrk                                         AS "rmrk",
+        A.prgrs_stts_cd                                AS "prgrsSttsCd",
+        FN_GET_CODENM('CT.PRGRS_STTS1', 
+        	           A.prgrs_stts_cd)                AS "prgrsSttsNm",
+        COALESCE(A.prcs_rslt_cn,
+        	(SELECT prgrs_cn
+        	   FROM tb_sprt_biz_prgre P
+        	  WHERE sn = (SELECT MAX(sn) 
+        	                FROM tb_sprt_biz_prgre 
+        	               WHERE sprt_aply_no = A.sprt_aply_no))
+        )                                              AS "prcsRsltCn",
+        A.del_yn                                       AS "delYn",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate",
+		SUBSTR(A.prgrs_stts_cd,2,2)                    AS "statusCd",
+        FN_GET_CODENM('CT.APLY_PRC_RSLT', 
+        	           SUBSTR(A.prgrs_stts_cd,2,2))    AS "statusNm",
+		CASE WHEN SUBSTR(A.prgrs_stts_cd,2,2) = '00'
+		     THEN FN_GET_CODENM('CT.PRGRS_STTS1', A.prgrs_stts_cd)
+		     ELSE FN_GET_CODENM('CT.APLY_STUS'  , '20')
+	    END                                            AS "rcptText",
+	    (SELECT CONCAT(user_nm, '(', user_id , ')' )
+	       FROM tb_user
+	      WHERE user_no = A.aply_user_no)              AS "aplcntNm"   
+    </sql>
+
+    <!-- 투자지원신청 목록조회 -->
+    <select id="listSprt" resultType="java.util.HashMap" parameterType="business.usr.support.service.SprtVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_invtsprt_aply   A
+         WHERE A.del_yn           = 'N'
+           AND A.aply_user_no     = #{gsUserNo}
+           AND A.sprt_aply_se_cd  = #{sprtSeCd}
+  		<if test="@common.util.CommUtils@isNotEmpty(prgrmNo)">
+  		   AND A.prgrm_no         = #{prgrmNo}
+  		</if>
+         ORDER BY 
+               A.sprt_aply_no DESC
+    </select>
+    <select id="listSprtCount" resultType="int" parameterType="business.usr.support.service.SprtVO">
+        SELECT COUNT(1) 
+          FROM tb_invtsprt_aply A
+         WHERE A.del_yn         = 'N'
+           AND A.aply_user_no     = #{gsUserNo}
+           AND A.sprt_aply_se_cd  = #{sprtSeCd}
+  		<if test="@common.util.CommUtils@isNotEmpty(prgrmNo)">
+  		   AND A.prgrm_no         = #{prgrmNo}
+  		</if>
+    </select>
+
+    <!-- 투자지원신청 상세조회 -->
+    <select id="viewSprt" resultType="business.usr.support.service.SprtVO" parameterType="string">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_invtsprt_aply A
+         WHERE sprt_aply_no = #{sprtAplyNo}
+    </select>
+    
+    <!-- 투자지원신청 있는지 확인 -->
+    <select id="existSprt" resultType="boolean" parameterType="string">
+        SELECT CASE WHEN COUNT(*) = 0 THEN 0 ELSE 1 END
+          FROM tb_invtsprt_aply   A
+         WHERE sprt_aply_no = #{sprtAplyNo}
+    </select>
+
+    <!-- 투자지원신청 등록 -->
+    <insert id="regiSprt" parameterType="business.usr.support.service.SprtVO">
+    	<selectKey keyProperty="sprtAplyNo" resultType="string" order="BEFORE">
+    		SELECT 'S' || TO_CHAR(NOW(),'YY') || TO_CHAR(NEXTVAL('SEQ_INVTSPRT_APLY'), 'FM0000000')
+    	</selectKey>
+        INSERT 
+          INTO tb_invtsprt_aply 
+             ( sprt_aply_no,
+               sprt_aply_se_cd,
+               aply_bzenty_no,
+               aply_user_no,
+               prvc_clct_agre_yn,
+               unity_mng_sys_agre_yn,
+               bzenty_nm,
+               brno,
+               fndn_ymd,
+               rprsv_nm,
+               brdt,
+               sexdstn,
+               lctn_addr,
+               rprs_telno,
+               bzenty_type_cd,
+               biz_fld,
+               invt_hope_amt,
+               main_biz_cn,
+               core_itm_cn,
+               biz_cn,
+               pic_nm,
+               pic_telno,
+               pic_eml_addr,
+               prgrs_stts_cd,
+  <if test="@common.util.CommUtils@isNotEmpty(prgrmNo     )"> prgrm_no      ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(empCnt      )"> emp_cnt       ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(crno        )"> crno          ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(lctnDaddr   )"> lctn_daddr    ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(fxno        )"> fxno          ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(hmpgAddr    )"> hmpg_addr     ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(picDeptNm   )"> pic_dept_nm   ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(fundLinkUrl )"> fund_link_url ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(rcptYmd     )"> rcpt_ymd      ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(prcsYmd     )"> prcs_ymd      ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(rmrk        )"> rmrk          ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(prcsRsltCn  )"> prcs_rslt_cn  ,</if>
+               del_yn,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{sprtAplyNo},
+               #{sprtSeCd},
+               #{bzentyNo},
+               #{userNo},
+               COALESCE(#{prvcClctAgreYn   },'Y'),
+               COALESCE(#{unityMngSysAgreYn},'Y'),
+               #{bzentyNm},
+               #{brno},
+               #{fndnYmd},
+               #{rprsvNm},
+               #{brdt},
+               #{sexdstn},
+               #{lctnAddr},
+               #{rprsTelno},
+               #{bzentyTypeCd},
+               #{bizFld},
+               #{invtHopeAmt},
+               #{mainBizCn},
+               #{coreItmCn},
+               #{bizCn},
+               #{picNm},
+               #{picTelno},
+               #{picEmlAddr},
+               #{prgrsSttsCd},
+  <if test="@common.util.CommUtils@isNotEmpty(prgrmNo     )"> #{prgrmNo     },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(empCnt      )"> #{empCnt      },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(crno        )"> #{crno        },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(lctnDaddr   )"> #{lctnDaddr   },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(fxno        )"> #{fxno        },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(hmpgAddr    )"> #{hmpgAddr    },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(picDeptNm   )"> #{picDeptNm   },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(fundLinkUrl )"> #{fundLinkUrl },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(rcptYmd     )"> #{rcptYmd     },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(prcsYmd     )"> #{prcsYmd     },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(rmrk        )"> #{rmrk        },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(prcsRsltCn  )"> #{prcsRsltCn  },</if>
+               'N',
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 투자지원신청 수정 -->
+    <update id="updtSprt" parameterType="business.usr.support.service.SprtVO">
+        UPDATE tb_invtsprt_aply 
+           SET mdfr_no   = #{gsUserNo},
+  <if test="@common.util.CommUtils@isNotEmpty(prvcClctAgreYn      )"> prvc_clct_agre_yn    = #{prvcClctAgreYn      },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(unityMngSysAgreYn   )"> unity_mng_sys_agre_yn= #{unityMngSysAgreYn   },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(bzentyNm            )"> bzenty_nm            = #{bzentyNm            },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(brno                )"> brno                 = #{brno                },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(fndnYmd             )"> fndn_ymd             = #{fndnYmd             },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(rprsvNm             )"> rprsv_nm             = #{rprsvNm             },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(empCnt              )"> emp_cnt              = #{empCnt              },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(crno                )"> crno                 = #{crno                },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(brdt                )"> brdt                 = #{brdt                },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(sexdstn             )"> sexdstn              = #{sexdstn             },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(lctnAddr            )"> lctn_addr            = #{lctnAddr            },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(lctnDaddr           )"> lctn_daddr           = #{lctnDaddr           },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(rprsTelno           )"> rprs_telno           = #{rprsTelno           },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(fxno                )"> fxno                 = #{fxno                },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(bzentyTypeCd        )"> bzenty_type_cd       = #{bzentyTypeCd        },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(bizFld              )"> biz_fld              = #{bizFld              },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(hmpgAddr            )"> hmpg_addr            = #{hmpgAddr            },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(invtHopeAmt         )"> invt_hope_amt        = #{invtHopeAmt         },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(mainBizCn           )"> main_biz_cn          = #{mainBizCn           },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(coreItmCn           )"> core_itm_cn          = #{coreItmCn           },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(bizCn               )"> biz_cn               = #{bizCn               },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(picNm               )"> pic_nm               = #{picNm               },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(picDeptNm           )"> pic_dept_nm          = #{picDeptNm           },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(picTelno            )"> pic_telno            = #{picTelno            },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(picEmlAddr          )"> pic_eml_addr         = #{picEmlAddr          },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(fundLinkUrl         )"> fund_link_url        = #{fundLinkUrl         },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(rcptYmd             )"> rcpt_ymd             = #{rcptYmd             },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(prcsYmd             )"> prcs_ymd             = #{prcsYmd             },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(rmrk                )"> rmrk                 = #{rmrk                },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(prgrsSttsCd         )"> prgrs_stts_cd        = #{prgrsSttsCd         },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(prcsRsltCn          )"> prcs_rslt_cn         = #{prcsRsltCn          },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(delYn               )"> del_yn               = #{delYn               },</if>  
+               mdfcn_ymd = NOW()
+         WHERE sprt_aply_no = #{sprtAplyNo}
+    </update>
+
+    <!-- 투자지원신청 삭제 -->
+    <delete id="deltSprt" parameterType="business.usr.support.service.SprtVO">
+        DELETE 
+          FROM tb_invtsprt_aply 
+         WHERE sprt_aply_no = #{sprtAplyNo}
+    </delete> 
+
+    <!-- 투자지원신청 지원사업 목록조회 -->
+    <sql id="Sql-Column-Prgrm">
+		A.prgrm_no       AS "code",
+		A.prgrm_nm       AS "text",
+		CASE WHEN A.prgrm_clsf_cd = ''
+		     THEN 'PTC'
+		     ELSE A.prgrm_clsf_cd
+		END              AS "group",
+		CASE WHEN TO_CHAR(NOW(), 'YYYYMMDD') BETWEEN sprt_bgng_ymd AND sprt_end_ymd
+		     THEN 1
+		     ELSE 0
+		END              AS "active"
+    </sql>
+    
+    <select id="listPrgrm" resultType="java.util.HashMap" parameterType="business.usr.support.service.SprtVO">
+        SELECT <include refid="Sql-Column-Prgrm"/>
+          FROM tb_invtsprt_mng   A
+         WHERE A.sprt_aply_se_cd = #{sprtSeCd}
+           AND A.del_yn          = 'N'
+           AND A.use_yn          = 'Y'
+         ORDER BY 
+               "code"
+    </select>
+
+    <!-- 투자지원신청 지원사업 조회 -->
+    <select id="viewPrgrm" resultType="java.util.HashMap" parameterType="business.usr.support.service.SprtVO">
+        SELECT <include refid="Sql-Column-Prgrm"/>
+          FROM tb_invtsprt_mng   A
+         WHERE A.prgrm_no        = #{prgrmNo}
+    </select>
+    
+    <!-- 투자지원신청 지원사업 있는지 확인 -->
+    <select id="existPrgrm" resultType="boolean" parameterType="string">
+        SELECT CASE WHEN COUNT(*) = 0 THEN 0 ELSE 1 END
+          FROM tb_invtsprt_mng   A
+         WHERE A.prgrm_no        = #{prgrmNo}
+    </select>
+
+    <!-- 마이페이지 - 신청내역 - 지원사업진행현황 목록조회 
+    	 : 사업명/진행상태 기준의 최종건만 조회되도록
+    	 : 2023.08.22 최종건만 조회하는 로직 제외
+    -->
+    <select id="listSprtPrgre" resultType="java.util.HashMap" parameterType="string">
+        SELECT A.sn                                           AS "sn",
+               A.sprt_aply_no                                 AS "sprtAplyNo",
+               A.prgrm_se_cd                                  AS "prgrmSeCd",
+               CASE WHEN B.sprt_aply_se_cd = 'SB'
+                    THEN FN_GET_CODENM('CT.PRGRM_SE', A.prgrm_se_cd)
+                    ELSE (SELECT prgrm_nm
+                            FROM tb_invtsprt_mng     P
+                           WHERE P.prgrm_no        = B.prgrm_no
+                             AND P.del_yn          = 'N'
+                             AND P.use_yn          = 'Y')
+               END                                            AS "prgrmSeNm",
+               A.dscsn_cntr_cd                                AS "dscsnCntrCd",
+               FN_GET_CODENM('CT.DSCSN_CNTR',A.dscsn_cntr_cd) AS "dscsnCntrNm",
+               A.prcs_cycl                                    AS "prcsCycl",
+               A.ftf_yn                                       AS "ftfYn",
+               A.prgrs_cn                                     AS "prgrsCn",
+               A.pic_nm                                       AS "picNm",
+               A.pic_telno                                    AS "picTelno",
+               A.evnt_no                                      AS "evntNo",
+               A.prgrs_stts_cd                                AS "prgrsSttsCd",
+               FN_GET_CODENM('CT.PRGRS_STTS1',
+                             A.prgrs_stts_cd)                 AS "prgrsSttsNm",
+               A.prgrs_detail_stts_cd                         AS "prgrsDetailSttsCd",
+				CASE
+					WHEN A.prgrs_detail_stts_cd IS NULL 
+					THEN FN_GET_CODENM('CT.PRGRS_STTS1', A.prgrs_stts_cd)
+					ELSE FN_GET_CODENM('CT.PRGRS_DETAIL_STTS', A.prgrs_detail_stts_cd)
+				END                                           AS "prgrsDetailSttsNm",
+               A.prcs_ymd                                     AS "prcsYmd",
+               A.rgtr_no                                      AS "rgtrNo",
+               TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		       TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+               A.mdfr_no                                      AS "mdfrNo",
+               TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		       TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+          FROM tb_sprt_biz_prgre A
+             , tb_invtsprt_aply  B
+         WHERE A.sprt_aply_no  = B.sprt_aply_no  
+           AND A.sprt_aply_no  = #{sprtAplyNo}
+           AND A.sn           IN (SELECT MAX(sn)
+                                   FROM tb_sprt_biz_prgre
+                                  WHERE sprt_aply_no         = A.sprt_aply_no
+                                  GROUP BY
+                                        prgrm_se_cd
+                                      , prcs_cycl
+                                      , prgrs_stts_cd)
+         ORDER BY 
+               A.sn DESC
+    </select>
+
+</mapper>

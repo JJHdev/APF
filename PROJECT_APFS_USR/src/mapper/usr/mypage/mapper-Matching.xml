@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Matching">
+
+    <!-- 매칭설정 목록조회 -->
+    <select id="listMatching" resultType="business.usr.mypage.service.MatchingVO" parameterType="business.usr.mypage.service.MatchingVO">
+        SELECT A.user_no                                      AS "userNo",
+               A.stng_se_cd                                   AS "stngSeCd",
+               A.stng_dtl_cd                                  AS "stngDtlCd",
+               A.rgtr_no                                      AS "rgtrNo",
+               TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		       TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+               A.mdfr_no                                      AS "mdfrNo",
+               TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		       TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+          FROM tb_mtchg_stng A
+             , tb_user       U
+         WHERE A.user_no     = U.user_no
+           AND U.use_stts_cd = '1'
+           AND A.user_no     = #{userNo}
+         ORDER BY 
+               A.stng_se_cd
+    </select>
+
+    <!-- 매칭설정관리 등록 -->
+    <insert id="regiMatching" parameterType="business.usr.mypage.service.MatchingVO">
+        INSERT 
+          INTO tb_mtchg_stng 
+             ( user_no,
+               stng_se_cd,
+               stng_dtl_cd,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{userNo},
+               #{stngSeCd},
+               #{stngDtlCd},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 매칭설정 사용자기준 삭제 -->
+    <delete id="deltMatchingAll" parameterType="string">
+        DELETE 
+          FROM tb_mtchg_stng 
+         WHERE user_no = #{userNo}
+    </delete> 
+
+    <!-- 매칭설정여부 확인 -->
+    <select id="existMatching" resultType="boolean" parameterType="string">
+        SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
+          FROM tb_mtchg_stng A
+             , tb_user       U
+         WHERE A.user_no     = U.user_no
+           AND U.use_stts_cd = '1'
+           AND A.user_no     = #{userNo}
+    </select>
+
+</mapper>

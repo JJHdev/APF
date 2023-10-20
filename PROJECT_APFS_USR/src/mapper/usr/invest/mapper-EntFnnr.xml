@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EntFnnr">
+
+    <sql id="Sql-Column">
+        A.ir_no                                        AS "irNo",
+        A.sn                                           AS "sn",
+        A.data_se_cd                                   AS "dataSeCd",
+        FN_GET_CODENM('CT.DATA_SE', A.data_se_cd)      AS "dataSeNm",
+        A.fnnr_se_cd                                   AS "fnnrSeCd",
+        FN_GET_CODENM('CT.FNNR_SE', A.fnnr_se_cd)      AS "fnnrSeNm",
+        A.fnnr_acnt_cd                                 AS "fnnrAcntCd",
+        A.fnnr_ymd                                     AS "fnnrYmd",
+        A.fnnr_yr                                      AS "fnnrYr",
+        A.fnnr_amt                                     AS "fnnrAmt",
+        A.kd_cd                                        AS "kdCd",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 재무정보 목록조회 -->
+    <select id="listEntFnnr" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_fnnr A
+         WHERE A.ir_no    = #{irNo}
+		<if test="@common.util.CommUtils@isNotEmpty(dataSeCd)">
+		   AND A.data_se_cd = #{dataSeCd}
+		</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fnnrSeCd)">
+		   AND A.fnnr_se_cd = #{fnnrSeCd}
+		</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fnnrAcntCd)">
+		   AND A.fnnr_acnt_cd = #{fnnrAcntCd}
+		</if>
+		<if test="@common.util.CommUtils@isNotEmpty(kdCd)">
+		   AND A.kd_cd = #{kdCd}
+		</if>
+		<!-- 수정목록 조회시 -->
+		<if test="@common.util.CommUtils@isEqual(manualYn,'Y')">
+		   AND (A.kd_cd IS NULL OR A.kd_cd = '')
+		</if>
+		<!-- 기준년도개수 조건이 있는 경우 -->
+		<if test="@common.util.CommUtils@isNotEmpty(fnnrYrCnt)">
+		   AND A.fnnr_yr <![CDATA[ >= ]]> CAST((CAST(TO_CHAR(NOW(),'YYYY') AS INTEGER) - #{fnnrYrCnt}) AS TEXT)
+		</if>
+         ORDER BY 
+               A.sn
+    </select>
+
+    <!-- 재무정보 수정 목록조회 -->
+    <select id="listEntFnnrUpdates" resultType="java.util.HashMap" parameterType="business.usr.invest.service.EntVO">
+		SELECT A.fnnr_yr     AS "fnnrYr"
+		     , SUM(CASE WHEN A.fnnr_acnt_cd IN (
+		                     SELECT cd_id
+		                       FROM sys_code 
+		                      WHERE up_cd_id = #{fnnrType} 
+		                        AND use_yn   = 'Y' 
+		                        AND cd_ordr  = 1
+		                     )
+		                THEN A.fnnr_amt 
+		                ELSE 0 
+		            END)     AS "fnnrAmt1"
+		     , SUM(CASE WHEN A.fnnr_acnt_cd IN (
+		                     SELECT cd_id
+		                       FROM sys_code 
+		                      WHERE up_cd_id = #{fnnrType} 
+		                        AND use_yn   = 'Y' 
+		                        AND cd_ordr  = 2
+		                     )
+		                THEN A.fnnr_amt 
+		                ELSE 0 
+		            END)     AS "fnnrAmt2"
+		     , SUM(CASE WHEN A.fnnr_acnt_cd IN (
+		                     SELECT cd_id
+		                       FROM sys_code 
+		                      WHERE up_cd_id = #{fnnrType} 
+		                        AND use_yn   = 'Y' 
+		                        AND cd_ordr  = 3
+		                     )
+		                THEN A.fnnr_amt 
+		                ELSE 0 
+		            END)     AS "fnnrAmt3"
+		     , (SELECT cd_id
+		          FROM sys_code 
+		         WHERE up_cd_id = #{fnnrType} 
+                   AND use_yn   = 'Y' 
+                   AND cd_ordr  = 1
+               )             AS "fnnrAcntCd1"
+		     , (SELECT cd_id
+		          FROM sys_code 
+		         WHERE up_cd_id = #{fnnrType} 
+                   AND use_yn   = 'Y' 
+                   AND cd_ordr  = 2
+               )             AS "fnnrAcntCd2"
+		     , (SELECT cd_id
+		          FROM sys_code 
+		         WHERE up_cd_id = #{fnnrType} 
+                   AND use_yn   = 'Y' 
+                   AND cd_ordr  = 3
+               )             AS "fnnrAcntCd3"
+		     , #{irNo}       AS "irNo"
+		     , #{fnnrSeCd}   AS "fnnrSeCd"
+		     , #{dataSeCd}   AS "dataSeCd"
+		  FROM tb_ent_fnnr   A
+	     WHERE A.ir_no       = #{irNo}
+	       AND A.fnnr_se_cd  = #{fnnrSeCd}
+	       AND A.data_se_cd  = #{dataSeCd}
+		 GROUP BY 
+		       A.fnnr_yr
+    </select>
+
+    <!-- 재무정보 기준년도 조회 -->
+    <select id="getEntFnnrYear" resultType="string" parameterType="business.usr.invest.service.EntVO">
+        SELECT MAX(fnnr_yr) 
+          FROM tb_ent_fnnr
+         WHERE ir_no      = #{irNo}
+		   AND data_se_cd = #{dataSeCd}
+		   AND fnnr_se_cd = #{fnnrSeCd}
+    </select>
+
+    <!-- 재무정보 세부 목록조회 -->
+    <select id="listEntFnnrDetails" resultType="java.util.HashMap" parameterType="business.usr.invest.service.EntVO">
+		SELECT B.fnnr_acnt_cd  AS "fnnrCd"
+		     , B.fnnr_acnt_nm  AS "fnnrNm"
+		     , B.fnnr_cd_step  AS "fnnrLv"
+		     , A.fnnr_amt1     AS "fnnrAmt1"
+		     , A.fnnr_amt2     AS "fnnrAmt2"
+		     , A.fnnr_amt3     AS "fnnrAmt3"
+		     , A.fnnr_amt4     AS "fnnrAmt4"
+		  FROM (SELECT fnnr_acnt_cd
+		             , SUM(CASE WHEN fnnr_yr = CAST((#{fnnrMaxYr}  ) AS TEXT) THEN fnnr_amt ELSE 0 END) AS fnnr_amt1
+		             , SUM(CASE WHEN fnnr_yr = CAST((#{fnnrMaxYr}-1) AS TEXT) THEN fnnr_amt ELSE 0 END) AS fnnr_amt2
+		             , SUM(CASE WHEN fnnr_yr = CAST((#{fnnrMaxYr}-2) AS TEXT) THEN fnnr_amt ELSE 0 END) AS fnnr_amt3
+		             , SUM(CASE WHEN fnnr_yr = CAST((#{fnnrMaxYr}-3) AS TEXT) THEN fnnr_amt ELSE 0 END) AS fnnr_amt4
+		          FROM tb_ent_fnnr
+		         WHERE ir_no      = #{irNo}
+		           AND fnnr_se_cd = #{fnnrSeCd}
+		           AND data_se_cd = #{dataSeCd}
+		         GROUP BY
+		               fnnr_acnt_cd
+		       ) A
+		 INNER JOIN
+		       tb_fnnr_code_ko  B
+		    ON A.fnnr_acnt_cd = B.fnnr_acnt_cd
+		 WHERE B.fnnr_se_cd   = #{fnnrSeCd}
+		 ORDER BY
+		       B.fnnr_acnt_cd
+    </select>
+
+    <!-- 재무정보 요약 목록조회 -->
+    <select id="listEntFnnrSummary" resultType="java.util.HashMap" parameterType="business.usr.invest.service.EntVO">
+		SELECT C.cd_id                  AS "fnnrCd"
+		     , C.cd_nm                  AS "fnnrNm"
+		     , COALESCE(A.fnnr_amt1, 0) AS "fnnrAmt1"
+		     , COALESCE(A.fnnr_amt2, 0) AS "fnnrAmt2"
+		     , COALESCE(A.fnnr_amt3, 0) AS "fnnrAmt3"
+		     , COALESCE(A.fnnr_amt4, 0) AS "fnnrAmt4"
+		  FROM sys_code C
+		  LEFT OUTER JOIN
+		      (SELECT fnnr_acnt_cd
+		            , SUM(CASE WHEN fnnr_yr = CAST((#{fnnrMaxYr}-3) AS TEXT) THEN fnnr_amt ELSE 0 END) AS fnnr_amt1
+		            , SUM(CASE WHEN fnnr_yr = CAST((#{fnnrMaxYr}-2) AS TEXT) THEN fnnr_amt ELSE 0 END) AS fnnr_amt2
+		            , SUM(CASE WHEN fnnr_yr = CAST((#{fnnrMaxYr}-1) AS TEXT) THEN fnnr_amt ELSE 0 END) AS fnnr_amt3
+		            , SUM(CASE WHEN fnnr_yr = CAST((#{fnnrMaxYr}  ) AS TEXT) THEN fnnr_amt ELSE 0 END) AS fnnr_amt4
+		         FROM tb_ent_fnnr A1
+		        WHERE ir_no      = #{irNo}
+		          AND fnnr_se_cd = #{fnnrSeCd}
+		          AND data_se_cd = #{dataSeCd}
+		          AND EXISTS (
+		              SELECT 1
+		                FROM sys_code
+		               WHERE cd_id    = A1.fnnr_acnt_cd
+		                 AND use_yn   = 'Y'
+		                 AND up_cd_id = #{fnnrType}
+		              )
+		        GROUP BY
+		              fnnr_acnt_cd
+		       ) A
+		    ON C.cd_id    = A.fnnr_acnt_cd
+		 WHERE C.use_yn   = 'Y'
+		   AND C.up_cd_id = #{fnnrType}
+		 ORDER BY
+		       C.cd_ordr
+    </select>
+
+    <!-- 재무정보 년도별 목록조회 -->
+    <select id="listEntFnnrYear" resultType="string" parameterType="business.usr.invest.service.EntVO">
+        SELECT generate_series (
+                   CAST((SELECT MAX(fnnr_yr) 
+                           FROM tb_ent_fnnr
+                          WHERE ir_no      = #{irNo}
+				            AND data_se_cd = #{dataSeCd}
+				            AND fnnr_se_cd = #{fnnrSeCd}
+                        ) AS INTEGER) - 3,
+                   CAST((SELECT MAX(fnnr_yr) 
+                           FROM tb_ent_fnnr
+                          WHERE ir_no      = #{irNo}
+				            AND data_se_cd = #{dataSeCd}
+				            AND fnnr_se_cd = #{fnnrSeCd}
+                        ) AS INTEGER)
+               ) AS year
+         ORDER BY
+               year ASC
+    </select>
+
+    <!-- 재무정보 상세조회 -->
+    <select id="viewEntFnnr" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_fnnr A
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </select>
+
+    <!-- 재무정보 등록 -->
+    <insert id="regiEntFnnr" parameterType="business.usr.invest.service.EntVO">
+        INSERT 
+          INTO tb_ent_fnnr 
+             ( ir_no,
+               sn,
+               data_se_cd,
+               fnnr_se_cd,
+               fnnr_acnt_cd,
+               fnnr_ymd,
+               fnnr_yr,
+               fnnr_amt,
+               kd_cd,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{irNo},
+			   NEXTVAL('seq_ent_fnnr'),
+               #{dataSeCd},
+               #{fnnrSeCd},
+               #{fnnrAcntCd},
+               #{fnnrYmd},
+               #{fnnrYr},
+               #{fnnrAmt},
+               #{kdCd},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 재무정보 수정 -->
+    <update id="updtEntFnnr" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_ent_fnnr 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(dataSeCd            )"> data_se_cd           = #{dataSeCd            },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fnnrSeCd            )"> fnnr_se_cd           = #{fnnrSeCd            },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fnnrAcntCd          )"> fnnr_acnt_cd         = #{fnnrAcntCd          },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fnnrYmd             )"> fnnr_ymd             = #{fnnrYmd             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fnnrYr              )"> fnnr_yr              = #{fnnrYr              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fnnrAmt             )"> fnnr_amt             = #{fnnrAmt             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(kdCd                )"> kd_cd                = #{kdCd                },</if>
+               mdfcn_ymd = NOW()
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </update>
+
+    <!-- 재무정보 삭제 -->
+    <delete id="deltEntFnnr" parameterType="business.usr.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent_fnnr 
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </delete> 
+
+    <!-- IR번호 기준 수정대상 재무정보목록 삭제 -->
+    <delete id="deltEntFnnrForUpdates" parameterType="business.usr.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent_fnnr 
+         WHERE ir_no      = #{irNo}
+           AND data_se_cd = #{dataSeCd}
+           AND (kd_cd IS NULL OR kd_cd = '')
+    </delete>
+
+    <!-- 재무정보 KODATA 등록여부 조회 -->
+    <select id="existKodata" resultType="boolean" parameterType="string">
+    	SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
+    	  FROM tb_ent_fnnr A
+    	 WHERE EXISTS (
+    	       SELECT 1
+    	         FROM vw_ent
+    	        WHERE bzenty_no = #{bzentyNo}
+    	          AND ir_no     = A.ir_no
+    	       )
+    	   AND A.data_se_cd = 'K'
+    	   AND A.kd_cd IS NOT NULL
+    </select>
+
+</mapper>

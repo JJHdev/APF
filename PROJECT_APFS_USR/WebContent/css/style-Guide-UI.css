@@ -1,0 +1,117 @@
+.borer-box{
+    border: 1px dashed #9747FF;
+    border-radius: 5px;
+    padding: 16px;
+}
+
+
+.datum-point{
+    width:1040px;
+    margin:auto;
+}
+.datum-point2{
+    width:1558px;
+    margin:auto;
+    position:relative;
+}
+.row.interval-1 {
+    margin: 0 -3px;
+}
+
+.row.interval-1>div {
+    padding: 0 3px;
+}
+.row.interval-3 {
+    margin: -8px -12px;
+    /* justify-content: space-between; */
+}
+
+.row.interval-3>div {
+    padding: 8px 12px;
+    flex-grow: 0;
+    white-space: nowrap;
+}
+.row.interval-3>div:nth-child(1){}
+.row.interval-3>div:nth-child(2){}
+.position-text.ver1 {
+    font-style: normal;
+    font-weight: 700;
+    font-size: 36px;
+    line-height: 100%;
+    position: absolute;
+    text-align: center;
+    left: 50%;
+    transform: translateX(-50%);
+    top: -90px;
+}
+.position-text.ver2 {
+    position: absolute;
+    left: -148px;
+    padding-left: 65px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.position-text.ver2>p {
+    font-weight: 600;
+    font-size: 24px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
+}
+.position-text.ver3 {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: -36px;
+}
+.position-text.ver4 {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: -71px;
+    text-align: right;
+    width: 60px;
+}
+.dark-mode{position:relative;}
+.dark-mode::before{
+    content:"";
+    position: absolute;
+    width: 62%;
+    height: 116%;
+    background: var(--black);
+    top: -115px;
+    left: -455px;
+}
+.dark-mode>.row>div:nth-child(1) .position-text,
+.dark-mode>.row>div:nth-child(1) .position-text.ver2>p{
+    color:#fff;
+}
+
+
+[class*="table-box-"] table thead th:after,
+[class*="table-box-"] table tbody td:after,
+[class*="table-box-"] table thead th:before,
+[class*="table-box-"] table tbody td:before{
+    content: "";
+    position: absolute;
+    top: 50%;
+    background-color: var(--primary-t20);
+    width: 1px;
+    height: 28px;
+    transform: translateY(-50%);
+}
+[class*="table-box-"] table tr:hover>*::after{
+    top:auto !important;
+    transform: none !important;
+}
+[class*="table-box-"] table thead th:after,
+[class*="table-box-"] table tbody td:after{
+    right:0;
+}
+[class*="table-box-"] table thead th:before,
+[class*="table-box-"] table tbody td:before{
+    left:0
+}
+[class*="table-box-"] table thead tr th:last-child:after,
+[class*="table-box-"] table tbody tr td:last-child:after{opacity:1;}

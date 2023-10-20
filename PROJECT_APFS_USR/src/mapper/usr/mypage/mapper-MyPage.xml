@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="MyPage">
+	
+    <!-- 마이페이지 신청내역 건수목록 조회 -->
+    <select id="listAplyGroup" resultType="business.usr.mypage.service.MyPageVO" parameterType="business.usr.mypage.service.MyPageVO">
+		SELECT A.cd_id                     AS "aplyCd",
+		       A.cd_nm                     AS "aplyNm",
+		       CASE 
+		       -- 지원신청건수 (경영체)
+		       WHEN A.cd_id IN ('SB','SA','SC') 
+		       THEN (SELECT COUNT(*) 
+		               FROM tb_invtsprt_aply 
+		              WHERE aply_user_no    = #{gsUserNo} 
+		                AND sprt_aply_se_cd = A.cd_id
+		                AND del_yn          = 'N' 
+		                AND prgrs_stts_cd  != 'A00')
+		       -- IR지원건수 (경영체)
+		       WHEN A.cd_id = 'IR' 
+		       THEN (SELECT COUNT(*)
+		               FROM tb_fund_info    F
+		                  , tb_fund_sprt    S
+		              WHERE S.bzenty_no     = #{gsBzentyNo}
+		                AND F.fund_no       = S.fund_no
+		                AND F.use_yn        = 'Y'
+		                AND F.del_yn        = 'N')
+		       -- 북마크건수 (투자자)
+		       WHEN A.cd_id = 'BM' 
+		       THEN (SELECT COUNT(*)
+		               FROM tb_bkmk_info
+		              WHERE bzenty_no       = #{gsBzentyNo}
+		                AND bkmk_se_cd      = 'BM1')
+		       -- 미팅신청건수 (투자자)
+		       WHEN A.cd_id = 'MT' 
+		       THEN (SELECT COUNT(*)
+		               FROM tb_mtg_aply
+		              WHERE aplcnt_no       = #{gsUserNo})
+		       -- 경영체지원건수 (투자자)
+		       WHEN A.cd_id = 'FD' 
+		       THEN (SELECT COUNT(*)
+		               FROM tb_fund_info    F
+		                  , tb_fund_sprt    S
+		              WHERE F.fund_no       = S.fund_no
+		                AND F.del_yn        = 'N'
+		                AND F.use_yn        = 'Y'
+		                AND EXISTS (
+		                    SELECT 1
+		                      FROM tb_fund_invstr
+		                     WHERE fund_no   = F.fund_no
+		                       AND bzenty_no = #{gsBzentyNo}
+		                    )
+		            )
+		       ELSE 0
+		       END                         AS "aplyCnt"
+		  FROM sys_code   A
+		 WHERE A.up_cd_id = 'CT.MYPG_APLY_SE'
+		   AND A.use_yn   = 'Y'
+		<if test="@common.util.CommUtils@isNotEmpty(aplyType)">
+		   AND A.cd_cn    = #{aplyType}
+		</if>
+		<!-- 업체회원이 아닌 경우 투자후지원과 IR지원 제외 -->
+		<if test='gsBzentyYn != null and !"Y".equals(gsBzentyYn)'>
+		   AND A.cd_id NOT IN ('SA','IR')
+		</if>
+		 ORDER BY
+		       A.cd_ordr
+    </select>
+
+</mapper>
+
+
+

@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="MyPbanc">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+    		del_yn = 'N'
+    	<!-- 검색텍스트(통합검색) -->
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+        	AND (A.biz_pbanc_nm      LIKE '%' || #{srchText} || '%') <!-- 사업공고명 -->
+        </if>
+        <if test="@common.util.CommUtils@isEqual(divisionBkmk,'BM2')">
+        	AND (SELECT CASE WHEN COUNT(*) > 0 
+		             THEN 'Y' 
+		             ELSE 'N' 
+		        END
+		   FROM tb_bkmk_info B1
+		  WHERE trgt_bzenty_no = A.crdns_bzenty_no
+		    AND doc_no         = A.biz_pbanc_no
+		    AND bzenty_no      = #{gsBzentyNo}
+		    AND bkmk_se_cd     = 'BM2')= 'Y'
+        </if>
+    </sql>
+    <sql id="Sql-Column">
+		FN_GET_PRGRS(A.rcpt_bgng_dt, A.rcpt_end_dt)      AS "prgrsSttsCd", <!-- 모집상태 -->
+		(SELECT CASE WHEN COUNT(*) > 0 
+		             THEN 'Y' 
+		             ELSE 'N' 
+		        END
+		   FROM tb_bkmk_info B1
+		  WHERE trgt_bzenty_no = A.crdns_bzenty_no
+		    AND doc_no         = A.biz_pbanc_no
+		    AND bzenty_no      = #{gsBzentyNo}
+		    AND bkmk_se_cd     = 'BM2')                  AS "gsBkmkYn", <!-- 북마크여부 -->
+   		(SELECT C.SN
+		   FROM tb_bkmk_info C
+		  WHERE trgt_bzenty_no = A.crdns_bzenty_no
+		    AND doc_no         = A.biz_pbanc_no
+		    AND bzenty_no      = #{gsBzentyNo}
+		    AND bkmk_se_cd     = 'BM2')                  AS "sn", <!-- 북마크여부 -->
+        A.biz_pbanc_no                                   AS "bizPbancNo",
+        A.biz_pbanc_nm                                   AS "bizPbancNm",
+        A.crdns_bzenty_no                                AS "crdnsBzentyNo",
+        FN_GET_ENTNM(A.crdns_bzenty_no)                  AS "crdnsBzentyNm",
+        A.brno                                           AS "brno",
+        A.tkcg_dept_nm                                   AS "tkcgDeptNm",
+        A.pic_nm                                         AS "picNm",
+        FN_FMT_DATA('TEL', A.pic_telno)                  AS "picTelno",
+        A.biz_guidance_url                               AS "bizGuidanceUrl",
+        A.rcpt_se_cd                                     AS "rcptSeCd",
+        FN_GET_CODENM('CT.RCPT_WHL_SE', A.rcpt_se_cd)    AS "rcptSeNm",
+        FN_FMT_STRTODATE(SUBSTR(A.rcpt_bgng_dt,1,8),'-') AS "rcptBgngDt",
+        FN_FMT_STRTODATE(SUBSTR(A.rcpt_end_dt ,1,8),'-') AS "rcptEndDt",
+        FN_FMT_STRTODATE(SUBSTR(A.rcpt_bgng_dt,1,8),'-') AS "rcptBgngYmd",
+        FN_FMT_STRTODATE(SUBSTR(A.rcpt_end_dt ,1,8),'-') AS "rcptEndYmd",
+        FN_FMT_STRTODATE(SUBSTR(A.rcpt_bgng_dt,9,10),'') AS "rcptBgngTm",
+        FN_FMT_STRTODATE(SUBSTR(A.rcpt_end_dt ,9,10),'') AS "rcptEndTm",
+        A.sprt_fld_cd                                    AS "sprtFldCd",
+        FN_GET_CODENM('CT.SPRT_RLM', A.sprt_fld_cd)      AS "sprtFldNm",
+        A.biz_fld                                        AS "bizFld",
+        FN_GET_CODENMLIST('CT.BIZ_RLM',A.biz_fld,',',',') AS "bizFldNm",
+        A.biz_trgt                                       AS "bizTrgt",
+        FN_GET_CODENMLIST('CT.SPRT_TRGT',A.biz_trgt,',',',') AS "bizTrgtNm",
+        A.biz_trgt_age                                   AS "bizTrgtAge",
+        FN_GET_CODENM('CT.SPRT_AGE', A.biz_trgt_age)     AS "bizTrgtAgeNm",
+        A.biz_trgt_fntn_pd                               AS "bizTrgtFntnPd",
+        FN_GET_CODENM('CT.FNTN_WHL', A.biz_trgt_fntn_pd) AS "bizTrgtFntnPdNm",
+        A.rcpt_mthd_cd                                   AS "rcptMthdCd",
+        FN_GET_CODENM('CT.RCPT_WHL_SE',A.rcpt_mthd_cd)   AS "rcptMthdNm",
+        A.rcpt_mthd_cn                                   AS "rcptMthdCn",
+        A.aply_qlfc_cn                                   AS "aplyQlfcCn",
+        A.aply_excl_trgt_cn                              AS "aplyExclTrgtCn",
+        A.sbmsn_dcmnt_cn                                 AS "sbmsnDcmntCn",
+        A.sprt_cn                                        AS "sprtCn",
+        A.pbanc_stts_cd                                  AS "pbancSttsCd",
+        FN_GET_CODENM('CT.PRGRE_STUS1',A.pbanc_stts_cd)  AS "pbancSttsNm",
+        A.del_yn                                         AS "delYn",
+        A.rgtr_no                                        AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')    AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')               AS "regDate",
+        A.mdfr_no                                        AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')    AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')               AS "mdfDate"
+    </sql>
+    
+     <!-- 게시판 탭목록조회 -->
+    <select id="listPbancTab" resultType="java.util.HashMap" parameterType="business.usr.mypage.service.MyPbancVO">
+		SELECT A.cd_id  AS "code"
+             , A.cd_nm  AS "text"
+		  FROM sys_code A
+		 WHERE A.up_cd_id  = #{divisionBkmk}
+		   AND A.cd_nm LIKE '%지원사업%'
+    </select>
+
+    <!-- 사업공고관리 목록조회 -->
+    <select id="listPbanc" resultType="java.util.HashMap" parameterType="business.usr.mypage.service.MyPbancVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_biz_pbanc A
+         WHERE <include refid="Sql-Where"/>
+           AND crdns_bzenty_no = #{gsBzentyNo}
+         ORDER BY A.biz_pbanc_no DESC   <!-- 최신등록순 -->
+    </select>
+    <select id="listPbancCount" resultType="int" parameterType="business.usr.mypage.service.MyPbancVO">
+        SELECT COUNT(1) 
+          FROM tb_biz_pbanc A
+         WHERE <include refid="Sql-Where"/>
+           AND crdns_bzenty_no = #{gsBzentyNo}
+    </select>
+
+    <!-- 사업공고관리 상세조회 -->
+    <select id="viewPbanc" resultType="business.usr.mypage.service.MyPbancVO" parameterType="business.usr.mypage.service.MyPbancVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_biz_pbanc A
+         WHERE biz_pbanc_no = #{bizPbancNo}
+    </select>
+    
+    <!-- 사업공고관리 세션등록기관명 상세조회 -->
+    <select id="viewCrdnsBzentyNm" resultType="business.usr.mypage.service.MyPbancVO" parameterType="business.usr.mypage.service.MyPbancVO">
+        SELECT A.bzenty_nm       AS "crdnsBzentyNm"
+          FROM tb_ent A
+         WHERE A.bzenty_no = #{gsBzentyNo}
+    </select>
+
+    <!-- 사업공고관리 등록 -->
+    <insert id="regiPbanc" parameterType="business.usr.mypage.service.MyPbancVO">
+       	<selectKey keyProperty="bizPbancNo" resultType="String" order="BEFORE">
+    		SELECT CONCAT('B23', NEXTVAL('SEQ_BIZ_PBANC'))
+    	</selectKey>
+        INSERT 
+          INTO tb_biz_pbanc 
+             ( biz_pbanc_no,
+               biz_pbanc_nm,
+               crdns_bzenty_no,
+               crdns_bzenty_nm,
+               brno,
+               tkcg_dept_nm,
+               pic_nm,
+               pic_telno,
+               biz_guidance_url,
+               rcpt_se_cd,
+               rcpt_bgng_dt,
+               rcpt_end_dt,
+               sprt_fld_cd,
+               biz_fld,
+               biz_trgt,
+               biz_trgt_age,
+               biz_trgt_fntn_pd,
+               rcpt_mthd_cn,
+               rcpt_mthd_cd,
+               aply_qlfc_cn,
+               aply_excl_trgt_cn,
+               sbmsn_dcmnt_cn,
+               sprt_cn,
+               pbanc_stts_cd,
+               del_yn,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{bizPbancNo},
+               #{bizPbancNm},
+               #{crdnsBzentyNo},
+               #{crdnsBzentyNm},
+               #{brno},
+               #{tkcgDeptNm},
+               #{picNm},
+               #{picTelno},
+               #{bizGuidanceUrl},
+               #{rcptSeCd},
+				<choose>
+				    <when test="@common.util.CommUtils@isEqual(rcptSeCd,'20')">
+				        null,
+				        null,
+				    </when>
+				    <otherwise>
+				        #{rcptBgngDt},
+				        #{rcptEndDt},
+				    </otherwise>
+				</choose>
+			   #{sprtFldCd},
+               #{bizFld},
+               #{bizTrgt},
+               #{bizTrgtAge},
+               #{bizTrgtFntnPd},
+               #{rcptMthdCn},
+               #{rcptMthdCd},
+               #{aplyQlfcCn},
+               #{aplyExclTrgtCn},
+               #{sbmsnDcmntCn},
+               #{sprtCn},
+               '10',
+               'N',
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 사업공고관리 수정 -->
+    <update id="updtPbanc" parameterType="business.usr.mypage.service.MyPbancVO">
+        UPDATE tb_biz_pbanc 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(bizPbancNm          )"> biz_pbanc_nm         = #{bizPbancNm          			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(crdnsBzentyNo       )"> crdns_bzenty_no      = #{crdnsBzentyNo       			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(crdnsBzentyNm       )"> crdns_bzenty_nm      = #{crdnsBzentyNm       			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(brno                )"> brno                 = #{brno                			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(tkcgDeptNm          )"> tkcg_dept_nm         = #{tkcgDeptNm          			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(picNm               )"> pic_nm               = #{picNm               			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(picTelno            )"> pic_telno            = #{picTelno            			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bizGuidanceUrl      )"> biz_guidance_url     = #{bizGuidanceUrl      			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rcptSeCd            )"> rcpt_se_cd           = #{rcptSeCd            			},</if>
+		
+		<if test="@common.util.CommUtils@isNotEmpty(rcptBgngDt          )"> rcpt_bgng_dt         = #{rcptBgngDt          			},</if>
+		<if test="@common.util.CommUtils@isEmpty   (rcptBgngDt          )"> rcpt_bgng_dt         = FN_FMT_STRTODATE(#{rcptBgngDt},''),</if>
+		
+		<if test="@common.util.CommUtils@isNotEmpty(rcptEndDt           )"> rcpt_end_dt          = #{rcptEndDt           		    },</if>
+		<if test="@common.util.CommUtils@isEmpty   (rcptEndDt           )"> rcpt_end_dt          = FN_FMT_STRTODATE(#{rcptEndDt},''	),</if>
+		
+		<if test="@common.util.CommUtils@isNotEmpty(sprtFldCd           )"> sprt_fld_cd          = #{sprtFldCd           			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bizFld              )"> biz_fld              = #{bizFld              			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bizTrgt             )"> biz_trgt             = #{bizTrgt             			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bizTrgtAge          )"> biz_trgt_age         = #{bizTrgtAge          			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bizTrgtFntnPd       )"> biz_trgt_fntn_pd     = #{bizTrgtFntnPd       			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rcptMthdCd          )"> rcpt_mthd_cd         = #{rcptMthdCd          			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rcptMthdCn          )"> rcpt_mthd_cn         = #{rcptMthdCn          			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(aplyQlfcCn          )"> aply_qlfc_cn         = #{aplyQlfcCn          			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(aplyExclTrgtCn      )"> aply_excl_trgt_cn    = #{aplyExclTrgtCn      			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(sbmsnDcmntCn        )"> sbmsn_dcmnt_cn       = #{sbmsnDcmntCn       			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(sprtCn              )"> sprt_cn              = #{sprtCn              			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pbancSttsCd         )"> pbanc_stts_cd        = #{pbancSttsCd         			},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(delYn               )"> del_yn               = #{delYn               			},</if>  
+               mdfcn_ymd = NOW()
+         WHERE biz_pbanc_no = #{bizPbancNo}
+    </update>
+
+    <!-- 사업공고관리 삭제 -->
+    <delete id="deltPbanc" parameterType="business.usr.mypage.service.MyPbancVO">
+        DELETE 
+          FROM tb_biz_pbanc 
+         WHERE biz_pbanc_no = #{bizPbancNo}
+    </delete> 
+
+</mapper>

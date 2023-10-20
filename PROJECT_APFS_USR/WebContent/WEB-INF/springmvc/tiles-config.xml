@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC
+       "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN"
+       "http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+ 
+<tiles-definitions>
+
+    <!-- 공통 레이아웃 -->
+    <definition name="tiles-modal" template="/WEB-INF/jsp/tiles/modal.jsp">
+        <put-attribute name="body"     value="" />
+    </definition>
+	<definition name="tiles-popup" template="/WEB-INF/jsp/tiles/popup.jsp">
+        <put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+		<put-attribute name="body"     value="" />
+	</definition>
+	
+    <!-- 공통 URL 패턴 -->
+    <definition name="com/common/loginCheck" extends="tiles-popup">
+        <put-attribute name="body" value="/WEB-INF/jsp/com/common/loginCheck.jsp" />
+    </definition>
+    <definition name="com/*/popup*" extends="tiles-popup">
+        <put-attribute name="body" value="/WEB-INF/jsp/com/{1}/popup{2}.jsp" />
+    </definition>
+    <definition name="com/*/modal*" extends="tiles-modal">
+        <put-attribute name="body" value="/WEB-INF/jsp/com/{1}/modal{2}.jsp" />
+    </definition>
+    <definition name="error/error" template="/WEB-INF/jsp/error/error.jsp">
+        <put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+        <put-attribute name="header"   value="/WEB-INF/jsp/tiles/header.jsp" />
+        <put-attribute name="footer"   value="/WEB-INF/jsp/tiles/footer.jsp" />
+    </definition>
+    <definition name="error/modal" extends="tiles-modal">
+    	<put-attribute name="body" value="/WEB-INF/jsp/error/modal.jsp" />
+    </definition>
+    <definition name="error/popup" extends="tiles-popup">
+    	<put-attribute name="body" value="/WEB-INF/jsp/error/popup.jsp" />
+    </definition>
+
+	<!-- 업무시스템 레이아웃 -->
+    <definition name="tiles-page" template="/WEB-INF/jsp/tiles/layout.jsp">
+        <put-attribute name="body"     value="" />
+        <put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+        <put-attribute name="header"   value="/WEB-INF/jsp/tiles/header.jsp" />
+        <put-attribute name="footer"   value="/WEB-INF/jsp/tiles/footer.jsp" />
+    </definition>
+    <definition name="tiles-subpage" template="/WEB-INF/jsp/tiles/sublayout.jsp">
+        <put-attribute name="body"     value="" />
+        <put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+        <put-attribute name="header"   value="/WEB-INF/jsp/tiles/header.jsp" />
+        <put-attribute name="footer"   value="/WEB-INF/jsp/tiles/footer.jsp" />
+    </definition>
+	<definition name="tiles-main" template="/WEB-INF/jsp/tiles/main.jsp">
+		<put-attribute name="body"     value="" />
+		<put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+		<put-attribute name="header"   value="/WEB-INF/jsp/tiles/header.jsp" />
+		<put-attribute name="footer"   value="/WEB-INF/jsp/tiles/footer.jsp" />
+	</definition>
+	<definition name="tiles-gis" template="/WEB-INF/jsp/tiles/layoutgis.jsp">
+		<put-attribute name="body"     value="" />
+		<put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+		<put-attribute name="footer"   value="/WEB-INF/jsp/tiles/footer.jsp" />
+	</definition>
+    <definition name="tiles-mypage" template="/WEB-INF/jsp/tiles/mypage.jsp">
+        <put-attribute name="body"     value="" />
+        <put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+        <put-attribute name="header"   value="/WEB-INF/jsp/tiles/header.jsp" />
+        <put-attribute name="footer"   value="/WEB-INF/jsp/tiles/footer.jsp" />
+    </definition>
+    <definition name="tiles-search" template="/WEB-INF/jsp/tiles/search.jsp"> <!-- 23.08.14 LHB 통합검색 서브메뉴 미적용으로 인한 추가 -->
+        <put-attribute name="body"     value="" />
+        <put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+        <put-attribute name="header"   value="/WEB-INF/jsp/tiles/header.jsp" />
+        <put-attribute name="footer"   value="/WEB-INF/jsp/tiles/footer.jsp" />
+    </definition>
+
+    <!-- 업무시스템 URL 패턴 -->
+    <!-- 2023.08.31 메인의 알림팝업의 URL문제로 인한 별도의 tiles 설정 -->
+    <definition name="usr/main/popupNotice" extends="tiles-modal">
+        <put-attribute name="body" value="/WEB-INF/jsp/usr/main/popupNotice.jsp" />
+    </definition>
+	<definition name="usr/*/popup*" extends="tiles-popup">
+		<put-attribute name="body" value="/WEB-INF/jsp/usr/{1}/popup{2}.jsp" />
+	</definition>
+	<definition name="usr/*/*/popup*" extends="tiles-popup">
+		<put-attribute name="body" value="/WEB-INF/jsp/usr/{1}/{2}/popup{3}.jsp" />
+	</definition>
+    <definition name="usr/*/modal*" extends="tiles-modal">
+        <put-attribute name="body" value="/WEB-INF/jsp/usr/{1}/modal{2}.jsp" />
+    </definition>
+    <definition name="usr/*/*/modal*" extends="tiles-modal">
+        <put-attribute name="body" value="/WEB-INF/jsp/usr/{1}/{2}/modal{3}.jsp" />
+    </definition>
+	<definition name="usr/main/main" extends="tiles-main">
+		<put-attribute name="body" value="/WEB-INF/jsp/usr/main/main.jsp" />
+	</definition>
+    <definition name="usr/gis/*/*" extends="tiles-gis">
+        <put-attribute name="body" value="/WEB-INF/jsp/usr/gis/{1}/{2}.jsp" />
+    </definition>
+    <definition name="usr/mypage/*/*" extends="tiles-mypage">
+        <put-attribute name="body" value="/WEB-INF/jsp/usr/mypage/{1}/{2}.jsp" />
+    </definition>
+    <definition name="usr/inform/search/*" extends="tiles-search">
+        <put-attribute name="body" value="/WEB-INF/jsp/usr/inform/search/{1}.jsp" />
+    </definition>
+    <definition name="usr/*/*" extends="tiles-page">
+        <put-attribute name="body" value="/WEB-INF/jsp/usr/{1}/{2}.jsp" />
+    </definition>
+    <definition name="usr/*/*/*" extends="tiles-page">
+        <put-attribute name="body" value="/WEB-INF/jsp/usr/{1}/{2}/{3}.jsp" />
+    </definition>
+    <definition name="com/*/*" extends="tiles-subpage">
+        <put-attribute name="body" value="/WEB-INF/jsp/com/{1}/{2}.jsp" />
+    </definition>
+
+</tiles-definitions>

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="FundSprt">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+        A.fund_no                                      AS "fundNo",
+        F.fund_nm                                      AS "fundNm", 
+        A.bzenty_no                                    AS "bzentyNo",
+        FN_GET_ENTNM(A.bzenty_no)                      AS "bzentyNm",
+        A.ir_rls_yn                                    AS "irRlsYn",
+        A.sprt_stts_cd                                 AS "sprtSttsCd",
+        FN_GET_CODENM('CT.SPRT_STUS', A.sprt_stts_cd)  AS "sprtSttsNm",
+        A.sprt_ymd                                     AS "sprtYmd",
+        A.rvw_ymd                                      AS "rvwYmd",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')             AS "mdfDate",
+		<!-- 신규등록(NEW) 여부 -->
+        CASE WHEN TO_DATE(A.sprt_ymd, 'YYYYMMDD') <![CDATA[ > ]]> (NOW() - INTERVAL '1 DAYS')
+             THEN 'Y'
+             ELSE 'N'
+        END                                            AS "newYn",
+		<!-- IR 추가파일 조회 -->
+		(SELECT sn
+		   FROM tb_biz_file
+		  WHERE del_yn     = 'N'
+		    AND file_path IS NOT NULL
+		    AND task_se_cd = 'TS001'
+		    AND doc_no     = A.fund_no
+		    AND dtl_doc_no = A.bzenty_no)              AS "fileNo"
+    </sql>
+
+    <!-- 투자자기준 경영체의 펀드지원정보(IR지원) 목록조회 -->
+    <select id="listFundSprt" resultType="java.util.HashMap" parameterType="business.usr.invest.service.FundVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_fund_sprt A
+             , tb_fund_info F
+         WHERE A.fund_no = F.fund_no
+           AND F.del_yn  = 'N'
+           AND F.use_yn  = 'Y'
+           AND EXISTS (
+               SELECT 1
+                 FROM tb_fund_invstr
+                WHERE fund_no   = F.fund_no
+                  AND bzenty_no = #{gsBzentyNo}
+               )
+		<if test="@common.util.CommUtils@isNotEmpty(sprtSttsCd)">
+		   AND A.sprt_stts_cd = #{sprtSttsCd}
+		</if>
+         ORDER BY 
+               A.sprt_ymd DESC
+    </select>
+    
+    <select id="listFundSprtCount" resultType="int" parameterType="business.usr.invest.service.FundVO">
+        SELECT COUNT(1) 
+          FROM tb_fund_sprt A
+             , tb_fund_info F
+         WHERE A.fund_no = F.fund_no
+           AND F.del_yn  = 'N'
+           AND F.use_yn  = 'Y'
+           AND EXISTS (
+               SELECT 1
+                 FROM tb_fund_invstr
+                WHERE fund_no   = F.fund_no
+                  AND bzenty_no = #{gsBzentyNo}
+               )
+		<if test="@common.util.CommUtils@isNotEmpty(sprtSttsCd)">
+		   AND A.sprt_stts_cd = #{sprtSttsCd}
+		</if>
+    </select>
+
+    <!-- 펀드지원정보(IR지원) 상세조회 -->
+    <select id="viewFundSprt" resultType="business.usr.invest.service.FundVO" parameterType="business.usr.invest.service.FundVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_fund_sprt A
+             , tb_fund_info F
+         WHERE A.fund_no   = F.fund_no
+           AND F.del_yn    = 'N'
+           AND F.use_yn    = 'Y'
+           AND A.fund_no   = #{fundNo}
+           AND A.bzenty_no = #{bzentyNo}
+    </select>
+
+    <!-- 펀드지원정보(IR지원) 등록 -->
+    <insert id="regiFundSprt" parameterType="business.usr.invest.service.FundVO">
+        INSERT 
+          INTO tb_fund_sprt 
+             ( fund_no,
+               bzenty_no,
+               ir_rls_yn,
+               sprt_stts_cd,
+               sprt_ymd,
+               rvw_ymd,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{fundNo},
+               #{bzentyNo},
+               COALESCE(#{irRlsYn},'N'),
+               #{sprtSttsCd},
+               #{sprtYmd},
+               #{rvwYmd},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 펀드지원정보(IR지원) 수정 -->
+    <update id="updtFundSprt" parameterType="business.usr.invest.service.FundVO">
+        UPDATE tb_fund_sprt 
+           SET MDFR_NO   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(irRlsYn             )"> ir_rls_yn            = #{irRlsYn             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(sprtSttsCd          )"> sprt_stts_cd         = #{sprtSttsCd          },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(sprtYmd             )"> sprt_ymd             = #{sprtYmd             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rvwYmd              )"> rvw_ymd              = #{rvwYmd              },</if>  
+               MDFCN_YMD = NOW()
+         WHERE fund_no   = #{fundNo}
+           AND bzenty_no = #{bzentyNo}
+    </update>
+
+    <!-- 펀드지원정보(IR지원) 삭제 -->
+    <delete id="deltFundSprt" parameterType="business.usr.invest.service.FundVO">
+        DELETE 
+          FROM tb_fund_sprt 
+         WHERE fund_no   = #{fundNo}
+           AND bzenty_no = #{bzentyNo}
+    </delete> 
+
+</mapper>

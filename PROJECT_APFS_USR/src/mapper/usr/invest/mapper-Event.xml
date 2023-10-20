@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Event">
+
+    <!-- ======================== -->
+    <!--  공통 sql                 -->
+    <!-- ======================== -->
+    <sql id="Sql-Where-Event">
+        <if test="@common.util.CommUtils@isNotEmpty(srchYr)">
+            AND A.evnt_yr = #{srchYr}
+        </if>
+    </sql>
+    <sql id="Sql-Where-EventEnt">
+        <if test="@common.util.CommUtils@isNotEmpty(evntNo)">
+            AND (A.evnt_no = #{evntNo})
+        </if>
+    </sql>
+    
+    <sql id="Sql-Column-Event">
+		A.evnt_no												AS "evntNo",
+		A.evnt_nm												AS "evntNm",
+		A.evnt_cn												AS "evntCn",
+		FN_FMT_STRTODATE(A.evnt_bgng_ymd, '-')					AS "evntBgngYmd",
+		A.evnt_end_ymd											AS "evntEndYmd",
+		A.evnt_yr												AS "evntYr",
+		COALESCE(#{evntType}, 'INVT')							AS "evntType",
+		A.use_yn												AS "useYn",
+		A.del_yn												AS "delYn",
+		A.rgtr_no												AS "rgtrNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')			AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')						AS "regDate",
+		A.mdfr_no												AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')			AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')						AS "mdfDate",
+		FN_GET_USERNM(A.rgtr_no)   		           				AS "rgtrNm",
+		EXISTS (SELECT 
+					1 
+				FROM tb_event_invt 
+				WHERE 
+					evnt_no = A.evnt_no 
+					AND bzenty_no = #{bzentyNo}) 				AS "isPartcpt",
+		(SELECT 
+			 DISTINCT prgrs_stts_cd
+		 FROM tb_opinion_ir 
+		 WHERE evnt_no = A.evnt_no 
+			AND bzenty_no = #{bzentyNo}
+			AND user_no = #{gsUserNo})	 						AS "irPrgrsSttsCd",
+		EXISTS (SELECT 
+			 		1
+				 FROM tb_opinion_ir 
+				 WHERE evnt_no    = A.evnt_no 
+					AND bzenty_no = #{bzentyNo}
+					AND user_no   = #{gsUserNo})	 			AS "irRgstYn",
+		(SELECT 
+			group_authrt_cd
+		 FROM tb_grp_auth
+		 WHERE menu_id = 'MU_USR_MYP0401'
+		 	AND user_no = #{gsUserNo})							AS "userAuth"
+    </sql>
+    <sql id="Sql-Column-EventEnt">
+    	A.evnt_partcptn_no												AS "evntPartcptnNo",
+		A.evnt_no														AS "evntNo",
+		(SELECT evnt_nm
+		   FROM tb_event_mng
+		  WHERE evnt_no = A.evnt_no
+		)																AS "evntNm",
+		A.bzenty_no														AS "bzentyNo",
+		FN_FMT_DATA('RNO', A.brno)										AS "brno",
+		A.bzenty_nm														AS "bzentyNm",
+		A.rprsv_nm														AS "rprsvNm",
+		A.telno															AS "telno",
+		A.eml_addr														AS "emlAddr",
+		A.main_biz_cn													AS "mainBizCn",
+		A.inq_cnt														AS "inqCnt",
+		A.rgtr_no														AS "rgtrNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')					AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')								AS "regDate",
+		A.mdfr_no														AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')					AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')								AS "mdfDate",
+		FN_GET_USERNM(A.rgtr_no)           								AS "rgtrNm",
+	    <!-- IR 투자자 검토의견서 작성시 필요한 정보 -->
+	    FN_GET_USERNM(#{gsUserNo})||'('||FN_GET_USERID(#{gsUserNo})||')' AS "rgtrNmNo",	  	<!-- 작성자 -->
+	   	FN_GET_ENTNM(#{bzentyNo})			          					AS "bzentyInvtNm", 	<!-- 운용사명(작성자 기업명) -->
+	   	B.sn															AS "entImgSn"
+    </sql>
+
+    <!-- 투자설명회 목록조회 -->
+    <select id="listEvent" resultType="java.util.HashMap" parameterType="business.usr.invest.service.EventVO">
+        SELECT <include refid="Sql-Column-Event"/>
+          FROM tb_event_mng A
+         WHERE 1 = 1
+           AND del_yn = 'N'
+           AND use_yn = 'Y'
+         	   <include refid="Sql-Where-Event"/>
+         ORDER BY 
+               A.evnt_no DESC
+    </select>
+    <select id="listEventCount" resultType="int" parameterType="business.usr.invest.service.EventVO">
+        SELECT COUNT(1) 
+          FROM tb_event_mng A
+         WHERE 1 = 1
+           AND del_yn = 'N'
+               <include refid="Sql-Where-Event"/>
+    </select>
+    
+    <!-- 투자설명회 상세조회 -->
+    <select id="viewEvent" resultType="business.usr.invest.service.EventVO" parameterType="business.usr.invest.service.EventVO">
+        SELECT <include refid="Sql-Column-Event"/>
+          FROM tb_event_mng A
+         WHERE evnt_no = #{evntNo}
+    </select>
+    
+    <!-- 참여 경영체 목록조회 -->
+    <select id="listEventEnt" resultType="java.util.HashMap" parameterType="business.usr.invest.service.EventVO">
+        SELECT <include refid="Sql-Column-EventEnt"/>
+          FROM tb_event_ent A join tb_biz_file B
+          ON A.evnt_partcptn_no = B.doc_no
+         WHERE 1 = 1
+         	   <include refid="Sql-Where-EventEnt"/>
+         	   AND B.file_se_cd = '00'
+         ORDER BY 
+               A.evnt_partcptn_no
+    </select>
+    <select id="listEventEntCount" resultType="int" parameterType="business.usr.invest.service.EventVO">
+        SELECT COUNT(1) 
+          FROM tb_event_ent A
+         WHERE 1 = 1
+               <include refid="Sql-Where-EventEnt"/>
+    </select>
+</mapper>

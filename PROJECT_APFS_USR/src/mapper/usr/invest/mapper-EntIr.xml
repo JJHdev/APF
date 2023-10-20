@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EntIr">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+        A.ir_no                                        AS "irNo",
+        A.bzenty_no                                    AS "bzentyNo",
+        A.main_biz_cn                                  AS "mainBizCn",
+        A.core_itm_cn                                  AS "coreItmCn",
+        A.biz_cn                                       AS "bizCn",
+        A.pic_nm                                       AS "picNm",
+        A.pic_telno                                    AS "picTelno",
+        A.rls_yn                                       AS "rlsYn",
+        A.pr_vido_url                                  AS "prVidoUrl",
+        A.inq_cnt                                      AS "inqCnt",
+        A.prgrs_stts_cd                                AS "prgrsSttsCd",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 업체IR정보 목록조회 -->
+    <select id="listEntIr" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_ir A
+         WHERE A.bzenty_no = #{bzentyNo}
+         ORDER BY 
+               A.ir_no
+    </select>
+
+    <!-- 업체IR정보 상세조회 -->
+    <select id="viewEntIr" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_ir A
+         WHERE ir_no = #{irNo}
+    </select>
+
+    <!-- 업체IR정보 등록 -->
+    <insert id="regiEntIr" parameterType="business.usr.invest.service.EntVO">
+    	<selectKey keyProperty="irNo" resultType="string" order="BEFORE">
+    		SELECT 'I' || TO_CHAR(NOW(),'YY') || TO_CHAR(NEXTVAL('SEQ_ENT_IR'), 'FM0000000')
+    	</selectKey>
+        INSERT 
+          INTO tb_ent_ir 
+             ( ir_no,
+               bzenty_no,
+		<if test="@common.util.CommUtils@isNotEmpty(mainBizCn  )"> main_biz_cn ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(coreItmCn  )"> core_itm_cn ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bizCn      )"> biz_cn      ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(picNm      )"> pic_nm      ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(picTelno   )"> pic_telno   ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(prVidoUrl  )"> pr_vido_url ,</if>
+               rls_yn,
+               inq_cnt,
+               prgrs_stts_cd,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{irNo},
+               #{bzentyNo},
+		<if test="@common.util.CommUtils@isNotEmpty(mainBizCn  )"> #{mainBizCn  },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(coreItmCn  )"> #{coreItmCn  },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bizCn      )"> #{bizCn      },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(picNm      )"> #{picNm      },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(picTelno   )"> #{picTelno   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(prVidoUrl  )"> #{prVidoUrl  },</if>
+               #{rlsYn},
+               0,
+               #{prgrsSttsCd},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 업체IR정보 수정 -->
+    <update id="updtEntIr" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_ent_ir 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(mainBizCn           )"> main_biz_cn          = #{mainBizCn           },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(coreItmCn           )"> core_itm_cn          = #{coreItmCn           },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bizCn               )"> biz_cn               = #{bizCn               },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(picNm               )"> pic_nm               = #{picNm               },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(picTelno            )"> pic_telno            = #{picTelno            },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rlsYn               )"> rls_yn               = #{rlsYn               },</if>
+	<!-- 2023.08.31 IR작성하기 - 상세정보수정인 경우 -->
+	<if test="act == 'IF'">
+		<if test="@common.util.CommUtils@isEmpty   (prVidoUrl)"> pr_vido_url =         NULL,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(prVidoUrl)"> pr_vido_url = #{prVidoUrl},</if>
+	</if>		
+		<if test="@common.util.CommUtils@isNotEmpty(prgrsSttsCd         )"> prgrs_stts_cd        = #{prgrsSttsCd         },</if>  
+               mdfcn_ymd = NOW()
+         WHERE ir_no     = #{irNo}
+    </update>
+
+    <!-- 업체IR정보 조회수증가 -->
+    <update id="updtEntIrInqCnt" parameterType="string">
+        UPDATE tb_ent_ir 
+           SET inq_cnt = inq_cnt + 1
+         WHERE ir_no   = #{irNo}
+    </update>
+
+    <!-- 업체IR정보 삭제 -->
+    <delete id="deltEntIr" parameterType="business.usr.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent_ir 
+         WHERE ir_no     = #{irNo}
+    </delete> 
+
+    <!-- 업체정보 IR작성여부 확인 -->
+    <select id="existEntIr" resultType="boolean" parameterType="business.usr.invest.service.EntVO">
+        SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
+          FROM tb_ent_ir A
+         WHERE bzenty_no = #{bzentyNo}
+		<if test="@common.util.CommUtils@isEmpty(prgrsSttsCd)">
+		   AND prgrs_stts_cd != '00'
+		</if>
+		<if test="@common.util.CommUtils@isNotEmpty(prgrsSttsCd)">
+			<!-- ALL인 경우 조건제외 -->
+			<if test="!@common.util.CommUtils@isEqual(prgrsSttsCd,'ALL')">
+				AND prgrs_stts_cd  = #{prgrsSttsCd}
+			</if>
+		</if>
+    </select>
+
+    <!-- IR작성용 최종 IR번호 조회 -->
+    <select id="getLastEntIrNo" resultType="string" parameterType="business.usr.invest.service.EntVO">
+		SELECT MAX(ir_no)
+		  FROM tb_ent_ir
+		 WHERE bzenty_no = #{bzentyNo}
+		<if test="@common.util.CommUtils@isNotEmpty(prgrsSttsCd)">
+		   AND prgrs_stts_cd  = #{prgrsSttsCd}
+		</if>
+    </select>
+
+</mapper>

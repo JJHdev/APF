@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="User">
+
+    <!-- 회원가입 저장처리 -->
+    <insert id="regiUser" parameterType="business.com.user.service.UserVO">
+    	<selectKey keyProperty="userNo" resultType="string" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_USER')
+    	</selectKey>
+        INSERT 
+          INTO tb_user 
+             ( user_no,
+               bzenty_no,
+               user_id,
+               user_nm,
+               pswd,
+               eml_addr,
+               telno,
+               mbl_telno,
+               brdt,
+               zip,
+               addr,
+               daddr,
+               sexdstn,
+               dept_cd,
+               dept_nm,
+               empl_no,
+               idntf_id,
+               lgn_se_cd,
+               join_ymd,
+               whdwl_ymd,
+               cntn_psblty_ip_addr,
+               pswd_lock_ymd,
+               pswd_err_cnt,
+               pswd_chg_ymd,
+               pswd_next_ymd,
+               last_lgn_dt,
+               moblphon_rcptn_agre_yn,
+               prvc_clct_agre_yn,
+               thpty_pvsn_agre_yn,
+               use_stts_cd,
+               test_use_yn,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( #{userNo},
+               #{bzentyNo},
+               #{userId},
+               #{userNm},
+               #{pswd},
+               #{emlAddr},
+               #{telno},
+               #{mblTelno},
+               #{brdt},
+               #{zip},
+               #{addr},
+               #{daddr},
+               #{sexdstn},
+               #{deptCd},
+               #{deptNm},
+               #{emplNo},
+               #{idntfId},
+               COALESCE(#{lgnSeCd}, 'P'),
+               #{joinYmd},
+               #{whdwlYmd},
+               #{cntnPsbltyIpAddr},
+               #{pswdLockYmd},
+               COALESCE(#{pswdErrCnt}, 0),
+               #{pswdChgYmd},
+               #{pswdNextYmd},
+               #{lastLgnDt},
+               #{moblphonRcptnAgreYn},
+               COALESCE(#{prvcClctAgreYn }, 'Y'),
+               COALESCE(#{thptyPvsnAgreYn}, 'Y'),
+               #{useSttsCd},
+               COALESCE(#{testUseYn}, 'N'),
+               COALESCE(#{gsUserNo}, #{userNo}),
+               NOW()
+             )
+    </insert>
+    <!-- 권한 등록 -->
+    <insert id="regiRole" parameterType="business.com.user.service.UserVO">
+		INSERT 
+		  INTO SYS_ROLE_USER
+		     ( ROLE_ID,
+			   USER_NO,
+			   RGTR_NO,
+			   REG_YMD
+		     )
+		VALUES
+		     ( #{roleId},
+		       #{userNo},
+			   #{gsUserNo},
+			   NOW()
+		     )
+	</insert>
+
+	<!-- 권한 등록여부 확인 -->
+    <select id="existRole" resultType="boolean" parameterType="business.com.user.service.UserVO">
+    	SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
+    	  FROM SYS_ROLE_USER
+         WHERE ROLE_ID = #{roleId}
+           AND USER_NO = #{userNo}
+    </select>
+
+    <!-- 중복가입자 체크 -->
+    <select id="existUser" resultType="boolean" parameterType="string">
+        SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
+          FROM TB_USER A
+         WHERE USER_ID = #{userId}
+           AND USE_STTS_CD = '1' <!-- 활성화된 회원만 조회가능 -->
+    </select>
+
+    <!-- 사용자암호 일치여부 확인-->
+    <select id="existUserPswd" resultType="int" parameterType="java.util.HashMap">
+        SELECT COUNT(*)
+          FROM TB_USER A
+         WHERE USER_ID = #{userId}
+           AND PSWD    = #{password}
+           AND USE_STTS_CD = '1' <!-- 활성화된 회원만 조회가능 -->
+    </select>
+    
+    <!-- 사용자정보 칼럼 -->
+    <sql id="Sql-Column">
+             U.user_no                                      AS "userNo",
+             U.bzenty_no                                    AS "bzentyNo",
+             FN_GET_ENTNM(U.bzenty_no)                      AS "bzentyNm",
+             U.user_id                                      AS "userId",
+             U.user_nm                                      AS "userNm",
+             U.eml_addr                                     AS "emlAddr",
+             U.telno                                        AS "telno",
+             U.mbl_telno                                    AS "mblTelno",
+             U.brdt                                         AS "brdt",
+             U.zip                                          AS "zip",
+             U.addr                                         AS "addr",
+             U.daddr                                        AS "daddr",
+             U.sexdstn                                      AS "sexdstn",
+             U.dept_cd                                      AS "deptCd",
+             U.dept_nm                                      AS "deptNm",
+             U.empl_no                                      AS "emplNo",
+             U.idntf_id                                     AS "idntfId",
+             U.lgn_se_cd                                    AS "lgnSeCd",
+		     FN_FMT_STRTODATE(U.join_ymd,     '-')  		AS "joinYmd",
+		     FN_FMT_STRTODATE(U.whdwl_ymd,    '-')  		AS "whdwlYmd",
+             U.cntn_psblty_ip_addr                          AS "cntnPsbltyIpAddr",
+             U.pswd_err_cnt                                 AS "pswdErrCnt",
+		     FN_FMT_STRTODATE(U.pswd_lock_ymd,'-')  		AS "pswdLockYmd",
+		     FN_FMT_STRTODATE(U.pswd_chg_ymd, '-')  		AS "pswdChgYmd",
+		     FN_FMT_STRTODATE(U.pswd_next_ymd,'-')  		AS "pswdNextYmd",
+		     TO_CHAR(COALESCE(U.last_lgn_dt, NOW())
+		            ,'yyyy-mm-dd hh24:mi:ss') 	            AS "lastLgnDt",
+             U.moblphon_rcptn_agre_yn                       AS "moblphonRcptnAgreYn",
+             U.prvc_clct_agre_yn                            AS "prvcClctAgreYn",
+             U.thpty_pvsn_agre_yn                           AS "thptyPvsnAgreYn",
+             U.use_stts_cd                                  AS "useSttsCd",
+             U.test_use_yn                                  AS "testUseYn",
+             U.rgtr_no                                      AS "rgtrNo",
+             TO_CHAR(U.reg_ymd, 'yyyy-mm-dd hh24:mi:ss')    AS "regDttm",
+             TO_CHAR(U.reg_ymd, 'yyyy-mm-dd')               AS "regDate",
+             U.mdfr_no                                      AS "mdfrNo",
+             TO_CHAR(U.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+             TO_CHAR(U.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+    
+    <!-- 로그인사용자정보 칼럼 -->
+    <sql id="Sql-Column-UserInfo">
+    		<include refid="Sql-Column"/>,
+             R.role_id                                      AS "roleId",
+             (SELECT role_nm
+               FROM SYS_ROLE
+              WHERE sys_se_cd = '${@business.com.CommConst@SYSTEM_CODE}'
+                AND role_id   = R.role_id)                  AS "roleNm",
+             CURRENT_DATE - 
+             COALESCE(COALESCE(
+             			TO_DATE(NULLIF(U.pswd_chg_ymd,''), 
+             			'yyyymmdd'
+             		 ), U.reg_ymd::DATE
+             ), TO_DATE('20000101', 'yyyymmdd'))            AS "diffDays",
+             CURRENT_DATE - 
+             COALESCE(
+             	TO_DATE(U.pswd_next_ymd, 'yyyymmdd'), 
+             	CURRENT_DATE
+             )                                              AS "diffNextDays"
+    </sql>
+
+	<!-- 로그인시 사용자정보 조회 -->
+    <select id="getUserInfo" resultType="common.user.UserInfo" parameterType="string">
+        SELECT /* 사용자정보 조회 */
+               <include refid="Sql-Column-UserInfo"/>
+          FROM TB_USER U
+             , (
+                SELECT A.USER_NO
+                     , A.ROLE_ID
+                  FROM SYS_ROLE_USER A
+                     , SYS_ROLE      B
+                     , TB_USER       C
+                 WHERE A.USER_NO   = C.USER_NO
+                   AND B.SYS_SE_CD = '${@business.com.CommConst@SYSTEM_CODE}'
+                   AND A.ROLE_ID   = B.ROLE_ID
+                   AND C.USER_ID   = #{userId}
+               ) R
+         WHERE U.USER_NO = R.USER_NO
+           AND U.USER_ID = #{userId}
+           AND U.USE_STTS_CD = '1' <!-- 활성화된 회원만 조회가능 -->
+         LIMIT 1
+    </select>
+
+	<!-- 사용자정보 조회 -->
+    <select id="getUser" resultType="business.com.user.service.UserVO" parameterType="string">
+        SELECT <include refid="Sql-Column"/>,
+               (SELECT C.ROLE_ID
+                  FROM SYS_ROLE_USER C
+                     , SYS_ROLE      D
+                 WHERE D.SYS_SE_CD = '${@business.com.CommConst@SYSTEM_CODE}'
+                   AND C.role_id   = D.role_id
+                   AND C.user_no   = U.user_no) AS "roleId",
+               (SELECT D.ROLE_NM
+                  FROM SYS_ROLE_USER C
+                     , SYS_ROLE      D
+                 WHERE D.SYS_SE_CD = '${@business.com.CommConst@SYSTEM_CODE}'
+                   AND C.role_id   = D.role_id
+                   AND C.user_no   = U.user_no) AS "roleNm"
+          FROM TB_USER U
+         WHERE U.USER_NO = #{userNo}
+           AND U.USE_STTS_CD = '1' <!-- 활성화된 회원만 조회가능 -->
+    </select>
+    
+    <!-- 아이디/비밀번호 찾기 - 사용자정보 조회 -->
+    <select id="getUserByIdPw" resultType="business.com.user.service.UserVO" parameterType="business.com.user.service.UserVO">
+        SELECT USER_NO		AS "userNo",
+               USER_ID		AS "userId",
+               USER_NM		AS "userNm",  <!-- 이메일 발송에 사용하기 위해 이름, 이메일 추가 조회 -->
+               LGN_SE_CD	AS "lgnSeCd", <!-- 로그인 구분 확인을 위해 추가 조회 -->
+               EML_ADDR		AS "emlAddr"
+          FROM TB_USER U
+         WHERE 1=1
+           AND U.USE_STTS_CD	= '1' <!-- 활성화된 회원만 조회가능 -->
+           AND U.USER_NM		= #{userNm}
+           AND U.MBL_TELNO		= #{mblTelno}
+           AND U.LGN_SE_CD		= 'P'
+           <if test="@common.util.CommUtils@isNotEmpty(userId  )">AND U.USER_ID = #{userId}</if>
+         ORDER BY
+               CASE WHEN LGN_SE_CD = 'P' THEN 1
+                    ELSE 2
+               END
+         LIMIT 1
+    </select>
+    
+	<!-- OAUTH 로그인시 사용자정보 조회 -->
+    <select id="getUserInfoByOauth" resultType="common.user.UserInfo" parameterType="business.com.user.service.UserVO">
+        SELECT /* 사용자정보 조회 */
+               <include refid="Sql-Column-UserInfo"/>
+          FROM TB_USER U
+             , (
+                SELECT A.USER_NO
+                     , A.ROLE_ID
+                  FROM SYS_ROLE_USER A
+                     , SYS_ROLE      B
+                     , TB_USER       C
+                 WHERE A.USER_NO   = C.USER_NO
+                   AND B.SYS_SE_CD = '${@business.com.CommConst@SYSTEM_CODE}'
+                   AND A.ROLE_ID   = B.ROLE_ID
+                   AND C.LGN_SE_CD = #{lgnSeCd}
+                   AND C.IDNTF_ID  = #{idntfId}
+               ) R
+         WHERE U.USER_NO   = R.USER_NO
+           AND U.LGN_SE_CD = #{lgnSeCd}
+           AND U.IDNTF_ID  = #{idntfId}
+           AND U.USE_STTS_CD = '1'
+         LIMIT 1
+    </select>
+
+    <!-- 로그인 실패 정보 업데이트(패스워드 실패횟수, 잠금시간)  -->
+    <update id="updtPswdErrCnt">
+        UPDATE TB_USER
+           SET PSWD_ERR_CNT = #{pswdErrCnt}
+          <if test="pswdErrCnt >= 5">
+             , PSWD_LOCK_YMD = TO_CHAR(CURRENT_DATE,'YYYYMMDD')
+          </if>
+         WHERE USER_ID     = #{userId}
+           AND USE_STTS_CD = '1'
+    </update>
+
+    <!-- 로그인 시간 등록, 로그인 에러카운터 0으로 초기화 -->
+    <update id="updtLoginTime" parameterType="string">
+        UPDATE TB_USER
+           SET last_lgn_dt  = NOW()
+             , PSWD_ERR_CNT = 0
+         WHERE USER_ID      = #{userId}
+           AND USE_STTS_CD  = '1'
+    </update>
+
+    <!-- 업체회원의 업체번호 초기화 처리 -->
+    <update id="updtUserBzentyReset" parameterType="hashmap">
+        UPDATE TB_USER
+           SET mdfcn_ymd = NOW()
+             , mdfr_no   = #{gsUserNo}
+             , bzenty_no = NULL
+         WHERE user_no   = #{userNo}
+    </update>
+
+    <!-- 업체회원을 일반회원으로 권한변경처리 -->
+    <update id="updtUserBzentyRole" parameterType="hashmap">
+        UPDATE SYS_ROLE_USER
+           SET mdfcn_ymd = NOW()
+             , mdfr_no   = #{gsUserNo}
+             , role_id   = #{newRoleId}
+         WHERE user_no   = #{userNo}
+           AND role_id   = #{roleId}
+    </update>
+
+    <!-- 회원의 권한조회 -->
+    <select id="getUserRole" resultType="string" parameterType="string">
+        SELECT role_id
+          FROM SYS_ROLE_USER
+         WHERE user_no = #{userNo}
+         LIMIT 1
+    </select>
+
+    <!-- 회원정보 변경처리 -->
+    <update id="updtUser" parameterType="business.com.user.service.UserVO">
+    	UPDATE tb_user
+    	   SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(userNm  )"> user_nm   = #{userNm  }, </if>
+		<if test="@common.util.CommUtils@isNotEmpty(mblTelno)"> mbl_telno = #{mblTelno}, </if>
+		<if test="@common.util.CommUtils@isNotEmpty(pswd    )"> pswd      = #{pswd    }, </if>
+    	       mdfcn_ymd = NOW()
+    	 WHERE user_no   = #{userNo}
+    </update>
+    
+    <!-- 회원정보 탈퇴처리 -->
+    <update id="updtUserFinish" parameterType="business.com.user.service.UserVO">
+    	UPDATE tb_user
+    	   SET mdfr_no     = #{gsUserNo},
+    	       whdwl_ymd   = #{whdwlYmd},
+    	       use_stts_cd = #{useSttsCd},
+    	       mdfcn_ymd   = NOW()
+    	 WHERE user_no     = #{userNo}
+    </update>
+
+    <!-- 회원정보 탈퇴처리 (권한삭제) -->
+    <delete id="deltUserRole" parameterType="string">
+    	DELETE 
+    	  FROM SYS_ROLE_USER
+    	 WHERE USER_NO = #{userNo}
+    </delete>
+
+    <!-- 회원정보 업체번호 업데이트 -->
+    <update id="updtUserBzenty" parameterType="business.com.user.service.UserVO">
+    	UPDATE tb_user
+    	   SET mdfr_no   = #{gsUserNo},
+    	       bzenty_no = #{bzentyNo},
+    	       mdfcn_ymd = NOW()
+    	 WHERE user_no   = #{userNo}
+    </update>
+
+	<!-- 업체의 대표계정 회원정보 조회 -->
+    <select id="getUserRprs" resultType="business.com.user.service.UserVO" parameterType="string">
+        SELECT <include refid="Sql-Column"/>
+          FROM TB_USER U
+         WHERE U.use_stts_cd = '1' <!-- 활성화된 회원만 조회가능 -->
+           AND U.bzenty_no   = #{bzentyNo}
+           AND EXISTS (
+               SELECT 1
+                 FROM tb_grp_usr
+                WHERE user_no = U.user_no
+                  AND rprs_yn = 'Y'
+               )
+         LIMIT 1
+    </select>
+
+    <!-- 업체 승인여부 확인 -->
+    <select id="approveBzenty" resultType="boolean" parameterType="string">
+        SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
+          FROM TB_ENT
+         WHERE bzenty_no   = #{bzentyNo}
+           AND use_stts_cd = '1'
+    </select>
+
+    <!-- 업체에 속한 회원목록조회 -->
+    <select id="listUserByEnt" resultType="business.com.user.service.UserVO" parameterType="string">
+        SELECT <include refid="Sql-Column"/>
+          FROM TB_USER U
+         WHERE U.use_stts_cd = '1' <!-- 활성화된 회원만 조회가능 -->
+           AND U.bzenty_no   = #{bzentyNo}
+         ORDER BY 
+               U.user_no ASC
+    </select>
+
+</mapper>

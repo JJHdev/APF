@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Bookmark">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(sn)">
+            AND A.sn = #{sn}
+        </if>
+    </sql>
+    <sql id="Sql-Column">
+        A.sn                                           AS "sn",
+        A.bzenty_no                                    AS "bzentyNo",
+        A.trgt_bzenty_no                               AS "trgtBzentyNo",
+        A.doc_no                                       AS "docNo",
+        A.bkmk_se_cd                                   AS "bkmkSeCd",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 북마크정보 목록조회 -->
+    <select id="listBookmark" resultType="java.util.HashMap" parameterType="business.usr.mypage.service.BookmarkVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_bkmk_info A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY 
+               A.sn
+    </select>
+    <select id="listBookmarkCount" resultType="int" parameterType="business.usr.mypage.service.BookmarkVO">
+        SELECT COUNT(1) 
+          FROM tb_bkmk_info A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 북마크정보 상세조회 -->
+    <select id="viewBookmark" resultType="business.usr.mypage.service.BookmarkVO" parameterType="business.usr.mypage.service.BookmarkVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_bkmk_info A
+         WHERE sn = #{sn}
+    </select>
+
+    <!-- 북마크정보 등록 -->
+    <insert id="regiBookmark" parameterType="business.usr.mypage.service.BookmarkVO">
+        INSERT 
+          INTO tb_bkmk_info 
+             ( sn,
+               bzenty_no,
+               trgt_bzenty_no,
+               doc_no,
+               bkmk_se_cd,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( NEXTVAL('SEQ_BKMK_INFO'),
+               #{gsBzentyNo},
+               #{trgtBzentyNo},
+               #{docNo},
+               #{bkmkSeCd},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 북마크정보 삭제 -->
+    <delete id="deltBookmark" parameterType="business.usr.mypage.service.BookmarkVO">
+        DELETE 
+          FROM tb_bkmk_info 
+         WHERE bzenty_no      = #{gsBzentyNo}
+           AND bkmk_se_cd     = #{bkmkSeCd}
+           AND trgt_bzenty_no = #{trgtBzentyNo}
+        <if test="@common.util.CommUtils@isNotEmpty(sn)">
+           AND doc_no         = #{docNo}
+        </if>
+    </delete> 
+
+</mapper>

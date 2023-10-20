@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Dscsn">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(dscsnAplyNo)">
+            AND A.dscsn_aply_no = #{dscsnAplyNo}
+        </if>
+    </sql>
+    <sql id="Sql-Column">
+        A.dscsn_aply_no                                AS "dscsnAplyNo",
+        A.aply_bzenty_no                               AS "bzentyNo",
+        A.dscsn_aply_ymd                               AS "dscsnAplyYmd",
+        A.pic_nm                                       AS "picNm",
+        A.pic_dept_nm                                  AS "picDeptNm",
+        A.pic_telno                                    AS "picTelno",
+        A.pic_eml_addr                                 AS "picEmlAddr",
+        A.dscsn_cn                                     AS "dscsnCn",
+        A.dscsn_ymd                                    AS "dscsnYmd",
+        A.prgrs_stts_cd                                AS "prgrsSttsCd",
+        A.prcs_rslt_cn                                 AS "prcsRsltCn",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 상담신청 목록조회 -->
+    <select id="listDscsn" resultType="java.util.HashMap" parameterType="business.usr.support.service.DscsnVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_dscsn_aply A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY 
+               A.dscsn_aply_no
+    </select>
+    <select id="listDscsnCount" resultType="int" parameterType="business.usr.support.service.DscsnVO">
+        SELECT COUNT(1) 
+          FROM tb_dscsn_aply A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 상담신청 상세조회 -->
+    <select id="viewDscsn" resultType="business.usr.support.service.DscsnVO" parameterType="business.usr.support.service.DscsnVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_dscsn_aply A
+         WHERE dscsn_aply_no = #{dscsnAplyNo}
+    </select>
+    
+    <!-- 상담신청 있는지 확인 -->
+    <select id="existDscsn" resultType="boolean" parameterType="string">
+        SELECT CASE WHEN COUNT(*) = 0 THEN 0 ELSE 1 END
+          FROM tb_dscsn_aply A
+         WHERE dscsn_aply_no = #{dscsnAplyNo}
+    </select>
+
+    <!-- 상담신청 등록 -->
+    <insert id="regiDscsn" parameterType="business.usr.support.service.DscsnVO">
+    	<selectKey keyProperty="dscsnAplyNo" resultType="string" order="BEFORE">
+    		SELECT 'D' || TO_CHAR(NOW(),'YY') || TO_CHAR(NEXTVAL('SEQ_DSCSN_APLY'), 'FM0000000')
+    	</selectKey>
+        INSERT 
+          INTO tb_dscsn_aply 
+             ( dscsn_aply_no,
+               aply_bzenty_no,
+               dscsn_aply_ymd,
+               pic_nm,
+               pic_telno,
+               pic_eml_addr,
+               prgrs_stts_cd,
+  <if test="@common.util.CommUtils@isNotEmpty(picDeptNm )"> pic_dept_nm  ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(dscsnCn   )"> dscsn_cn     ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(dscsnYmd  )"> dscsn_ymd    ,</if>
+  <if test="@common.util.CommUtils@isNotEmpty(prcsRsltCn)"> prcs_rslt_cn ,</if>  
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{dscsnAplyNo},
+               #{bzentyNo},
+               #{dscsnAplyYmd},
+               #{picNm},
+               #{picTelno},
+               #{picEmlAddr},
+               #{prgrsSttsCd},
+  <if test="@common.util.CommUtils@isNotEmpty(picDeptNm )"> #{picDeptNm  },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(dscsnCn   )"> #{dscsnCn    },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(dscsnYmd  )"> #{dscsnYmd   },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(prcsRsltCn)"> #{prcsRsltCn },</if>  
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 상담신청 수정 -->
+    <update id="updtDscsn" parameterType="business.usr.support.service.DscsnVO">
+        UPDATE tb_dscsn_aply 
+           SET mdfr_no   = #{gsUserNo},
+  <if test="@common.util.CommUtils@isNotEmpty(dscsnAplyYmd        )"> dscsn_aply_ymd       = #{dscsnAplyYmd        },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(picNm               )"> pic_nm               = #{picNm               },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(picDeptNm           )"> pic_dept_nm          = #{picDeptNm           },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(picTelno            )"> pic_telno            = #{picTelno            },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(picEmlAddr          )"> pic_eml_addr         = #{picEmlAddr          },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(dscsnCn             )"> dscsn_cn             = #{dscsnCn             },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(dscsnYmd            )"> dscsn_ymd            = #{dscsnYmd            },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(prgrsSttsCd         )"> prgrs_stts_cd        = #{prgrsSttsCd         },</if>
+  <if test="@common.util.CommUtils@isNotEmpty(prcsRsltCn          )"> prcs_rslt_cn         = #{prcsRsltCn          },</if>  
+               mdfcn_ymd = NOW()
+         WHERE dscsn_aply_no = #{dscsnAplyNo}
+    </update>
+
+    <!-- 상담신청 삭제 -->
+    <delete id="deltDscsn" parameterType="business.usr.support.service.DscsnVO">
+        DELETE 
+          FROM tb_dscsn_aply 
+         WHERE dscsn_aply_no = #{dscsnAplyNo}
+    </delete> 
+
+</mapper>

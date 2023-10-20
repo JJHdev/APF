@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Group">
+
+    <!-- 멤버관리/권한관리 목록조회 -->
+    <select id="listGroup" resultType="java.util.HashMap" parameterType="business.com.user.service.GroupVO">
+		SELECT C.bzenty_no    AS "bzentyNo",
+		       C.bzenty_nm    AS "bzentyNm",
+		       U.user_no      AS "userNo",
+		       U.user_id      AS "userId",
+		       U.user_nm      AS "userNm",
+		       U.join_ymd     AS "joinYmd",
+		       G.rprs_yn      AS "rprsYn",
+		       COALESCE((SELECT group_authrt_cd FROM tb_grp_auth WHERE user_no = G.user_no AND menu_id = 'MU_USR_MYP0001'),'R') AS "menu00", <!-- 기업정보 -->
+		       COALESCE((SELECT group_authrt_cd FROM tb_grp_auth WHERE user_no = G.user_no AND menu_id = 'MU_USR_MYP0101'),'R') AS "menu01", <!-- IR작성하기 -->
+		       COALESCE((SELECT group_authrt_cd FROM tb_grp_auth WHERE user_no = G.user_no AND menu_id = 'MU_USR_MYP0201'),'R') AS "menu02", <!-- 매칭설정 -->
+		       COALESCE((SELECT group_authrt_cd FROM tb_grp_auth WHERE user_no = G.user_no AND menu_id = 'MU_USR_MYP0301'),'R') AS "menu03", <!-- 신청내역 -->
+		       COALESCE((SELECT group_authrt_cd FROM tb_grp_auth WHERE user_no = G.user_no AND menu_id = 'MU_USR_MYP0401'),'R') AS "menu04", <!-- IR검토의견등록 -->
+		       U.use_stts_cd  AS "sttsCd",
+		       FN_GET_CODENM(
+		       'CT.USE_STUS', 
+		       U.use_stts_cd) AS "sttsNm",
+		       <!-- 신규(NEW) 여부 -->
+               CASE WHEN TO_DATE(U.join_ymd, 'YYYYMMDD') <![CDATA[>]]> (NOW() - INTERVAL '1 DAYS')
+                    THEN 'Y'
+                    ELSE 'N'
+               END            AS "newYn"
+		  FROM vw_ent          C
+		     , tb_user         U
+		     , tb_grp_usr      G
+		 WHERE C.bzenty_no   = #{gsBzentyNo}
+		   AND C.bzenty_no   = U.bzenty_no
+		   AND C.use_stts_cd = '1'
+		   AND U.use_stts_cd = '1'
+		   AND G.user_no     = U.user_no
+		<if test="@common.util.CommUtils@isNotEmpty(srchName)">
+		   AND U.user_nm  LIKE '%' || #{srchName} || '%'
+		</if>
+		<if test="pageCd == 'GR'">
+		   AND G.rprs_yn = 'N'
+		</if>
+         ORDER BY 
+               U.join_ymd DESC
+              ,G.rprs_yn  DESC
+              ,U.user_no  ASC
+    </select>
+    <select id="listGroupCount" resultType="int" parameterType="business.com.user.service.GroupVO">
+        SELECT COUNT(1) 
+		  FROM vw_ent          C
+		     , tb_user         U
+		     , tb_grp_usr      G
+		 WHERE C.bzenty_no   = #{gsBzentyNo}
+		   AND C.bzenty_no   = U.bzenty_no
+		   AND C.use_stts_cd = '1'
+		   AND U.use_stts_cd = '1'
+		   AND G.user_no     = U.user_no
+		<if test="@common.util.CommUtils@isNotEmpty(srchName)">
+		   AND U.user_nm  LIKE '%' || #{srchName} || '%'
+		</if>
+		<if test="pageCd == 'GR'">
+		   AND G.rprs_yn = 'N'
+		</if>
+    </select>
+
+    <!-- 메뉴ID 기준 접근권한 확인 -->
+    <select id="checkAccess" resultType="boolean" parameterType="business.com.user.service.GroupVO">
+		SELECT CASE WHEN COUNT(*) = 0 THEN 0 ELSE 1 END
+		  FROM tb_user         U
+		     , tb_grp_usr      G
+		     , tb_grp_auth     A
+		 WHERE U.user_no     = #{userNo}
+		   AND U.use_stts_cd = '1'
+		   AND G.user_no     = U.user_no
+		   AND G.user_no     = A.user_no
+		   AND A.menu_id     = #{menuId}
+		   AND A.group_authrt_cd IN ('V','R')
+    </select>
+
+    <!-- 그룹코드 중복 확인 -->
+    <select id="uniqueGroupCd" resultType="boolean" parameterType="string">
+		SELECT CASE WHEN COUNT(*) = 0 THEN 1 ELSE 0 END
+		  FROM vw_ent
+		 WHERE group_cd = #{groupCd}
+    </select>
+
+    <!-- 마이페이지 메뉴목록조회 -->
+    <select id="listMypageMenu" resultType="hashmap" parameterType="hashmap">
+        SELECT A.menu_id     AS "menuId",
+               A.menu_nm     AS "menuNm",
+               A.trgt_url    AS "trgtUrl"
+          FROM tb_grp_menu   A
+         WHERE A.sys_authrt_info LIKE '%' || #{gsRoleId} || '%'
+		<!-- 대표계정이 아닌 경우 -->
+		<if test="@common.util.CommUtils@isNotEmpty(gsRprsYn)"> 
+		   AND A.rprs_yn = #{gsRprsYn}
+		</if>
+		<!-- URL이 없는 메뉴 제외 -->
+		   AND A.trgt_url IS NOT NULL
+		<!-- 권한이 있는 사용자만 조회 -->
+           AND EXISTS ( 
+               SELECT 1
+                 FROM tb_grp_auth       G
+                    , tb_user           U
+                WHERE G.user_no         = U.user_no 
+                  AND G.menu_id         = A.menu_id
+                  AND U.use_stts_cd     = '1'
+                  AND G.user_no         = #{gsUserNo}
+                  AND G.group_authrt_cd IN ('M','V')
+               )
+         ORDER BY
+               A.menu_id
+    </select>
+    
+    <!-- 대표계정여부 확인 -->
+    <select id="getGrpRprsYn" parameterType="string" resultType="string">
+        SELECT CASE WHEN COUNT(*) = 0 THEN 'N' ELSE 'Y' END
+          FROM tb_grp_usr    B
+             , tb_user       U
+         WHERE B.user_no     = U.user_no
+           AND U.use_stts_cd = '1'
+           AND B.user_no     = #{userNo}
+           AND B.rprs_yn     = 'Y'
+    </select>
+
+    <!-- 업체기준 사용자가 있는지 확인 -->
+    <select id="existGrpUsr" resultType="boolean" parameterType="string">
+        SELECT CASE WHEN COUNT(*) = 0 THEN 0 ELSE 1 END
+          FROM tb_grp_usr    B
+             , tb_user       U
+         WHERE B.user_no     = U.user_no
+           AND U.use_stts_cd = '1'
+           AND U.bzenty_no   = #{bzentyNo}
+    </select>
+
+    <!-- 그룹사용자관리 등록 -->
+    <insert id="regiGrpUsr" parameterType="business.com.user.service.GroupVO">
+        INSERT 
+          INTO tb_grp_usr 
+             ( user_no,
+               rprs_yn,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{userNo},
+               #{rprsYn},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+    <!-- 그룹사용자관리 수정 -->
+    <update id="updtGrpUsr" parameterType="business.com.user.service.GroupVO">
+        UPDATE tb_grp_usr 
+           SET mdfr_no   = #{gsUserNo},
+               rprs_yn   = #{rprsYn},
+               mdfcn_ymd = NOW()
+         WHERE user_no   = #{userNo}
+    </update>
+
+    <!-- 업체 회원의 대표계정 비활성 처리 -->
+    <update id="updtGrpUsrReset" parameterType="business.com.user.service.GroupVO">
+        UPDATE tb_grp_usr A 
+           SET mdfr_no   = #{gsUserNo},
+               rprs_yn   = 'N',
+               mdfcn_ymd = NOW()
+         WHERE rprs_yn   = 'Y'
+           AND EXISTS (
+               SELECT 1
+                 FROM tb_user
+                WHERE bzenty_no = #{gsBzentyNo}
+                  AND user_no   = A.user_no
+               )
+    </update>
+    
+    <!-- 업체회원의 대표계정 권한 일괄 수정 -->
+    <update id="updtGrpAuthRprs" parameterType="business.com.user.service.GroupVO">
+        UPDATE tb_grp_auth A 
+           SET mdfr_no         = #{gsUserNo},
+               group_authrt_cd = #{groupAuthrtCd},
+               mdfcn_ymd       = NOW()
+         WHERE EXISTS (
+               SELECT 1
+                 FROM tb_grp_usr  G
+                    , tb_user     U
+                WHERE G.user_no   = U.user_no
+                  AND U.bzenty_no = #{gsBzentyNo}
+                  AND G.user_no   = A.user_no
+               )
+    </update>
+    
+    <!-- 그룹사용자관리 삭제 -->
+    <delete id="deltGrpUsr" parameterType="business.com.user.service.GroupVO">
+        DELETE 
+          FROM tb_grp_usr 
+         WHERE user_no = #{userNo}
+    </delete> 
+
+    <!-- 그룹권한관리 등록 -->
+    <insert id="regiGrpAuth" parameterType="business.com.user.service.GroupVO">
+        INSERT 
+          INTO tb_grp_auth 
+             ( user_no,
+               menu_id,
+               group_authrt_cd,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{userNo},
+               #{menuId},
+               #{groupAuthrtCd},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- ROLE기준 메뉴 일괄 등록 -->
+    <insert id="regiGrpAuthByRole" parameterType="business.com.user.service.GroupVO">
+        INSERT 
+          INTO tb_grp_auth 
+             ( user_no,
+               menu_id,
+               group_authrt_cd,
+               rgtr_no,
+               reg_ymd  
+             )
+        SELECT #{userNo}
+             , A.menu_id
+             , #{groupAuthrtCd}
+             , #{gsUserNo}
+             , NOW()
+          FROM tb_grp_menu A
+         WHERE A.sys_authrt_info LIKE '%' || #{roleId} || '%'
+    </insert>
+
+    <!-- 그룹권한관리 수정 -->
+    <update id="updtGrpAuth" parameterType="business.com.user.service.GroupVO">
+        UPDATE tb_grp_auth 
+           SET mdfr_no         = #{gsUserNo},
+               group_authrt_cd = #{groupAuthrtCd},
+               mdfcn_ymd       = NOW()
+         WHERE user_no         = #{userNo}
+           AND menu_id         = #{menuId}
+    </update>
+
+    <!-- 사용자기준 권한 일괄 수정 -->
+    <update id="updtGrpAuthByUser" parameterType="business.com.user.service.GroupVO">
+        UPDATE tb_grp_auth 
+           SET mdfr_no         = #{gsUserNo},
+               group_authrt_cd = #{groupAuthrtCd},
+               mdfcn_ymd       = NOW()
+         WHERE user_no         = #{userNo}
+    </update>
+
+    <!-- 그룹권한관리 삭제 -->
+    <delete id="deltGrpAuth" parameterType="business.com.user.service.GroupVO">
+        DELETE 
+          FROM tb_grp_auth 
+         WHERE user_no = #{userNo}
+           AND menu_id = #{menuId}
+    </delete> 
+
+    <!-- 그룹권한관리 삭제 -->
+    <delete id="deltGrpAuthByUser" parameterType="business.com.user.service.GroupVO">
+        DELETE 
+          FROM tb_grp_auth 
+         WHERE user_no = #{userNo}
+    </delete> 
+
+    <!-- 그룹권한정보가 있는지 확인 -->
+    <select id="existGrpAuth" resultType="boolean" parameterType="business.com.user.service.GroupVO">
+        SELECT CASE WHEN COUNT(*) = 0 THEN 0 ELSE 1 END
+          FROM tb_grp_auth   G
+             , tb_user       U
+         WHERE G.user_no     = U.user_no
+           AND U.use_stts_cd = '1'
+           AND G.user_no     = #{userNo}
+           ANd G.menu_id     = #{menuId}
+    </select>
+
+    <!-- 그룹권한코드 조회 -->
+    <select id="getGrpAuthCd" resultType="string" parameterType="business.com.user.service.GroupVO">
+        SELECT G.group_authrt_cd
+          FROM tb_grp_auth   G
+             , tb_user       U
+         WHERE G.user_no     = U.user_no
+           AND U.use_stts_cd = '1'
+           AND G.user_no     = #{userNo}
+           ANd G.menu_id     = #{menuId}
+    </select>
+
+    <!-- 그룹메뉴관리 등록 -->
+    <insert id="regiGrpMenu" parameterType="business.com.user.service.GroupVO">
+        INSERT 
+          INTO tb_grp_menu 
+             ( menu_id,
+               menu_nm,
+               trgt_url,
+               sys_authrt_info,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{menuId},
+               #{menuNm},
+               #{trgtUrl},
+               #{sysAuthrtInfo},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 그룹메뉴관리 수정 -->
+    <update id="updtGrpMenu" parameterType="business.com.user.service.GroupVO">
+        UPDATE tb_grp_menu 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(menuNm       )"> menu_nm         = #{menuNm       },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(trgtUrl      )"> trgt_url        = #{trgtUrl      },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(sysAuthrtInfo)"> sys_authrt_info = #{sysAuthrtInfo},</if>  
+               mdfcn_ymd = NOW()
+         WHERE menu_id   = #{menuId}
+    </update>
+
+    <!-- 그룹메뉴관리 삭제 -->
+    <delete id="deltGrpMenu" parameterType="business.com.user.service.GroupVO">
+        DELETE 
+          FROM tb_grp_menu 
+         WHERE menu_id = #{menuId}
+    </delete> 
+
+    <!-- 업채 그룹코드 수정 -->
+    <update id="updtGroupCd" parameterType="business.com.user.service.GroupVO">
+        UPDATE tb_ent 
+           SET mdfr_no   = #{gsUserNo},
+               group_cd  = #{groupCd},
+               mdfcn_ymd = NOW()
+         WHERE bzenty_no = #{bzentyNo}
+    </update>
+
+</mapper>

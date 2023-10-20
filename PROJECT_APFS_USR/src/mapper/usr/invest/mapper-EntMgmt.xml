@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EntMgmt">
+
+    <sql id="Sql-Column">
+        A.ir_no                                        AS "irNo",
+        A.sn                                           AS "sn",
+        A.jbps_nm                                      AS "jbpsNm",
+        A.flnm                                         AS "mgtFlnm",
+        A.age                                          AS "age",
+        A.career_cn                                    AS "careerCn",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 경영진정보 목록조회 -->
+    <select id="listEntMgmt" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_mgmt A
+         WHERE A.ir_no    = #{irNo}
+         ORDER BY 
+               A.ir_no,
+               A.sn
+    </select>
+
+    <!-- 경영진정보 상세조회 -->
+    <select id="viewEntMgmt" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_mgmt A
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </select>
+
+    <!-- 경영진정보 등록 -->
+    <insert id="regiEntMgmt" parameterType="business.usr.invest.service.EntVO">
+        INSERT 
+          INTO tb_ent_mgmt 
+             ( ir_no,
+               sn,
+               jbps_nm,
+               flnm,
+               age,
+               career_cn,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{irNo},
+			   NEXTVAL('seq_ent_mgmt'),
+               #{jbpsNm},
+               #{mgtFlnm},
+               #{age},
+               #{careerCn},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 경영진정보 수정 -->
+    <update id="updtEntMgmt" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_ent_mgmt 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(jbpsNm              )"> jbps_nm              = #{jbpsNm              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(mgtFlnm             )"> flnm                 = #{mgtFlnm             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(age                 )"> age                  = #{age                 },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(careerCn            )"> career_cn            = #{careerCn            },</if>  
+               mdfcn_ymd = NOW()
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </update>
+
+    <!-- 경영진정보 삭제 -->
+    <delete id="deltEntMgmt" parameterType="business.usr.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent_mgmt 
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </delete> 
+
+</mapper>

@@ -1,0 +1,158 @@
+ <style>
+	#fisrtAgreeCheck, #secondAgreeCheck {
+	  display: none; 
+	}
+ </style>
+ <script>
+ $(document).ready(function() {
+	    $('#srvcTrmsAgreYn1').change(function() {
+	        if ($(this).prop('checked')) {
+	            $(this).val('Y');
+	        } else {
+	            $(this).val('N');
+	        }
+	    });
+	    $('#prvcClctAgreYn1').change(function() {
+	        if ($(this).prop('checked')) {
+	            $(this).val('Y');
+	            $('#secondAgreeCheck, #fisrtAgreeCheck').prop('checked', true);
+	        } else {
+	            $(this).val('N');
+	            $('#secondAgreeCheck, #fisrtAgreeCheck').prop('checked', false);
+	        }
+	    });
+	    $('#secondAgreeCheck, #fisrtAgreeCheck').change(function() {
+	        if ($('#secondAgreeCheck').prop('checked') && $('#fisrtAgreeCheck').prop('checked')) {
+	            $('#prvcClctAgreYn1').prop('checked', true).val('Y');
+	        } else {
+	            $('#prvcClctAgreYn1').prop('checked', false).val('N');
+	        }
+	    });
+	});
+</script>
+ 
+<div class="col-12 col-md txtbox">
+
+	<p class="fs-md-16px fw-600 text-left pl-20px" style="margin-bottom: 10px; margin-top: 10px;">
+		1. 농림수산식품모태펀드 투자유치 지원과 농업정책보험금융원 투자지원사업 관리를 위한 개인·기업 정보 수집·이용 동의서
+	<label style="display: inline;; align-items: center; margin-left: 10px;" id="agreeChck">
+	    <input type="checkbox" id="fisrtAgreeCheck" onchange="underChckValue(this)">
+	    <span class="agreeChck"></span>
+	</label>
+	</p>
+	<span class="d-block fs-15px pl-20px" style="margin-bottom: 10px;">
+	농식품 투자정보 플랫폼 ASSIST는 「개인정보 보호법」(이하 “법”이라고 한다.) 제15조, 제17조, 제23조, 제24조 등 관련법규 에서 정하는 바에 따라 개인·기업정보의 수집·이용에 관하여 아래와 같이 귀하의 동의를 얻고자 합니다.
+	<br/>
+	농식품 투자정보 플랫폼 ASSIST는 이용자의 사전 동의 없이는 이용자의 개인정보를 함부로 공개하지 않으며, 수집된 정보는 아래와 같이 이용됩니다. 또한, 이용자가 제공한 모든 개인·기업정보는 아래 목적 외로는 사용하지 않으며 목적이 변경될 시에는 이를 알리고 동의를 구할 것입니다.
+	</span>
+	
+	<div class="px-16px" style="margin-bottom: 30px; margin-top: 30px;" >
+		<div class="table-box-1 no-hover">
+			<table>
+				<colgroup>
+					<col width="90px">
+					<col width="360px">
+				</colgroup>
+				<tbody class="bs-1 ts-l">
+					<tr class="px-v-l">
+						<td scope="col" class="text-start">개인·기업 정보 수집·이용 목적</td>
+						<td scope="col" class="text-start" style="font-size: 1.2em;">농림수산식품모태펀드 투자유치 지원 및 관리, 농식품혁신스타트업투자조합 직접투자 및 관리, 농림수산식품모태펀드 투자지원사업과 농식품 크라우드펀딩 상담 및 사업 운영·관리</td>
+					</tr>
+				</tbody>
+				<tbody class="bs-1 ts-l">
+					<tr class="px-v-l">
+						<td scope="col" class="text-start">개인·기업 정보 수집·이용 항목</td>
+						<td scope="col" class="text-start">대표자정보(성명, 생년월일, 전화번호, 휴대전화번호, 이메일), 담당자정보(성명, 전화번호, 휴대전화번호, 이메일), 가입자 아이디, 비밀번호, 기업정보(FAX번호, 홈페이지명, 전화번호, 재무제표, 특허 및 상표권 보유현황, 농림수산식품모태펀드로부터 투자받은 금액, 농금원/농진원/농기평/식품진흥원 등 공공기관에서 수행한 정부지원사업 이력 등)</td>
+					</tr>
+				</tbody>
+				<tbody class="bs-1 ts-l">
+					<tr class="px-v-l">
+						<td scope="col" class="text-start">개인·기업 정보 보유 및 이용기간</td>
+						<td scope="col" class="text-start">농식품 투자정보 플랫폼 ASSIST는 <span style="font-size: 1.2em;">10년 간</span> 개인·기업 정보를 보유 및 이용합니다. 단, 이용목적의 달성 시 또는 정보주체가 개인정보 삭제를 요청할 경우 지체없이 해당 개인정보를 파기합니다. 법령에 따라 보존하여야 하는 경우에는 그러하지 않을 수 있지만, 불필요하게 되었을 때에는 지체없이 해당 개인정보를 파기합니다.</td>
+					</tr>
+				</tbody>
+				<tbody class="bs-1 ts-l">
+					<tr class="px-v-l">
+						<td scope="col" class="text-start">동의를 거부할 권리 및 거부할 경우의 불이익</td>
+						<td scope="col" class="text-start">정보주체는 개인정보 수집·이용 동의를 거부할 권리가 있습니다. 하지만, 동의를 거부할 경우 (가칭)농식품 투자정보 플랫폼에서 제공하는 서비스를 이용할 수 없습니다.</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	
+	<p class="fs-md-16px fw-600 text-left pl-20px" style="margin-bottom: 10px; margin-top: 10px;">
+		2. 농림수산식품모태펀드 투자유치 지원과 농업정책보험금융원 투자지원사업 관리를 위한 개인·기업 정보 제3자 제공 동의서
+		<label style="display: inline;; align-items: center; margin-left: 10px;" id="agreeChck">
+		    <input type="checkbox" id="secondAgreeCheck" onchange="underChckValue(this)">
+		    <span class="agreeChck"></span>
+		</label>
+	</p>
+	<span class="d-block fs-15px pl-20px" style="margin-bottom: 10px;">
+		농식품 투자정보 플랫폼 ASSIST는 「개인정보 보호법」(이하 “법”이라고 한다.), 제15조, 제17조, 제23조, 제24조 등 관련법규에서 정하는 바에 따라 개인·기업정보의 제3자 제공에 관하여 아래와 같이 귀하의 동의를 얻고자 합니다.
+		<br/>
+		농식품 투자정보 플랫폼 ASSIST는 이용자의 사전 동의 없이는 이용자의 개인정보를 함부로 제공하지 않으며, 제공된 정보는 아래와 같이 이용됩니다. 또한, 이용자가 제공한 모든 개인·기업정보는 아래 목적 외로는 사용하지 않으며 목적이 변경될 시에는 이를 알리고 동의를 구할 것입니다.
+	</span>
+	<div class="px-16px" style="margin-bottom: 30px; margin-top: 30px;" >
+		<div class="table-box-1 no-hover">
+			<table>
+				<colgroup>
+					<col width="90px">
+					<col width="360px">
+				</colgroup>
+				<tbody class="bs-1 ts-l">
+					<tr class="px-v-l">
+						<td scope="col" class="text-start">제공받는 자</td>
+						<td scope="col" class="text-start">농림축산식품부, 해양수산부, 농림수산식품모태펀드가 출자한 조합의 업무집행조합원, 한국농업기술진흥원, 농림식품기술기획평가원, 한국식품산업클러스터진흥원, 한국농수산식품유통공사, NH농협금융지주, NH금융연구소, 수협중앙회, 해양수산과학기술진흥원 등 유관기관</td>
+					</tr>
+				</tbody>
+				<tbody class="bs-1 ts-l">
+					<tr class="px-v-l">
+						<td scope="col" class="text-start">제공받는 자의 개인·기업 정보 이용 목적</td>
+						<td scope="col" class="text-start" style="font-size: 1.2em;">농림수산식품모태펀드 투자유치 지원 및 관리, 농산업 동향·경영체 분석보고서 작성, 농식품경영체 성장을 위해 각 유관기관에서 주관하는 정부지원사업 정보 제공 및 관리, 관련 통계자료 작성 등</td>
+					</tr>
+				</tbody>
+				<tbody class="bs-1 ts-l">
+					<tr class="px-v-l">
+						<td scope="col" class="text-start">개인·기업 정보 제공 항목</td>
+						<td scope="col" class="text-start">대표자정보(성명, 생년월일, 전화번호, 휴대전화번호, 이메일), 담당자정보(성명, 전화번호, 휴대전화번호, 이메일), 가입자 아이디, 비밀번호, 기업정보(FAX번호, 홈페이지명, 전화번호, 재무제표, 특허 및 상표권 보유현황, 농림수산식품모태펀드로부터 투자받은 금액, 농금원/농진원/농기평/식품진흥원 등 공공기관에서 수행한 정부지원사업 이력 등)</td>
+					</tr>
+				</tbody>
+				<tbody class="bs-1 ts-l">
+					<tr class="px-v-l">
+						<td scope="col" class="text-start">제공받는 자의 개인정보 보유 및 이용기간</td>
+						<td scope="col" class="text-start">제공받는 자는 <span style="font-size: 1.2em;">10년 간</span> 개인·기업 정보를 보유 및 이용합니다. 단, 제공받는 자는 이용목적의 달성 시 또는 정보주체가 개인정보 삭제를 요청할 경우 지체없이 해당 개인정보를 파기합니다. 법령에 따라 보존하여야 하는 경우에는 그러하지 않을 수 있지만, 불필요하게 되었을 때에는 지체없이 해당 개인정보를 파기합니다.</td>
+					</tr>
+				</tbody>
+				<tbody class="bs-1 ts-l">
+					<tr class="px-v-l">
+						<td scope="col" class="text-start">동의를 거부할 권리 및 거부할 경우의 불이익</td>
+						<td scope="col" class="text-start">정보주체는 개인정보 제공 동의를 거부할 권리가 있습니다. 하지만, 동의를 거부할 경우 농식품 투자정보 플랫폼 ASSIST에서 제공하는 서비스를 이용할 수 없습니다.</td>
+					</tr>
+				</tbody>
+			</table>
+			<br/>	
+			<br/>	
+		</div>
+	</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

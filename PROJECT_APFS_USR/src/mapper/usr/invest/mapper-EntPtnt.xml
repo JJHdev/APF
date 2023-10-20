@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EntPtnt">
+
+    <sql id="Sql-Column">
+        A.ir_no                                        AS "irNo",
+        A.sn                                           AS "sn",
+        A.patent_se_cd                                 AS "patentSeCd",
+        FN_GET_CODENM('CT.ILLT_REG_SE',A.patent_se_cd) AS "patentSeNm",
+        A.applnm                                       AS "applnm",
+        A.patntrt_man                                  AS "patntrtMan",
+        A.nm                                           AS "nm",
+        A.illt_reg_no                                  AS "illtRegNo",
+        A.patent_reg_ymd                               AS "patentRegYmd",
+        A.kd_cd                                        AS "kdCd",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 특허상표권현황 목록조회 -->
+    <select id="listEntPtnt" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_ptnt A
+         WHERE A.ir_no = #{irNo}
+        <!-- 2023.08.31 제외 
+		<if test="@common.util.CommUtils@isNotEmpty(kdCd)">
+		   AND A.kd_cd = #{kdCd}
+		</if>
+		 -->
+		<!-- 수정목록 조회시 2023.08.30 LSH 제외함
+		<if test="@common.util.CommUtils@isEqual(manualYn,'Y')">
+		   AND (A.kd_cd IS NULL OR A.kd_cd = '')
+		</if>
+		 -->
+         ORDER BY 
+               A.ir_no,
+               A.sn
+    </select>
+    
+    <select id="listEntPtntCount" resultType="int" parameterType="business.usr.invest.service.EntVO">
+        SELECT COUNT(1) 
+          FROM tb_ent_ptnt A
+         WHERE A.ir_no    = #{irNo}
+        <!-- 2023.08.31 제외 
+		<if test="@common.util.CommUtils@isNotEmpty(kdCd)">
+		   AND A.kd_cd = #{kdCd}
+		</if>
+		 -->
+		<!-- 수정목록 조회시 2023.08.30 LSH 제외함
+		<if test="@common.util.CommUtils@isEqual(manualYn,'Y')">
+		   AND (A.kd_cd IS NULL OR A.kd_cd = '')
+		</if>
+		 -->
+    </select>
+
+    <!-- 특허상표권현황 구분별 합계건수 조회 -->
+    <select id="listEntPtntSummary" resultType="java.util.HashMap" parameterType="business.usr.invest.service.EntVO">
+    	SELECT C.cd_id       AS "code"
+    	     , C.cd_nm       AS "text"
+    	     ,(SELECT COUNT(*)
+    	         FROM tb_ent_ptnt A
+    	        WHERE A.ir_no        = #{irNo}
+    	          AND A.patent_se_cd = C.cd_id
+    	       )             AS "count"
+    	  FROM sys_code C
+    	 WHERE C.up_cd_id = 'CT.ILLT_REG_SE'
+    	 ORDER BY
+    	       C.cd_ordr
+    	     , C.cd_id
+    </select>
+
+    <!-- 특허상표권현황 상세조회 -->
+    <select id="viewEntPtnt" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_ptnt A
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </select>
+
+    <!-- 특허상표권현황 등록 -->
+    <insert id="regiEntPtnt" parameterType="business.usr.invest.service.EntVO">
+        INSERT 
+          INTO tb_ent_ptnt 
+             ( ir_no,
+               sn,
+               patent_se_cd,
+               applnm,
+               patntrt_man,
+               nm,
+               illt_reg_no,
+               patent_reg_ymd,
+               kd_cd,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{irNo},
+			   NEXTVAL('seq_ent_ptnt'),
+               #{patentSeCd},
+               #{applnm},
+               #{patntrtMan},
+               #{nm},
+               #{illtRegNo},
+               #{patentRegYmd},
+               #{kdCd},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 특허상표권현황 수정 -->
+    <update id="updtEntPtnt" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_ent_ptnt 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(patentSeCd          )"> patent_se_cd         = #{patentSeCd          },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(applnm              )"> applnm               = #{applnm              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(patntrtMan          )"> patntrt_man          = #{patntrtMan          },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(nm                  )"> nm                   = #{nm                  },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(illtRegNo           )"> illt_reg_no          = #{illtRegNo           },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(patentRegYmd        )"> patent_reg_ymd       = #{patentRegYmd        },</if>  
+		<if test="@common.util.CommUtils@isNotEmpty(kdCd                )"> kd_cd                = #{kdCd                },</if>
+               mdfcn_ymd = NOW()
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </update>
+
+    <!-- 특허상표권현황 삭제 -->
+    <delete id="deltEntPtnt" parameterType="business.usr.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent_ptnt 
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </delete> 
+
+    <!-- 특허상표권현황 KODATA 등록여부 조회 -->
+    <select id="existKodata" resultType="boolean" parameterType="string">
+    	SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
+    	  FROM tb_ent_ptnt A
+    	 WHERE EXISTS (
+    	       SELECT 1
+    	         FROM vw_ent
+    	        WHERE bzenty_no = #{bzentyNo}
+    	          AND ir_no     = A.ir_no
+    	       )
+    	   AND A.data_se_cd = 'K'
+    	   AND A.kd_cd IS NOT NULL
+    </select>
+
+</mapper>

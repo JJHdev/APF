@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Main">
+	<!-- 이미지 file가져오기-->
+    <sql id="Sql-ColumnFile">
+    	
+    </sql>
+    
+	<!-- 메인화면 배너 -->
+	<select id="listBanner" resultType="java.util.HashMap" parameterType="business.com.common.service.MainVO">
+		SELECT BANNER_NO			AS "bannerNo"
+			 , BANNER_NM			AS "bannerNm"
+			 , BANNER_URL			AS "bannerUrl"
+			 , BANNER_EXPLN			AS "bannerExpln"
+			 , PSTG_BGNG_YMD		AS "pstgBgngYmd"
+		     , PSTG_END_YMD			AS "pstgEndYmd"
+		     , (SELECT sn
+				FROM tb_bbs_file 
+				WHERE pst_No = A.banner_no AND file_se_cd = '00' AND del_Yn = 'N') AS "files"
+		FROM TB_BANNER A
+		WHERE
+			USE_YN 		= 'Y'
+		   	AND TO_CHAR(CURRENT_DATE, 'YYYYMMDD') BETWEEN PSTG_BGNG_YMD AND PSTG_END_YMD 
+		ORDER BY
+			BANNER_NO DESC
+	</select>
+	
+	<!-- 메인화면 공지사항 팝업 (window) -->
+	<select id="listPopupNotice" resultType="java.util.HashMap" parameterType="business.usr.inform.service.BbsVO">
+		SELECT PST_NO				AS "pstNo"
+		     , PST_TTL				AS "pstTtl"
+		     , PST_CN				AS "pstCn"
+		     , PSTG_BGNG_YMD		AS "pstgBgngYmd"
+		     , PSTG_END_YMD			AS "pstgEndYmd"
+		     , POPUP_HG				AS "popupHg"
+		     , POPUP_AR				AS "popupAr"
+		     , (SELECT sn
+				FROM tb_bbs_file 
+				WHERE pst_No = A.pst_no AND file_se_cd = '00' AND del_Yn = 'N') AS "files"
+	  	 FROM TB_BBS A
+		 WHERE 
+		 	BBS_SE_CD 	= 'B10'
+		   	AND POPUP_YN 	= 'Y'
+		   	AND DEL_YN 		= 'N'
+		   	AND TO_CHAR(CURRENT_DATE, 'YYYYMMDD') BETWEEN PSTG_BGNG_YMD AND PSTG_END_YMD 
+		 ORDER BY
+		 	PST_NO 
+	</select> 
+</mapper>

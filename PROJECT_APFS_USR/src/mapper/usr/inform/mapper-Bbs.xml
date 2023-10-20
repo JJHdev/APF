@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Bbs">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+            AND (A.pst_ttl LIKE '%'|| #{srchText} || '%'
+             OR  REGEXP_REPLACE(A.pst_cn, <![CDATA['<[^>]+>']]>, '', 'g')  LIKE '%'|| #{srchText} || '%'
+                )
+        </if>
+    	<if test="@common.util.CommUtils@isNotEmpty(pstClsfCd) &amp;&amp; !@common.util.CommUtils@isEqual(pstClsfCd,'00')">
+			AND A.pst_clsf_cd = #{pstClsfCd}
+		</if>
+	    <!-- QNA관리자 답변코드 제외조건 -->
+   		<if test="@common.util.CommUtils@isEqual(@business.usr.CodeConst@BBS_QNA,bbsSeCd)">
+            AND A.up_pst_no IS NULL
+            AND A.rgtr_no = #{gsUserNo}
+		</if>
+		<!-- 통합검색 다중 게시판 구분 검색조건 -->
+		<if test="@common.util.CommUtils@isNotEmptyList(bbsSeCdArr)">
+			AND A.bbs_se_cd IN <foreach item="item" collection="bbsSeCdArr" separator="," open="(" close=")">#{item}</foreach>
+		</if>
+    </sql>
+    
+    
+    <!-- Promotion 유튜브 영상 체크 -->
+    <sql id="Sql-IsPromotion">
+   		<if test="@common.util.CommUtils@isEqual(@business.usr.CodeConst@BBS_PROMOTION,bbsSeCd)">
+            AND  A.pst_link_url = #{pstLinkUrl}
+		</if>
+    </sql>
+    
+    <!-- 삭제한 게시물 제외 -->
+    <sql id="Sql-delNotWhere">
+    	And del_yn='N'
+    </sql>
+    
+    <!-- 홍보게시판 목록 조회용 -->
+    <sql id="Sql-OrderByPromotion">
+    	<if test="@common.util.CommUtils@isEqual(@business.usr.CodeConst@BBS_PROMOTION,bbsSeCd)">
+    		A.reg_Ymd DESC,
+    	</if>
+    </sql>
+    
+    <!-- 우수투자사례 썸네일 이미지 file가져오기-->
+    <sql id="Sql-ColumnInvestCaseThum">
+    	<if test="@common.util.CommUtils@isEqual(@business.usr.CodeConst@BBS_INVTCASE,bbsSeCd)">
+	    	(SELECT sn
+			FROM tb_bbs_file 
+			WHERE pst_No = A.pst_no AND file_se_cd = '00' AND del_Yn = 'N') AS "files",
+    	</if>
+    </sql>
+    <sql id="Sql-Column">
+        A.pst_no                                       			AS "pstNo",
+        A.up_pst_no                                   			AS "upPstNo",
+        A.bbs_se_cd                                    			AS "bbsSeCd",
+        FN_GET_CODENM('CT.BBS_SE', A.bbs_se_cd)        			AS "bbsSeNm",
+        A.pst_clsf_cd                                  			AS "pstClsfCd",
+        FN_GET_CODENM('CT.NTT_CL', A.pst_clsf_cd)      			AS "pstClsfNm",
+        A.annymty                                      			AS "annymty",
+        A.pst_ttl                                      			AS "pstTtl",
+		<choose>
+		    <when test="@common.util.CommUtils@isEqual(@business.usr.CodeConst@BBS_FAQ,bbsSeCd)">
+        		REPLACE(A.pst_cn, #{ckImageContext}, #{gsContext})		AS "pstCn",
+	        </when>
+		    <otherwise>
+		        A.pst_cn                                       			AS "pstCn",
+		    </otherwise>
+		</choose>         
+        A.inqry_type_cd                                			AS "inqryTypeCd",
+        FN_FMT_STRTODATE(A.pstg_bgng_ymd,'-')          			AS "pstgBgngYmd",
+        FN_FMT_STRTODATE(A.pstg_end_ymd ,'-')          			AS "pstgEndYmd",
+        FN_FMT_STRTODATE(A.fixing_bgng_ymd,'-')        			AS "fixingBgngYmd",
+        FN_FMT_STRTODATE(A.fixing_end_ymd ,'-')        			AS "fixingEndYmd",
+        A.pst_link_url                                 			AS "pstLinkUrl",
+        A.eml_addr                                     			AS "emlAddr",
+        A.tag_cn                                       			AS "tagCn",
+        A.inq_cnt                                      			AS "inqCnt",
+        A.rcmdtn_cnt                                   			AS "rcmdtnCnt",
+        A.pst_pswd                                     			AS "pstPswd",
+        A.ntc_yn                                       			AS "ntcYn",
+        A.fixing_yn                                    			AS "fixingYn",
+        A.rls_yn                                       			AS "rlsYn",
+        A.del_yn                                       			AS "delYn",
+        A.popup_yn                                     			AS "popupYn",
+        A.popup_hg                                     			AS "popupHg",
+        A.popup_ar                                     			AS "popupAr",
+        A.rgtr_no                                      			AS "rgtrNo",
+        COALESCE(FN_GET_USERNM(A.rgtr_no), '-')      			AS "rgtrNm",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  			AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             			AS "regDate",
+        A.mdfr_no                                      			AS "mdfrNo",
+        FN_GET_USERNM(A.mdfr_no)                       			AS "mdfrNm",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  			AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             			AS "mdfDate",
+       	<if test="@common.util.CommUtils@isEqual(@business.usr.CodeConst@BBS_COMMUNITY,bbsSeCd)">
+	   (SELECT D.bzenty_nm
+	      FROM tb_ent D
+		 WHERE D.bzenty_no = (SELECT C.bzenty_no
+								FROM tb_user C
+							   WHERE C.user_no = A.rgtr_no))   	AS "bzentyNm",
+    	</if>
+	    CASE WHEN EXISTS (SELECT 1
+	                        FROM tb_bbs B 
+	                       WHERE B.up_pst_no = A.pst_no
+	                       	 AND B.del_yn = 'N')
+	         THEN '20'
+	         ELSE '10'
+	    END                                            			AS "prcsSttsCd",
+	    CASE WHEN EXISTS (SELECT 1
+	                        FROM tb_bbs B 
+	                       WHERE B.up_pst_no = A.pst_no
+	                       	 AND B.del_yn = 'N')
+	         THEN FN_GET_CODENM('CT.PRCS_STUS_CD', '20')
+	         ELSE FN_GET_CODENM('CT.PRCS_STUS_CD', '10')
+	    END                                            			AS "prcsSttsNm",
+	    FN_GET_CODENM('CT.INQRY_CL' , A.pst_clsf_cd)   			AS "inqryClNm" 
+    </sql>
+    
+    <!-- 게시판 목록조회 -->
+    <select id="listBbs" resultType="java.util.HashMap" parameterType="business.usr.inform.service.BbsVO">
+        SELECT <include refid="Sql-ColumnInvestCaseThum"/>
+        	   <include refid="Sql-Column"/>
+          FROM tb_bbs A
+         WHERE (1=1) 
+         	   <if test="@common.util.CommUtils@isNotEmpty(bbsSeCd)">AND A.bbs_se_cd = #{bbsSeCd}</if>
+               <include refid="Sql-Where"/>
+               <include refid="Sql-delNotWhere"/>
+         ORDER BY 
+    	  CASE WHEN CURRENT_DATE BETWEEN TO_DATE(A.fixing_bgng_ymd, 'YYYYMMDD') AND TO_DATE(A.fixing_end_ymd, 'YYYYMMDD') AND A.fixing_yn = 'Y'
+		       THEN 1
+		       ELSE 2
+		   END,
+	    	    CASE #{srchType} WHEN 'A' THEN A.inq_cnt END DESC,
+         	   <include refid="Sql-OrderByPromotion"/>
+			     A.reg_ymd DESC
+    </select>
+    
+    <!-- 게시판 총 목록수 조회 -->
+    <select id="listBbsCount" resultType="int" parameterType="business.usr.inform.service.BbsVO">
+        SELECT COUNT(1) 
+          FROM tb_bbs A
+         WHERE (1=1)
+               <if test="@common.util.CommUtils@isNotEmpty(bbsSeCd)">AND A.bbs_se_cd = #{bbsSeCd}</if>
+               <include refid="Sql-Where"/>
+               <include refid="Sql-delNotWhere"/>
+    </select>
+    
+    <!-- 홍보영상 유튜브 목록 업데이트 유무 조회 -->
+    <select id="listBbsPromotionCount" resultType="int" parameterType="business.usr.inform.service.BbsVO">
+        SELECT COUNT(1) 
+          FROM tb_bbs A
+         WHERE (1=1)
+         	   <if test="@common.util.CommUtils@isNotEmpty(bbsSeCd)">AND A.bbs_se_cd = #{bbsSeCd}</if>
+               <include refid="Sql-Where"/>
+               <include refid="Sql-delNotWhere"/>
+               <include refid="Sql-IsPromotion"/>
+    </select>
+    
+    <!-- 홍보영상 게시판 목록조회 -->
+    <select id="listPromotionBbs" resultType="business.usr.inform.service.BbsVO" parameterType="business.usr.inform.service.BbsVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_bbs A
+         WHERE (1=1) 
+           AND A.bbs_se_cd = #{bbsSeCd}
+         ORDER BY A.reg_ymd DESC LIMIT 40
+    </select>
+    
+    <!-- 우수투자사례 이미지 번호 조회 -->
+    <select id="getBbsFileSn" resultType="java.lang.Integer" parameterType="business.usr.inform.service.BbsVO">
+        SELECT A.sn  AS "files"
+          FROM tb_bbs_file A
+         WHERE A.del_yn = 'N'
+           AND A.pst_no = #{pstNo}
+         ORDER BY  A.sn
+    </select>
+    
+    <!-- 게시판 탭목록조회 -->
+    <select id="listBbsTab" resultType="java.util.HashMap" parameterType="business.usr.inform.service.BbsVO">
+        SELECT A.cd_id  AS "code"
+             , A.cd_nm  AS "text"
+          FROM sys_code A
+         WHERE 
+          	   CASE WHEN #{bbsSeCd} = 'B60' THEN up_cd_id = 'CT.BBS_SE'
+               ELSE up_cd_id = 'CT.NTT_CL' END
+           AND cd_id LIKE #{bbsSeCd} || '%'
+           AND use_yn = 'Y'
+		<!-- 공지사항인 경우 투자자대상공고(B102)는 관리자,유관기관,투자자에게만 표출됨 -->
+		<if test='@common.util.CommUtils@isEqual("00",pstClsfCd)'>
+		   AND cd_id != 'B102'
+		</if>
+         ORDER BY 
+               A.cd_ordr
+    </select>
+
+    <!-- 게시판 상세조회 -->
+    <select id="viewBbs" resultType="business.usr.inform.service.BbsVO" parameterType="business.usr.inform.service.BbsVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_bbs A
+         WHERE pst_no = #{pstNo}
+        	   <include refid="Sql-delNotWhere"/>
+    </select>
+    
+    <!-- 게시판 1:1문의 관리자 답변 상세조회 -->
+    <select id="viewQnaBbs" resultType="business.usr.inform.service.BbsVO" parameterType="business.usr.inform.service.BbsVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_bbs A
+         WHERE up_pst_no = #{pstNo}
+         	<include refid="Sql-delNotWhere"/>
+    </select>
+    
+        <!-- Sys_Code 조회 -->
+    <select id="getSysCode" resultType="java.util.HashMap" parameterType="business.usr.inform.service.BbsVO">
+		SELECT B.cd_nm AS text, B.cd_id AS code
+		FROM   SYS_CODE B
+		WHERE  1=1 
+			  AND B.up_cd_id = #{prcsSttsCd}
+    </select>
+
+    <!-- 게시판 등록 -->
+    <insert id="regiBbs" parameterType="business.usr.inform.service.BbsVO">
+    	<selectKey keyProperty="pstNo" resultType="long" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_BBS')
+    	</selectKey>
+        INSERT 
+          INTO tb_bbs 
+             ( pst_no,
+               up_pst_no,
+               bbs_se_cd,
+               pst_clsf_cd,
+               inqry_type_cd,
+               annymty,
+               pst_ttl,
+               pst_cn,
+               pstg_bgng_ymd,
+               pstg_end_ymd,
+               fixing_bgng_ymd,
+               fixing_end_ymd,
+               pst_link_url,
+               eml_addr,
+               tag_cn,
+               inq_cnt,
+               rcmdtn_cnt,
+               pst_pswd,
+               ntc_yn,
+               fixing_yn,
+               rls_yn,
+               del_yn,
+               popup_yn,
+               popup_hg,
+               popup_ar,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{pstNo},
+               #{upPstNo},
+               #{bbsSeCd},
+               #{pstClsfCd},
+               #{inqryTypeCd},
+               #{annymty},
+               #{pstTtl},
+               #{pstCn},
+               FN_FMT_STRTODATE(#{pstgBgngYmd},''),
+               FN_FMT_STRTODATE(#{pstgEndYmd },''),
+               FN_FMT_STRTODATE(#{fixingBgngYmd},''),
+               FN_FMT_STRTODATE(#{fixingEndYmd },''),
+               #{pstLinkUrl},
+               #{emlAddr},
+               #{tagCn},
+               <choose>
+				   <when test="@common.util.CommUtils@isEqual(@business.usr.CodeConst@BBS_PROMOTION,bbsSeCd)">
+				       #{inqCnt},
+			       </when>
+				   <otherwise>
+				       0,
+			   	   </otherwise>
+			   </choose>   
+               0,
+               #{pstPswd},
+               'N',
+               <if test="@common.util.CommUtils@isNotEmpty(fixingYn)">#{fixingYn}</if><if test="@common.util.CommUtils@isEmpty(fixingYn)">'N'</if>,
+               'Y',
+               'N',
+               <if test="@common.util.CommUtils@isNotEmpty(popupYn)">#{popupYn}</if><if test="@common.util.CommUtils@isEmpty(popupYn)">'N'</if>,
+               #{popupHg},
+               #{popupAr},
+               #{gsUserNo},
+			<choose>
+			    <when test="@common.util.CommUtils@isEqual(@business.usr.CodeConst@BBS_PROMOTION,bbsSeCd)">
+			        TO_TIMESTAMP(#{regDttm}, 'YYYY-MM-DD HH24:MI:SS')
+		        </when>
+			    <otherwise>
+			        NOW()
+			    </otherwise>
+			</choose>
+             )
+    </insert>
+
+    <!-- 게시판 수정 -->
+    <update id="updtBbs" parameterType="business.usr.inform.service.BbsVO">
+        UPDATE tb_bbs 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(upPstNo             )"> up_pst_no            = #{upPstNo             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bbsSeCd             )"> bbs_se_cd            = #{bbsSeCd             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pstClsfCd           )"> pst_clsf_cd          = #{pstClsfCd           },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(annymty             )"> annymty              = #{annymty             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pstTtl              )"> pst_ttl              = #{pstTtl              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pstCn               )"> pst_cn               = #{pstCn               },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pstgBgngYmd         )"> pstg_bgng_ymd        = FN_FMT_STRTODATE(#{pstgBgngYmd},''),</if>
+		<if test="@common.util.CommUtils@isEmpty   (pstgBgngYmd         )"> pstg_bgng_ymd        = FN_FMT_STRTODATE(#{pstgBgngYmd},''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pstgEndYmd          )"> pstg_end_ymd         = FN_FMT_STRTODATE(#{pstgEndYmd },''),</if>
+		<if test="@common.util.CommUtils@isEmpty   (pstgEndYmd          )"> pstg_end_ymd         = FN_FMT_STRTODATE(#{pstgEndYmd },''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fixingBgngYmd       )"> fixing_bgng_ymd      = FN_FMT_STRTODATE(#{fixingBgngYmd},''),</if>
+		<if test="@common.util.CommUtils@isEmpty   (fixingBgngYmd       )"> fixing_bgng_ymd      = FN_FMT_STRTODATE(#{fixingBgngYmd },''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fixingEndYmd        )"> fixing_end_ymd       = FN_FMT_STRTODATE(#{fixingEndYmd },''),</if>
+		<if test="@common.util.CommUtils@isEmpty   (fixingEndYmd        )"> fixing_end_ymd       = FN_FMT_STRTODATE(#{fixingEndYmd },''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pstLinkUrl          )"> pst_link_url         = #{pstLinkUrl          },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(emlAddr             )"> eml_addr             = #{emlAddr             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(tagCn               )"> tag_cn               = #{tagCn               },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pstPswd             )"> pst_pswd             = #{pstPswd             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fixingYn            )"> fixing_yn            = #{fixingYn            },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(popupYn             )"> popup_yn             = #{popupYn             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(popupHg             )"> popup_hg             = #{popupHg             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(popupAr             )"> popup_ar             = #{popupAr             },</if>  
+               mdfcn_ymd = NOW()
+         WHERE pst_no    = #{pstNo}
+    </update>
+    
+        <!-- 게시판 수정 -->
+    <update id="updtPromotion" parameterType="business.usr.inform.service.BbsVO">
+        UPDATE tb_bbs 
+           SET 
+			<if test="@common.util.CommUtils@isNotEmpty(inqCnt              )"> inq_cnt              = #{inqCnt              },</if>
+			mdfcn_ymd = NOW()
+         WHERE pst_ttl    																	 	 	 = #{pstTtl}
+    </update>
+    
+        <!-- 중복된 제목 찾기 -->
+    <select id="findDuplicatesByName" resultType="business.usr.inform.service.BbsVO" parameterType="business.usr.inform.service.BbsVO">
+		 SELECT pst_ttl AS pstTtl, COUNT(*) as promotionIsCnt
+		FROM tb_bbs
+		 where bbs_se_Cd = #{bbsSeCd} and del_yn = 'N'
+		GROUP BY pst_ttl
+		HAVING COUNT(*) > 1;
+    </select>
+    
+        <!-- 중복된 홍보영상 임의 삭제 요청 -->
+    <update id="deletePromotion" parameterType="business.usr.inform.service.BbsVO">
+		WITH to_delete AS (
+		    SELECT pst_No
+		    FROM tb_Bbs
+		    WHERE pst_ttl = #{pstTtl              }
+		    LIMIT 1
+		)
+		DELETE FROM tb_Bbs
+		WHERE pst_No IN (SELECT pst_No FROM to_delete);
+    </update> 
+
+    <!-- 게시판 조회수 증가 -->
+    <update id="updtBbsInqCnt" parameterType="business.usr.inform.service.BbsVO">
+        UPDATE tb_bbs 
+           SET inq_cnt   = inq_cnt + 1
+         WHERE pst_no    = #{pstNo}
+    </update>
+    
+    <!-- 게시판 추천수 증가 -->
+    <update id="updtBbsRecmdtCnt" parameterType="business.usr.inform.service.BbsVO">
+        UPDATE tb_bbs 
+           SET rcmdtn_cnt = rcmdtn_cnt + 1
+         WHERE pst_no     = #{pstNo}
+    </update>
+
+    <!-- 게시판 삭제 -->
+    <update id="deltBbs" parameterType="business.usr.inform.service.BbsVO">
+        UPDATE tb_bbs 
+           SET del_yn     = 'Y'
+             , mdfr_no    = #{gsUserNo}
+             , mdfcn_ymd  = NOW()
+         WHERE pst_no     = #{pstNo}
+    </update> 
+    <!-- 테스트용 게시판 삭제 -->
+    <update id="deleteTestBbs">
+		DELETE FROM tb_bbs
+		WHERE bbs_se_cd = 'B50'
+    </update> 
+
+</mapper>

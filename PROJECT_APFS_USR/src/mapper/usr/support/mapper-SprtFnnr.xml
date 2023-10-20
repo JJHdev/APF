@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SprtFnnr">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+        A.sn                                           AS "sn",
+        A.sprt_aply_no                                 AS "sprtAplyNo",
+        A.fnnr_ymd                                     AS "fnnrYmd",
+        A.fnnr_amt                                     AS "fnnrAmt",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 매출정보 목록조회 -->
+    <select id="listSprtFnnr" resultType="java.util.HashMap" parameterType="business.usr.support.service.SprtVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_invtsprt_sls A
+         WHERE sprt_aply_no = #{sprtAplyNo}
+         ORDER BY 
+               A.sn
+    </select>
+
+    <!-- 매출정보 등록 -->
+    <insert id="regiSprtFnnr" parameterType="business.usr.support.service.SprtFnnrVO">
+        INSERT 
+          INTO tb_invtsprt_sls 
+             ( sn,
+               sprt_aply_no,
+               fnnr_ymd,
+               fnnr_amt,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( NEXTVAL('seq_invtsprt_sls'),
+               #{sprtAplyNo},
+               #{fnnrYmd},
+               #{fnnrAmt},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 매출정보 삭제 -->
+    <delete id="deltSprtFnnr" parameterType="business.usr.support.service.SprtFnnrVO">
+        DELETE 
+          FROM tb_invtsprt_sls
+		<if test="@common.util.CommUtils@isNotEmpty(sn)"> WHERE sn = #{sn} </if>
+		<if test="@common.util.CommUtils@isEmpty(sn   )"> WHERE sprt_aply_no = #{sprtAplyNo} </if>
+    </delete> 
+
+</mapper>

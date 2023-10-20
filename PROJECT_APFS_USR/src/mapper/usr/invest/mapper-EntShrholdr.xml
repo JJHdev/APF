@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EntShrholdr">
+
+    <sql id="Sql-Column">
+        A.ir_no                                        AS "irNo",
+        A.sn                                           AS "sn",
+        A.flnm                                         AS "flnm",
+        A.invt_amt                                     AS "invtAmt",
+        A.qota_rt                                      AS "qotaRt",
+        A.rel_cn                                       AS "relCn",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 주주현황 목록조회 -->
+    <select id="listEntShrholdr" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_shrholdr A
+         WHERE A.ir_no    = #{irNo}
+         ORDER BY 
+               A.ir_no,
+               A.sn
+    </select>
+
+    <!-- 주주현황 상세조회 -->
+    <select id="viewEntShrholdr" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_shrholdr A
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </select>
+
+    <!-- 주주현황 등록 -->
+    <insert id="regiEntShrholdr" parameterType="business.usr.invest.service.EntVO">
+        INSERT 
+          INTO tb_ent_shrholdr 
+             ( ir_no,
+               sn,
+               flnm,
+               invt_amt,
+               qota_rt,
+               rel_cn,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{irNo},
+			   NEXTVAL('seq_ent_shrholdr'),
+               #{flnm},
+               #{invtAmt},
+               #{qotaRt},
+               #{relCn},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 주주현황 수정 -->
+    <update id="updtEntShrholdr" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_ent_shrholdr 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(flnm                )"> flnm                 = #{flnm                },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(invtAmt             )"> invt_amt             = #{invtAmt             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(qotaRt              )"> qota_rt              = #{qotaRt              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(relCn               )"> rel_cn               = #{relCn               },</if>  
+               mdfcn_ymd = NOW()
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </update>
+
+    <!-- 주주현황 삭제 -->
+    <delete id="deltEntShrholdr" parameterType="business.usr.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent_shrholdr 
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </delete> 
+
+</mapper>

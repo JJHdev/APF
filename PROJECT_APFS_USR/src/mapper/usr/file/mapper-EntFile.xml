@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EntFile">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+        A.sn                                           AS "sn",
+        A.bzenty_no                                    AS "bzentyNo",
+        A.doc_se_cd                                    AS "docSeCd",
+        A.file_path                                    AS "filePath",
+        A.strg_file_nm                                 AS "strgFileNm",
+        A.file_nm                                      AS "fileNm",
+        A.file_sz                                      AS "fileSz",
+        A.rprs_yn                                      AS "rprsYn",
+        A.del_yn                                       AS "delYn",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 업체첨부파일 목록조회 -->
+    <select id="listEntFile" resultType="business.usr.file.service.EntFileVO" parameterType="business.usr.file.service.EntFileVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_file A
+         WHERE A.bzenty_no = #{bzentyNo}
+           AND A.del_yn    = 'N'
+        <if test="@common.util.CommUtils@isNotEmpty(docuCds)">
+           AND A.doc_se_cd IN <foreach item="item" collection="docuCds" separator="," open="(" close=")">#{item}</foreach>
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(docSeCd)">
+           AND A.doc_se_cd = #{docSeCd}
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(rprsYn)">
+           AND A.rprs_yn   = #{rprsYn}
+        </if>
+         ORDER BY 
+               A.rprs_yn DESC
+              ,A.sn      ASC
+    </select>
+
+    <!-- 업체첨부파일 상세조회 -->
+    <select id="viewEntFile" resultType="business.usr.file.service.EntFileVO" parameterType="long">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_file A
+         WHERE sn = #{sn}
+    </select>
+
+    <!-- 업체첨부파일 등록 -->
+    <insert id="regiEntFile" parameterType="business.usr.file.service.EntFileVO">
+    	<selectKey keyProperty="sn" resultType="long" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_ENT_FILE')
+    	</selectKey>
+        INSERT 
+          INTO tb_ent_file 
+             ( sn,
+		<if test="@common.util.CommUtils@isNotEmpty(docSeCd   )"> doc_se_cd    ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bzentyNo  )"> bzenty_no    ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rprsYn    )"> rprs_yn      ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(filePath  )"> file_path    ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(strgFileNm)"> strg_file_nm ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileNm    )"> file_nm      ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileSz    )"> file_sz      ,</if>
+               del_yn,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{sn},
+		<if test="@common.util.CommUtils@isNotEmpty(docSeCd   )"> #{docSeCd    },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bzentyNo  )"> #{bzentyNo   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rprsYn    )"> #{rprsYn     },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(filePath  )"> #{filePath   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(strgFileNm)"> #{strgFileNm },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileNm    )"> #{fileNm     },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileSz    )"> #{fileSz     },</if>
+               'N',
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 업체첨부파일 수정 -->
+    <update id="updtEntFile" parameterType="business.usr.file.service.EntFileVO">
+        UPDATE tb_ent_file 
+           SET MDFR_NO   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(docSeCd   )"> doc_se_cd    = #{docSeCd    },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bzentyNo  )"> bzenty_no    = #{bzentyNo   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rprsYn    )"> rprs_yn      = #{rprsYn     },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(filePath  )"> file_path    = #{filePath   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(strgFileNm)"> strg_file_nm = #{strgFileNm },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileNm    )"> file_nm      = #{fileNm     },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileSz    )"> file_sz      = #{fileSz     },</if>
+               MDFCN_YMD = NOW()
+         WHERE sn        = #{sn}
+    </update>
+
+    <!-- 업체첨부파일 삭제 -->
+    <delete id="deltEntFile" parameterType="business.usr.file.service.EntFileVO">
+        UPDATE tb_ent_file
+           SET mdfr_no   = #{gsUserNo},
+               del_yn    = 'Y',
+               mdfcn_ymd = NOW()
+         WHERE sn        = #{sn}
+    </delete> 
+
+</mapper>

@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Fund">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+            A.del_yn = 'N'
+        AND A.use_yn = 'Y'
+        <if test="@common.util.CommUtils@isNotEmpty(fundScaleCd)">
+        	<if test='!fundScaleCd.equals("MIN") and !fundScaleCd.equals("MAX")'>
+	        	AND #{fundScaleCd} <![CDATA[>=]]> FN_GET_FUNDRANGE(COALESCE(A.fund_oper_scale, 0), 1)
+        	</if>
+        </if>
+        <if test="@common.util.CommUtils@isNotEmptyList(invtFldList)">
+        	AND A.invt_fld_cd IN <foreach item="item" collection="invtFldList" separator="," open="(" close=")">#{item}</foreach>
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(prgrsSttsCd)">
+        	AND #{prgrsSttsCd} = FN_GET_PRGRS(A.invt_bgng_ymd, A.invt_end_ymd)
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(prgrsIconCd)">
+        	AND #{prgrsIconCd} = FN_GET_PRGRS(A.invt_bgng_ymd, A.invt_end_ymd)
+        </if>
+        <!-- 검색박스(펀드명,투자자명) 검색 -->
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+        	AND (   A.fund_nm LIKE '%'|| #{srchText} ||'%'
+        	     OR EXISTS (
+        	        SELECT 1
+        	          FROM tb_fund_invstr
+        	         WHERE fund_no = A.fund_no
+        	           AND invt_bzenty_nm LIKE '%'|| #{srchText} ||'%'
+        	        )
+        	    )
+        </if>
+        <!-- 매칭설정 조건(투자분야/펀드규모) -->
+        <if test='"M".equals(srchMode)'>
+           AND EXISTS (
+               SELECT  1
+                 FROM  tb_mtchg_stng   M
+                WHERE  M.user_no     = #{gsUserNo}
+                  AND  M.stng_se_cd  = 'SS1'
+                  AND (M.stng_dtl_cd = 'ALL' 
+                   OR  M.stng_dtl_cd = A.invt_fld_cd
+                      )
+               )
+           AND EXISTS (
+               SELECT  1
+                 FROM  tb_mtchg_stng   M
+                WHERE  M.user_no     = #{gsUserNo}
+                  AND  M.stng_se_cd  = 'SS4'
+                  AND (M.stng_dtl_cd = 'ALL' 
+                   OR  M.stng_dtl_cd <![CDATA[>=]]> FN_GET_FUNDRANGE(COALESCE(A.fund_oper_scale, 0), 1)
+                      )
+               )
+        </if>
+        <!-- 마이페이지 - IR지원목록 -->
+        <if test='"A".equals(srchMode)'>
+            AND EXISTS (
+                SELECT 1
+                  FROM tb_fund_sprt
+                 WHERE bzenty_no  = #{gsBzentyNo}
+                   AND fund_no    = A.fund_no
+                )
+        </if>
+    </sql>
+    <sql id="Sql-Column">
+        A.fund_no                                      AS "fundNo",
+        A.fund_nm                                      AS "fundNm",
+        A.fund_cn                                      AS "fundCn",
+        A.invt_fld_cd                                  AS "invtFldCd",
+        FN_GET_INVTFLDNM(A.invt_fld_cd)                AS "invtFldNm",
+        A.fund_oper_scale                              AS "fundOperScale",
+        A.make_yr                                      AS "makeYr",
+        A.orgz_ymd                                     AS "orgzYmd",
+        A.invt_bgng_ymd                                AS "invtBgngYmd",
+        A.invt_end_ymd                                 AS "invtEndYmd",
+        FN_GET_PRGRS(A.invt_bgng_ymd, A.invt_end_ymd)  AS "prgrsSttsCd",
+        A.mxtr_stts_cd                                 AS "mxtrSttsCd",
+        FN_GET_CODENM('CT.ASSC_STUS', A.invt_fld_cd)   AS "mxtrSttsNm",
+        A.mmbs1                                        AS "mmbs1",
+        A.mmbs2                                        AS "mmbs2",
+        A.mmbs3                                        AS "mmbs3",
+        A.mmbs4                                        AS "mmbs4",
+        A.mmbs5                                        AS "mmbs5",
+        A.rprs_telno                                   AS "rprsTelno",
+        A.rprs_hmpg_addr                               AS "rprsHmpgAddr",
+        A.use_yn                                       AS "useYn",
+        A.del_yn                                       AS "delYn",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+    <sql id="Sql-Column-Extra">
+		#{srchMode}                                    AS "srchMode", <!-- 검색구분코드 -->
+		(SELECT bzenty_no
+		   FROM tb_fund_invstr
+		  WHERE sn = A.sn)                             AS "invtBzentyNo",
+		(SELECT COALESCE(invt_bzenty_nm, FN_GET_ENTNM(bzenty_no))
+		   FROM tb_fund_invstr
+		  WHERE sn = A.sn)                             AS "invtBzentyNm",
+		(SELECT brno
+		   FROM tb_fund_invstr
+		  WHERE sn = A.sn)                             AS "invtBrno",
+		(SELECT E.hmpg_addr
+		   FROM tb_fund_invstr I
+		      , tb_ent         E
+		  WHERE I.bzenty_no  = E.bzenty_no
+		    AND I.sn         = A.sn)                   AS "invtHmpgAddr",
+		(SELECT S.sprt_ymd
+		   FROM tb_fund_sprt   S
+		  WHERE S.bzenty_no  = #{gsBzentyNo}
+		    AND S.fund_no    = A.fund_no
+		  LIMIT 1)                                     AS "sprtYmd" <!-- 마이페이지 - IR지원목록 - 지원일자 -->
+    </sql>
+    
+    <sql id="Sql-From">
+		(SELECT F.*,
+    	       (SELECT sn
+    	          FROM tb_fund_invstr
+    	         WHERE fund_no = F.fund_no
+    	         ORDER BY
+    	               sn ASC
+    	         LIMIT 1) AS sn
+    	  FROM tb_fund_info F)
+    </sql>
+
+    <!-- 펀드정보(모태펀드) 목록조회 -->
+    <select id="listFund" resultType="business.usr.invest.service.FundVO" parameterType="business.usr.invest.service.FundVO">
+        SELECT <include refid="Sql-Column"       />,
+               <include refid="Sql-Column-Extra" />
+          FROM <include refid="Sql-From"         /> A
+         WHERE <include refid="Sql-Where"        />
+         ORDER BY 
+        <if test="@common.util.CommUtils@isNotEmpty(ordrField)">
+              <if test="ordrField eq 'A'.toString()"> COALESCE(A.fund_oper_scale,0)  ASC, </if><!-- 펀드규모 오름차순 -->
+              <if test="ordrField eq 'B'.toString()"> COALESCE(A.fund_oper_scale,0) DESC, </if><!-- 펀드규모 내림차순 -->
+              <if test="ordrField eq 'C'.toString()"> A.orgz_ymd          ASC, </if><!-- 조성년도 오름차순 -->
+              <if test="ordrField eq 'D'.toString()"> A.orgz_ymd         DESC, </if><!-- 조성년도 내림차순 -->
+              <if test="ordrField eq 'E'.toString()"> "invtFldNm"         ASC, </if><!-- 투자분야 가나다순 -->
+        </if>
+               A.fund_no ASC
+    </select>
+    <select id="listFundCount" resultType="int" parameterType="business.usr.invest.service.FundVO">
+        SELECT COUNT(1) 
+          FROM <include refid="Sql-From"  /> A
+         WHERE <include refid="Sql-Where" />
+    </select>
+
+    <!-- 펀드정보(모태펀드) 상세조회 -->
+    <select id="viewFund" resultType="business.usr.invest.service.FundVO" parameterType="string">
+        SELECT <include refid="Sql-Column"       />,
+               <include refid="Sql-Column-Extra" />
+          FROM <include refid="Sql-From"         /> A
+         WHERE A.fund_no   = #{fundNo}
+           AND A.del_yn    = 'N'
+           AND A.use_yn    = 'Y'
+    </select>
+
+    <!-- 펀드정보(모태펀드) 등록 -->
+    <insert id="regiFund" parameterType="business.usr.invest.service.FundVO">
+        INSERT 
+          INTO tb_fund_info 
+             ( fund_no,
+               fund_nm,
+               fund_cn,
+               invt_fld_cd,
+               fund_oper_scale,
+               make_yr,
+               orgz_ymd,
+               invt_bgng_ymd,
+               invt_end_ymd,
+               mxtr_stts_cd,
+               mmbs1,
+               mmbs2,
+               mmbs3,
+               mmbs4,
+               mmbs5,
+               rprs_telno,
+               rprs_hmpg_addr,
+               use_yn,
+               del_yn,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{fundNo},
+               #{fundNm},
+               #{fundCn},
+               #{invtFldCd},
+               #{fundOperScale},
+               #{makeYr},
+               #{orgzYmd},
+               #{invtBgngYmd},
+               #{invtEndYmd},
+               #{mxtrSttsCd},
+               #{mmbs1},
+               #{mmbs2},
+               #{mmbs3},
+               #{mmbs4},
+               #{mmbs5},
+               #{rprsTelno},
+               #{rprsHmpgAddr},
+               #{useYn},
+               #{delYn},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 펀드정보(모태펀드) 수정 -->
+    <update id="updtFund" parameterType="business.usr.invest.service.FundVO">
+        UPDATE tb_fund_info 
+           SET MDFR_NO   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(fundNm              )"> fund_nm              = #{fundNm              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fundCn              )"> fund_cn              = #{fundCn              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(invtFldCd           )"> invt_fld_cd          = #{invtFldCd           },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fundOperScale       )"> fund_oper_scale      = #{fundOperScale       },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(makeYr              )"> make_yr              = #{makeYr              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(orgzYmd             )"> orgz_ymd             = #{orgzYmd             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(invtBgngYmd         )"> invt_bgng_ymd        = #{invtBgngYmd         },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(invtEndYmd          )"> invt_end_ymd         = #{invtEndYmd          },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(mxtrSttsCd          )"> mxtr_stts_cd         = #{mxtrSttsCd          },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(mmbs1               )"> mmbs1                = #{mmbs1               },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(mmbs2               )"> mmbs2                = #{mmbs2               },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(mmbs3               )"> mmbs3                = #{mmbs3               },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(mmbs4               )"> mmbs4                = #{mmbs4               },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(mmbs5               )"> mmbs5                = #{mmbs5               },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rprsTelno           )"> rprs_telno           = #{rprsTelno           },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rprsHmpgAddr        )"> rprs_hmpg_addr       = #{rprsHmpgAddr        },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(useYn               )"> use_yn               = #{useYn               },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(delYn               )"> del_yn               = #{delYn               },</if>  
+               MDFCN_YMD = NOW()
+         WHERE fund_no = #{fundNo}
+    </update>
+
+    <!-- 펀드정보(모태펀드) 삭제 -->
+    <update id="deltFund" parameterType="business.usr.invest.service.FundVO">
+        UPDATE tb_fund_info
+           SET mdfr_no   = #{gsUserNo},
+		       del_yn    = 'Y',
+               mdfcn_ymd = NOW()
+         WHERE fund_no = #{fundNo}
+    </update> 
+
+    <!-- 업체기준 펀드및조합정보 목록조회 -->
+    <select id="listFundByBzenty" resultType="business.usr.invest.service.FundVO" parameterType="string">
+        SELECT <include refid="Sql-Column"/>,
+               B.bzenty_no      AS "invtBzentyNo",
+               COALESCE(
+                   B.invt_bzenty_nm, 
+                   FN_GET_ENTNM(B.bzenty_no)
+               )                AS "invtBzentyNm",
+               B.brno           AS "invtBrno"
+          FROM tb_fund_info     A
+             , tb_fund_invstr   B
+         WHERE A.fund_no      = B.fund_no
+           AND B.bzenty_no    = #{bzentyNo}
+         ORDER BY 
+               A.fund_no ASC
+    </select>
+
+    <!-- 펀드및조합정보 목록조회 -->
+    <select id="listFundEnt" resultType="business.usr.invest.service.FundVO" parameterType="string">
+        SELECT A.fund_no        AS "fundNo",
+               A.fund_nm        AS "fundNm",
+               B.bzenty_no      AS "invtBzentyNo",
+               C.bzenty_nm      AS "invtBzentyNm",
+               (SELECT 'Y'
+                  FROM sys_code
+                 WHERE up_cd_id = 'CT.CRDNS_SE'
+                   AND cd_id    = '01'
+                   AND cd_cn    = B.bzenty_no
+               )                AS "apfsYn"
+          FROM tb_fund_info     A
+             , tb_fund_invstr   B
+             , tb_ent           C
+         WHERE A.fund_no      = B.fund_no
+           AND B.bzenty_no    = C.bzenty_no
+           AND A.fund_no      = #{fundNo}
+           AND A.use_yn       = 'Y'
+           AND A.del_yn       = 'N'
+           AND C.use_stts_cd  = '1'
+         ORDER BY 
+               B.bzenty_no ASC
+    </select>
+
+</mapper>

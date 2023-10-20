@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EntInvtAmt">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+        A.ir_no                                        AS "irNo",
+        A.sn                                           AS "sn",
+        A.invt_se_cd                                   AS "invtSeCd",
+        FN_GET_CODENM('CT.INVT_SE', A.invt_se_cd)      AS "invtSeNm",
+        A.invt_yr                                      AS "invtYr",
+        A.invt_amt                                     AS "invtAmt",
+        (SELECT SUM(COALESCE(invt_amt,0))
+           FROM tb_ent_invt_amt
+          WHERE ir_no = A.ir_no
+            AND invt_yr <![CDATA[<=]]> A.invt_yr)      AS "summAmt",
+        FN_GET_INVTSTEP(
+	        (SELECT SUM(COALESCE(invt_amt,0))
+	           FROM tb_ent_invt_amt
+	          WHERE ir_no = A.ir_no
+	            AND invt_yr <![CDATA[<=]]> A.invt_yr)
+		)                                              AS "invtStepCd",
+        FN_GET_CODENM('CT.INVT_STEP_SE', 
+	        FN_GET_INVTSTEP(
+		        (SELECT SUM(COALESCE(invt_amt,0))
+		           FROM tb_ent_invt_amt
+		          WHERE ir_no = A.ir_no
+		            AND invt_yr <![CDATA[<=]]> A.invt_yr)
+			)
+		)                                              AS "invtStepNm"
+    </sql>
+
+    <!-- 기타투자금액 목록조회 -->
+    <select id="listEntInvtAmt" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_invt_amt A
+         WHERE A.ir_no    = #{irNo}
+        <if test="@common.util.CommUtils@isNotEmpty(invtSeCd)">
+           AND A.invt_se_cd = #{invtSeCd}
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(invtStepCd)">
+           AND A.invt_step_cd = #{invtStepCd}
+        </if>
+         ORDER BY 
+               A.invt_yr,
+               A.invt_se_cd,
+               A.invt_amt,
+               A.sn
+    </select>
+
+    <!-- 기타투자금액 상세조회 -->
+    <select id="viewEntInvtAmt" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_invt_amt A
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </select>
+
+    <!-- 기타투자금액 등록 -->
+    <insert id="regiEntInvtAmt" parameterType="business.usr.invest.service.EntVO">
+        INSERT 
+          INTO tb_ent_invt_amt 
+             ( ir_no,
+               sn,
+               invt_se_cd,
+               invt_yr,
+               invt_amt,
+               invt_step_cd,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{irNo},
+               NEXTVAL('SEQ_ENT_INVT_AMT'),
+               #{invtSeCd},
+               #{invtYr},
+               #{invtAmt},
+               #{invtStepCd},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 기타투자금액 수정 -->
+    <update id="updtEntInvtAmt" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_ent_invt_amt 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(invtSeCd            )"> invt_se_cd           = #{invtSeCd            },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(invtYr              )"> invt_yr              = #{invtYr              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(invtAmt             )"> invt_amt             = #{invtAmt             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(invtStepCd          )"> invt_step_cd         = #{invtStepCd          },</if>  
+               mdfcn_ymd = NOW()
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </update>
+
+    <!-- 기타투자금액 삭제 -->
+    <delete id="deltEntInvtAmt" parameterType="business.usr.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent_invt_amt 
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </delete> 
+
+</mapper>

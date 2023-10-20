@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EntLwst">
+
+    <sql id="Sql-Column">
+        A.ir_no                                        AS "irNo",
+        A.sn                                           AS "sn",
+        A.acusr_nm                                     AS "acusrNm",
+        A.dfdt_nm                                      AS "dfdtNm",
+        A.lwst_cn                                      AS "lwstCn",
+        A.lwst_amt                                     AS "lwstAmt",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 소송현황 목록조회 -->
+    <select id="listEntLwst" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_lwst A
+         WHERE A.ir_no    = #{irNo}
+         ORDER BY 
+               A.ir_no,
+               A.sn
+    </select>
+
+    <!-- 소송현황 상세조회 -->
+    <select id="viewEntLwst" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_lwst A
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </select>
+
+    <!-- 소송현황 등록 -->
+    <insert id="regiEntLwst" parameterType="business.usr.invest.service.EntVO">
+        INSERT 
+          INTO tb_ent_lwst 
+             ( ir_no,
+               sn,
+               acusr_nm,
+               dfdt_nm,
+               lwst_cn,
+               lwst_amt,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{irNo},
+			   NEXTVAL('seq_ent_lwst'),
+               #{acusrNm},
+               #{dfdtNm},
+               #{lwstCn},
+               #{lwstAmt},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 소송현황 수정 -->
+    <update id="updtEntLwst" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_ent_lwst 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(acusrNm             )"> acusr_nm             = #{acusrNm             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(dfdtNm              )"> dfdt_nm              = #{dfdtNm              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(lwstCn              )"> lwst_cn              = #{lwstCn              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(lwstAmt             )"> lwst_amt             = #{lwstAmt             },</if>  
+               mdfcn_ymd = NOW()
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </update>
+
+    <!-- 소송현황 삭제 -->
+    <delete id="deltEntLwst" parameterType="business.usr.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent_lwst 
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </delete> 
+
+</mapper>

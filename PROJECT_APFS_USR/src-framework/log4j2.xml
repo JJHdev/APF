@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d %5p [%c] %m%n" />
+        </Console>
+        <File name="file" fileName="/APFS/source/PROJECT_APFS_FILES/logs/apfs_usr.log" append="false">
+            <PatternLayout pattern="%d %5p [%c] %m%n"/>
+        </File>
+    </Appenders>
+    <Loggers>
+        <Logger name="business" level="DEBUG" additivity="false">
+            <appender-ref ref="console" />
+            <appender-ref ref="file" />
+        </Logger>
+        <Logger name="egovframework" level="DEBUG" additivity="false">
+            <AppenderRef ref="console" />
+            <appender-ref ref="file" />
+        </Logger>
+        <Logger name="java.sql" level="INFO" additivity="false">
+            <AppenderRef ref="console" />
+            <appender-ref ref="file" />
+        </Logger>
+        <!-- log SQL with timing information, post execution -->
+        <logger name="jdbc.sqltiming" level="INFO" additivity="false">
+            <appender-ref ref="console" />
+            <appender-ref ref="file" />
+        </logger>
+
+        <logger name="org.springframework" level="INFO" additivity="false">
+            <appender-ref ref="console" />
+            <appender-ref ref="file" />
+        </logger>
+        <logger name="org.apache" level="ERROR" additivity="false">
+            <appender-ref ref="console" />
+            <appender-ref ref="file" />
+        </logger>
+ 
+        <!-- logger 제거 -->
+        <logger name="jdbc.audit"     	level="OFF"/>
+        <logger name="jdbc.resultset" 	level="OFF"/>
+        <!-- 
+        - jdbc.sqltiming : SQL 실행 소요 시간에 대한 타이밍 통계를 포함하여 실행 후 SQL을 기록합니다.
+        - jdbc.resultset : ResultSet 객체에 대한 모든 메소드 호출이 기록되기 때문에 훨씬 더 방대한 양의 로그가 나옵니다.
+        - jdbc.resultsettable : 데이터베이스 조회 결과를 테이블 형식으로 보여줍니다.
+        - jdbc.audit : ResultSet 을 제외한 모든 jdbc 호출을 출력합니다.
+        -->
+        
+        <Root level="DEBUG">
+            <appender-ref ref="console" />
+            <appender-ref ref="file" />
+        </Root>
+    </Loggers>
+</Configuration>

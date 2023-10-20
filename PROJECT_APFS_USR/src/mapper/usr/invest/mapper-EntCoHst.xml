@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EntCoHst">
+
+    <sql id="Sql-Column">
+        A.ir_no                                        AS "irNo",
+        A.sn                                           AS "sn",
+        A.bgng_ymd                                     AS "bgngCoYmd",
+        A.end_ymd                                      AS "endCoYmd",
+        A.cn                                           AS "cn",
+        A.rmrk                                         AS "rmrk",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 회사연혁 목록조회 -->
+    <select id="listEntCoHst" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_co_hst A
+         WHERE A.ir_no    = #{irNo}
+         ORDER BY 
+               A.bgng_ymd DESC,
+               A.sn       DESC
+    </select>
+
+    <!-- 회사연혁 상세조회 -->
+    <select id="viewEntCoHst" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_co_hst A
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </select>
+
+    <!-- 회사연혁 등록 -->
+    <insert id="regiEntCoHst" parameterType="business.usr.invest.service.EntVO">
+        INSERT 
+          INTO tb_ent_co_hst 
+             ( ir_no,
+               sn,
+               bgng_ymd,
+               end_ymd,
+               cn,
+               rmrk,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{irNo},
+			   NEXTVAL('seq_ent_co_hst'),
+               #{bgngCoYmd},
+               #{endCoYmd},
+               #{cn},
+               #{rmrk},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 회사연혁 수정 -->
+    <update id="updtEntCoHst" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_ent_co_hst 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(bgngCoYmd           )"> bgng_ymd             = #{bgngCoYmd           },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(endCoYmd            )"> end_ymd              = #{endCoYmd            },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(cn                  )"> cn                   = #{cn                  },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rmrk                )"> rmrk                 = #{rmrk                },</if>  
+               mdfcn_ymd = NOW()
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </update>
+
+    <!-- 회사연혁 삭제 -->
+    <delete id="deltEntCoHst" parameterType="business.usr.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent_co_hst 
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </delete> 
+
+</mapper>

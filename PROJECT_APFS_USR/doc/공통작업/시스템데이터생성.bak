@@ -1,0 +1,236 @@
+TRUNCATE TABLE SYS_ROLE_USER CASCADE;
+TRUNCATE TABLE SYS_ROLE_MENU CASCADE;
+TRUNCATE TABLE SYS_ROLE_PROG CASCADE;
+TRUNCATE TABLE SYS_MENU CASCADE;
+TRUNCATE TABLE SYS_PROG CASCADE;
+TRUNCATE TABLE SYS_ROLE CASCADE;
+TRUNCATE TABLE TB_USER CASCADE;
+
+DROP SEQUENCE IF EXISTS seq_user;
+
+CREATE SEQUENCE IF NOT EXISTS seq_user
+    INCREMENT 1
+    START 100001
+    MINVALUE 1
+    MAXVALUE 9999999999
+    CACHE 1;
+
+-- 2023.04.19 권한, 메뉴, 프로그램 등록
+INSERT INTO SYS_ROLE (RGTR_NO, REG_YMD, ROLE_ID, UP_ROLE_ID, ROLE_NM) VALUES 
+('system', NOW(), 'ROLE_ADM_SYS', 'NONE', '시스템관리자'),
+('system', NOW(), 'ROLE_ADM_MNG', 'NONE', '운영관리자'),
+('system', NOW(), 'ROLE_USR_USR', 'NONE', '개인회원'),
+('system', NOW(), 'ROLE_USR_EIV', 'NONE', '투자자회원'),
+('system', NOW(), 'ROLE_USR_EBZ', 'NONE', '경영체회원'),
+('system', NOW(), 'ROLE_USR_EIS', 'NONE', '유관기관회원'),
+('system', NOW(), 'ROLE_USR_RESTRICTED', 'NONE', '비회원')
+;
+
+-- 임시사용자등록 (비밀번호 : 1234)
+INSERT INTO TB_USER(RGTR_NO, REG_YMD, JOIN_YMD, PSWD, USER_NO, MBL_TELNO, USER_ID, EML_ADDR, USER_NM) VALUES 
+('system', NOW(), TO_CHAR(NOW(),'YYYYMMDD'), 'EBkBXJGam/+4Uy/658gVt0MY2lPZw1b/0VUvt2ja6XU=', '100001', '01011112221', 'system@test.com','system@test.com','시스템관리자'),
+('system', NOW(), TO_CHAR(NOW(),'YYYYMMDD'), '+LxGnVhG1DoRI5EeXPCyyYxOc1Qmj0zSG/2H1u9vg+A=', '100002', '01011112222',  'admin@test.com', 'admin@test.com','운영관리자'),
+('system', NOW(), TO_CHAR(NOW(),'YYYYMMDD'), 'ZLn01OTh3GT4hHy94P0Z2w/60xKsN8NSQUsE739SufM=', '100003', '01011112223',   'user@test.com',  'user@test.com','일반사용자'),
+('system', NOW(), TO_CHAR(NOW(),'YYYYMMDD'), 'OeJYhQien7MK226AKjcfK4hDwJl5iCnDd0dmbxPcde4=', '100004', '01011112224',   'invt@test.com',  'invt@test.com','투자자사용자'),
+('system', NOW(), TO_CHAR(NOW(),'YYYYMMDD'), 'jbfQKW8Hh0KFhIiYGERvU/rJXbf9drhPy2pPYsr/dvs=', '100005', '01011112225',   'comp@test.com',  'comp@test.com','경영체사용자'),
+('system', NOW(), TO_CHAR(NOW(),'YYYYMMDD'), '2ObKXulYRy1Gugs1lomJ1OzMB8AhZHYyQux1Yurh1tA=', '100006', '01011112226',   'inst@test.com',  'inst@test.com','유관기관사용자')
+;
+INSERT INTO SYS_ROLE_USER(RGTR_NO, REG_YMD, USER_NO, ROLE_ID)
+SELECT 'system', NOW(), USER_NO, 
+       CASE WHEN USER_ID LIKE 'system%' THEN 'ROLE_ADM_SYS'
+            WHEN USER_ID LIKE 'admin%'  THEN 'ROLE_ADM_MNG'
+            WHEN USER_ID LIKE 'user%'   THEN 'ROLE_USR_USR'
+            WHEN USER_ID LIKE 'invt%'   THEN 'ROLE_USR_EIV'
+            WHEN USER_ID LIKE 'comp%'   THEN 'ROLE_USR_EBZ'
+            WHEN USER_ID LIKE 'inst%'   THEN 'ROLE_USR_EIS'
+            ELSE 'ROLE_USR_RESTRICTED'
+       END  
+  FROM TB_USER
+;
+
+INSERT INTO SYS_MENU (POPUP_YN, USE_YN, RGTR_NO, REG_YMD, MENU_ORDR, MENU_LEVEL, SYS_SE_CD, UP_MENU_ID, MENU_ID, MENU_NM, TRGT_URL) VALUES 
+('N', 'Y', 'system', NOW(), 1, 1, 'USR', 'NONE', 'MU_USR_INV', '투자서비스'  , '/usr/invest/fund/openSearchFund.do'),
+('N', 'Y', 'system', NOW(), 2, 1, 'USR', 'NONE', 'MU_USR_SUP', '지원서비스'  , '/usr/support/searching/listSearching.do'),
+('N', 'Y', 'system', NOW(), 3, 1, 'USR', 'NONE', 'MU_USR_INF', '정보서비스'  , '/usr/inform/bbs/openInvestGuide.do'),
+('N', 'Y', 'system', NOW(), 4, 1, 'USR', 'NONE', 'MU_USR_CUS', '고객센터'    , '/usr/inform/bbs/listNotice.do'),
+('N', 'Y', 'system', NOW(), 5, 1, 'USR', 'NONE', 'MU_USR_INT', '플랫폼소개'  , '/usr/inform/intro/openPlatform.do'),
+('N', 'Y', 'system', NOW(), 1, 1, 'ADM', 'NONE', 'MU_ADM_MAN', '대시보드'    , '/adm/main/main.do'),
+('N', 'Y', 'system', NOW(), 2, 1, 'ADM', 'NONE', 'MU_ADM_MEM', '회원관리'    , '/adm/sys/user/listUserInfo.do'),
+('N', 'Y', 'system', NOW(), 3, 1, 'ADM', 'NONE', 'MU_ADM_SUP', '지원사업관리', '/adm/support/support/openAttractBefore.do'),
+('N', 'Y', 'system', NOW(), 4, 1, 'ADM', 'NONE', 'MU_ADM_INV', '투자정보관리', '/adm/invest/fof/openFOF.do'),
+('N', 'Y', 'system', NOW(), 6, 1, 'ADM', 'NONE', 'MU_ADM_MNG', '운영관리'    , '/adm/support/pbanc/listPbanc.do'),
+('N', 'Y', 'system', NOW(), 6, 1, 'ADM', 'NONE', 'MU_ADM_BBS', '게시판관리'  , '/adm/inform/bbs/openNotice.do'),
+('N', 'Y', 'system', NOW(), 5, 1, 'ADM', 'NONE', 'MU_ADM_SVY', '설문관리'    , '/adm/inform/survey/openSurvey.do'),
+('N', 'Y', 'system', NOW(), 7, 1, 'ADM', 'NONE', 'MU_ADM_SYS', '시스템관리'  , '/adm/sys/code/listCode.do')
+;
+
+INSERT INTO SYS_MENU (POPUP_YN, USE_YN, RGTR_NO, REG_YMD, MENU_ORDR, MENU_LEVEL, SYS_SE_CD, UP_MENU_ID, MENU_ID, MENU_NM, TRGT_URL) VALUES 
+('N', 'Y', 'system', NOW(), 1, 2, 'USR', 'MU_USR_INV', 'MU_USR_INV0101', '투자자검색', '/usr/invest/fund/openSearchFund.do'),
+('N', 'Y', 'system', NOW(), 2, 2, 'USR', 'MU_USR_INV', 'MU_USR_INV0201', '경영체검색', '/usr/invest/ent/openSearchEnt.do'),
+('N', 'Y', 'system', NOW(), 3, 2, 'USR', 'MU_USR_INV', 'MU_USR_INV0301', '매칭서비스', '/usr/mypage/matching/openMatchInvest.do'),
+('N', 'Y', 'system', NOW(), 4, 2, 'USR', 'MU_USR_INV', 'MU_USR_GIS0101', 'GIS', '/usr/gis/gis/openGIS.do'),
+('N', 'Y', 'system', NOW(), 1, 2, 'USR', 'MU_USR_SUP', 'MU_USR_SUP0101', '지원사업 통합검색', '/usr/support/searching/listSearching.do'),
+('N', 'Y', 'system', NOW(), 2, 2, 'USR', 'MU_USR_SUP', 'MU_USR_SUP0201', '매칭서비스', '/usr/mypage/matching/openMatchSupport.do'),
+('N', 'Y', 'system', NOW(), 3, 2, 'USR', 'MU_USR_SUP', 'MU_USR_SUP0301', '농금원 지원사업신청', '/usr/support/attractbefore/openAttractBefore.do'),
+('N', 'Y', 'system', NOW(), 1, 2, 'USR', 'MU_USR_INF', 'MU_USR_INF0101', '투자유치가이드', '/usr/inform/bbs/openInvestGuide.do'),
+('N', 'Y', 'system', NOW(), 2, 2, 'USR', 'MU_USR_INF', 'MU_USR_INF0201', '우수투자사례', '/usr/inform/bbs/listInvestCase.do'),
+('N', 'Y', 'system', NOW(), 3, 2, 'USR', 'MU_USR_INF', 'MU_USR_INF0301', '자료실', '/usr/inform/bbs/listData.do'),
+('N', 'Y', 'system', NOW(), 4, 2, 'USR', 'MU_USR_INF', 'MU_USR_INF0401', '홍보영상', '/usr/inform/bbs/listPromotion.do'),
+('N', 'Y', 'system', NOW(), 5, 2, 'USR', 'MU_USR_INF', 'MU_USR_INF0501', '유관기관커뮤니티', '/usr/inform/bbs/listCommunity.do'),
+('N', 'Y', 'system', NOW(), 1, 2, 'USR', 'MU_USR_CUS', 'MU_USR_CUS0101', '공지사항', '/usr/inform/bbs/listNotice.do'),
+('N', 'Y', 'system', NOW(), 2, 2, 'USR', 'MU_USR_CUS', 'MU_USR_CUS0201', '자주묻는질문', '/usr/inform/bbs/listFAQ.do'),
+('N', 'Y', 'system', NOW(), 3, 2, 'USR', 'MU_USR_CUS', 'MU_USR_CUS0301', '1:1문의', '/usr/inform/bbs/formQNA.do'),
+('N', 'Y', 'system', NOW(), 4, 2, 'USR', 'MU_USR_CUS', 'MU_USR_CUS0401', '설문조사', '/usr/inform/survey/listSurvey.do'),
+('N', 'Y', 'system', NOW(), 1, 2, 'USR', 'MU_USR_INT', 'MU_USR_INT0101', '플랫폼 소개', '/usr/inform/intro/openPlatform.do'),
+('N', 'Y', 'system', NOW(), 2, 2, 'USR', 'MU_USR_INT', 'MU_USR_INT0201', '농금원 안내', '/usr/inform/intro/openAPFS.do'),
+('N', 'Y', 'system', NOW(), 3, 2, 'USR', 'MU_USR_INT', 'MU_USR_INT0301', '유관기관 안내', '/usr/inform/intro/openAgency.do'),
+
+('N', 'Y', 'system', NOW(), 1, 2, 'ADM', 'MU_ADM_MEM', 'MU_ADM_MEM0101', '사용자관리', '/adm/sys/user/listUserInfo.do'),
+('N', 'Y', 'system', NOW(), 2, 2, 'ADM', 'MU_ADM_MEM', 'MU_ADM_MEM0201', '업체관리', '/adm/invest/corp/listCompany.do'),
+('N', 'Y', 'system', NOW(), 1, 2, 'ADM', 'MU_ADM_SUP', 'MU_ADM_SUP0101', '세부지원사업관리', '/adm/support/support/openAttractBefore.do'),
+('N', 'Y', 'system', NOW(), 2, 2, 'ADM', 'MU_ADM_SUP', 'MU_ADM_SUP0201', '신청현황관리', '/adm/support/apply/openApply.do'),
+('N', 'Y', 'system', NOW(), 1, 2, 'ADM', 'MU_ADM_INV', 'MU_ADM_INV0101', '모태펀드등록', '/adm/invest/fund/listFund.do'),
+('N', 'Y', 'system', NOW(), 2, 2, 'ADM', 'MU_ADM_INV', 'MU_ADM_INV0201', '투자설명회등록', '/adm/invest/event/listEvent.do'),
+('N', 'Y', 'system', NOW(), 3, 2, 'ADM', 'MU_ADM_INV', 'MU_ADM_INV0301', '참여기업등록', '/adm/invest/event/listEventEnt.do'),
+('N', 'Y', 'system', NOW(), 4, 2, 'ADM', 'MU_ADM_INV', 'MU_ADM_INV0401', 'IR검토의견서관리', '/adm/invest/event/listIrOpnn.do'),
+('N', 'Y', 'system', NOW(), 1, 2, 'ADM', 'MU_ADM_MNG', 'MU_ADM_MNG0101', '사업공고관리', '/adm/support/pbanc/listPbanc.do'),
+('N', 'Y', 'system', NOW(), 2, 2, 'ADM', 'MU_ADM_MNG', 'MU_ADM_MNG0201', 'IR지원현황', '/adm/support/ir/openIr.do'),
+('N', 'Y', 'system', NOW(), 3, 2, 'ADM', 'MU_ADM_MNG', 'MU_ADM_MNG0301', '배너관리', '/adm/inform/banner/openBanner.do'),
+('N', 'Y', 'system', NOW(), 4, 2, 'ADM', 'MU_ADM_MNG', 'MU_ADM_MNG0401', '투자분야관리', '/adm/invest/investfield/openInvestField.do'),
+('N', 'Y', 'system', NOW(), 5, 2, 'ADM', 'MU_ADM_MNG', 'MU_ADM_MNG0501', '제출서류관리', '/adm/invest/submitfile/openSubmitFile.do'),
+('N', 'Y', 'system', NOW(), 6, 2, 'ADM', 'MU_ADM_MNG', 'MU_ADM_MNG0601', '검색어관리', '/adm/inform/bbs/openSrchWord.do'),
+('N', 'Y', 'system', NOW(), 7, 2, 'ADM', 'MU_ADM_MNG', 'MU_ADM_MNG0701', '상담일지', '/adm/inform/bbs/openDscsn.do'),
+
+('N', 'Y', 'system', NOW(), 1, 2, 'ADM', 'MU_ADM_BBS', 'MU_ADM_BBS0101', '공지사항', '/adm/inform/bbs/openNotice.do'),
+('N', 'Y', 'system', NOW(), 2, 2, 'ADM', 'MU_ADM_BBS', 'MU_ADM_BBS0201', '질의응답', '/adm/inform/bbs/openQNA.do'),
+('N', 'Y', 'system', NOW(), 3, 2, 'ADM', 'MU_ADM_BBS', 'MU_ADM_BBS0301', '자료실', '/adm/inform/bbs/openData.do'),
+('N', 'Y', 'system', NOW(), 4, 2, 'ADM', 'MU_ADM_BBS', 'MU_ADM_BBS0401', '우수투자사례', '/adm/inform/bbs/openInvestCase.do'),
+('N', 'Y', 'system', NOW(), 5, 2, 'ADM', 'MU_ADM_BBS', 'MU_ADM_BBS0501', '홍보영상', '/adm/inform/bbs/openPromotion.do'),
+('N', 'Y', 'system', NOW(), 1, 2, 'ADM', 'MU_ADM_SVY', 'MU_ADM_SVY0101', '설문관리', '/adm/inform/survey/openSurvey.do'),
+('N', 'Y', 'system', NOW(), 2, 2, 'ADM', 'MU_ADM_SVY', 'MU_ADM_SVY0201', '설문결과관리', '/adm/inform/survey/openAnswer.do'),
+('N', 'Y', 'system', NOW(), 1, 2, 'ADM', 'MU_ADM_SYS', 'MU_ADM_SYS0101', '공통코드관리', '/adm/sys/code/listCode.do'),
+('N', 'Y', 'system', NOW(), 2, 2, 'ADM', 'MU_ADM_SYS', 'MU_ADM_SYS0201', '서류코드관리', '/adm/sys/file/listPapeCode.do'),
+('N', 'Y', 'system', NOW(), 3, 2, 'ADM', 'MU_ADM_SYS', 'MU_ADM_SYS0301', '권한관리', '/adm/sys/role/listRole.do'),
+('N', 'Y', 'system', NOW(), 4, 2, 'ADM', 'MU_ADM_SYS', 'MU_ADM_SYS0401', '메뉴관리', '/adm/sys/menu/listMenu.do'),
+('N', 'Y', 'system', NOW(), 5, 2, 'ADM', 'MU_ADM_SYS', 'MU_ADM_SYS0501', '프로그램관리', '/adm/sys/prog/listProg.do'),
+('N', 'Y', 'system', NOW(), 6, 2, 'ADM', 'MU_ADM_SYS', 'MU_ADM_SYS0601', '권한별메뉴관리', '/adm/sys/role/listRoleMenu.do'),
+('N', 'Y', 'system', NOW(), 7, 2, 'ADM', 'MU_ADM_SYS', 'MU_ADM_SYS0701', '권한별프로그램관리', '/adm/sys/role/listRoleProg.do'),
+('N', 'Y', 'system', NOW(), 8, 2, 'ADM', 'MU_ADM_SYS', 'MU_ADM_SYS0801', '접속이력', '/adm/sys/log/listAccessLog.do')
+;
+
+INSERT INTO SYS_PROG (PRGRM_TYPE, USE_YN, RGTR_NO, REG_YMD, PRGRM_ORDR, SYS_SE_CD, MENU_ID, PRGRM_ID, PRGRM_NM, PRGRM_URL) VALUES 
+ ('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_MAN0101', 'PG_ADM_MAN0101', '대시보드 - ', '/adm/main/main.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_MEM0101', 'PG_ADM_MEM0101', '회원관리 - 사용자관리', '/adm/sys/user/listUserInfo.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_MEM0201', 'PG_ADM_MEM0201', '회원관리 - 업체관리', '/adm/invest/corp/listCompany.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_SUP0101', 'PG_ADM_SUP0101', '지원사업관리 - 세부지원사업관리', '/adm/support/support/openAttractBefore.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_SUP0201', 'PG_ADM_SUP0201', '지원사업관리 - 신청현황관리', '/adm/support/apply/openApply.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_INV0101', 'PG_ADM_INV0101', '투자정보관리 - 모태펀드등록', '/adm/invest/fund/listFund.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_INV0201', 'PG_ADM_INV0201', '투자정보관리 - 투자설명회등록', '/adm/invest/event/listEvent.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_INV0301', 'PG_ADM_INV0301', '투자정보관리 - 참여기업등록', '/adm/invest/event/listEventEnt.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_INV0401', 'PG_ADM_INV0401', '투자정보관리 - IR검토의견서관리', '/adm/invest/event/listIrOpnn.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_MNG0101', 'PG_ADM_MNG0101', '운영관리 - 사업공고관리', '/adm/invest/announce/openAnnounce.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_MNG0201', 'PG_ADM_MNG0201', '운영관리 - IR지원현황', '/adm/support/ir/openIr.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_MNG0301', 'PG_ADM_MNG0301', '운영관리 - 배너관리', '/adm/inform/banner/openBanner.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_MNG0401', 'PG_ADM_MNG0401', '운영관리 - 투자분야관리', '/adm/invest/investfield/openInvestField.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_MNG0501', 'PG_ADM_MNG0501', '운영관리 - 제출서류관리', '/adm/invest/submitfile/openSubmitFile.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_MNG0601', 'PG_ADM_MNG0601', '운영관리 - 검색어관리', '/adm/inform/bbs/openSrchWord.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_MNG0701', 'PG_ADM_MNG0701', '운영관리 - 상담일지', '/adm/invest/dscsn/openDscsn.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_BBS0101', 'PG_ADM_BBS0101', '게시판관리 - 공지사항', '/adm/inform/bbs/openNotice.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_BBS0201', 'PG_ADM_BBS0201', '게시판관리 - 질의응답', '/adm/inform/bbs/openQNA.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_BBS0301', 'PG_ADM_BBS0301', '게시판관리 - 자료실', '/adm/inform/bbs/openData.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_BBS0401', 'PG_ADM_BBS0401', '게시판관리 - 우수투자사례', '/adm/inform/bbs/openInvestCase.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_BBS0501', 'PG_ADM_BBS0501', '게시판관리 - 홍보영상', '/adm/inform/bbs/openPromotion.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_SVY0101', 'PG_ADM_SVY0101', '설문관리 - 설문관리', '/adm/inform/survey/openSurvey.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_SVY0201', 'PG_ADM_SVY0201', '설문관리 - 설문결과관리', '/adm/inform/survey/openAnswer.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_SYS0101', 'PG_ADM_SYS0101', '시스템관리 - 공통코드관리', '/adm/sys/code/listCode.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_SYS0201', 'PG_ADM_SYS0201', '시스템관리 - 서류코드관리', '/adm/sys/file/listPapeCode.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_SYS0301', 'PG_ADM_SYS0301', '시스템관리 - 권한관리', '/adm/sys/role/listRole.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_SYS0401', 'PG_ADM_SYS0401', '시스템관리 - 메뉴관리', '/adm/sys/menu/listMenu.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_SYS0501', 'PG_ADM_SYS0501', '시스템관리 - 프로그램관리', '/adm/sys/prog/listProg.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_SYS0601', 'PG_ADM_SYS0601', '시스템관리 - 권한별메뉴관리', '/adm/sys/role/listRoleMenu.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_SYS0701', 'PG_ADM_SYS0701', '시스템관리 - 권한별프로그램관리', '/adm/sys/role/listRoleProg.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_SYS0801', 'PG_ADM_SYS0801', '시스템관리 - 접속이력', '/adm/sys/log/listAccessLog.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_BBS0101', 'PG_ADM_BBS0102', '게시판관리 - 공지사항 상세조회', '/adm/inform/bbs/viewNotice.do')
+,('url', 'Y', 'system', NOW(), 0, 'ADM', 'MU_ADM_BBS0101', 'PG_ADM_BBS0103', '게시판관리 - 공지사항 등록수정', '/adm/inform/bbs/formNotice.do')
+;
+
+INSERT INTO SYS_PROG (PRGRM_TYPE, USE_YN, RGTR_NO, REG_YMD, PRGRM_ORDR, SYS_SE_CD, MENU_ID, PRGRM_ID, PRGRM_NM, PRGRM_URL) VALUES 
+ ('url', 'Y', 'system', NOW(), 0, 'USR', NULL, 'PG_USR_MAN0101', '사용자메인', '/usr/main/main.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', NULL, 'PG_USR_MEM0201', '사용자로그인', '/com/common/login.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_INV0101', 'PG_USR_INV0101', '투자서비스 - 투자자검색', '/usr/invest/fund/openSearchFund.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_INV0201', 'PG_USR_INV0201', '투자서비스 - 경영체검색', '/usr/invest/ent/openSearchEnt.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_INV0301', 'PG_USR_INV0301', '투자서비스 - 매칭서비스', '/usr/invest/matching/openMatchInvest.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_GIS0101', 'PG_USR_GIS0101', '투자서비스 - GIS', '/usr/gis/gis/openGIS.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_SUP0101', 'PG_USR_SUP0101', '지원서비스 - 지원사업 통합검색', '/usr/support/searching/listSearching.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_SUP0201', 'PG_USR_SUP0201', '지원서비스 - 매칭서비스', '/usr/support/matching/openMatchSupport.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_SUP0301', 'PG_USR_SUP0301', '지원서비스 - 농금원 지원사업신청', '/usr/support/attractbefore/openAttractBefore.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_INF0101', 'PG_USR_INF0101', '정보서비스 - 투자유치가이드', '/usr/inform/bbs/openInvestGuide.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_INF0201', 'PG_USR_INF0201', '정보서비스 - 우수투자사례', '/usr/inform/bbs/listInvestCase.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_INF0301', 'PG_USR_INF0301', '정보서비스 - 자료실', '/usr/inform/bbs/listData.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_INF0401', 'PG_USR_INF0401', '정보서비스 - 홍보영상', '/usr/inform/bbs/listPromotion.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_INF0501', 'PG_USR_INF0501', '정보서비스 - 유관기관커뮤니티', '/usr/inform/bbs/listCommunity.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_CUS0101', 'PG_USR_CUS0101', '고객센터 - 공지사항', '/usr/inform/bbs/listNotice.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_CUS0201', 'PG_USR_CUS0201', '고객센터 - 자주묻는질문', '/usr/inform/bbs/listFAQ.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_CUS0301', 'PG_USR_CUS0301', '고객센터 - 1:1문의', '/usr/inform/bbs/formQNA.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_CUS0401', 'PG_USR_CUS0401', '고객센터 - 설문조사', '/usr/inform/survey/listSurvey.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_INT0101', 'PG_USR_INT0101', '플랫폼소개 - 플랫폼 소개', '/usr/inform/intro/openPlatform.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_INT0201', 'PG_USR_INT0201', '플랫폼소개 - 농금원 안내', '/usr/inform/intro/openAPFS.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', 'MU_USR_INT0301', 'PG_USR_INT0301', '플랫폼소개 - 유관기관 안내', '/usr/inform/intro/openAgency.do')
+;
+
+-- 회원가입 프로그램등록
+INSERT INTO SYS_PROG (PRGRM_TYPE, USE_YN, RGTR_NO, REG_YMD, PRGRM_ORDR, SYS_SE_CD, MENU_ID, PRGRM_ID, PRGRM_NM, PRGRM_URL) VALUES 
+ ('url', 'Y', 'system', NOW(), 0, 'USR', NULL, 'PG_USR_MEM0305', '회원가입 - 가입회원선택', '/com/user/openJoin.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', NULL, 'PG_USR_MEM0306', '회원가입 - 약관동의'    , '/com/user/openAgree.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', NULL, 'PG_USR_MEM0307', '회원가입 - 기본정보입력', '/com/user/openForm.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', NULL, 'PG_USR_MEM0308', '회원가입 - 기업정보입력', '/com/user/openCorp.do')
+,('url', 'Y', 'system', NOW(), 0, 'USR', NULL, 'PG_USR_MEM0309', '회원가입 - 가입완료'    , '/com/user/doneJoin.do')
+;
+
+-- 메뉴권한등록
+INSERT INTO SYS_ROLE_MENU (RGTR_NO, REG_YMD, ROLE_ID, MENU_ID) SELECT 'system', NOW(), ROLE_ID, MENU_ID FROM (SELECT MENU_ID FROM SYS_MENU WHERE SYS_SE_CD = 'USR') A, (SELECT ROLE_ID FROM SYS_ROLE) B;
+INSERT INTO SYS_ROLE_MENU (RGTR_NO, REG_YMD, ROLE_ID, MENU_ID) SELECT 'system', NOW(), ROLE_ID, MENU_ID FROM (SELECT MENU_ID FROM SYS_MENU WHERE SYS_SE_CD = 'ADM') A, (SELECT ROLE_ID FROM SYS_ROLE WHERE ROLE_ID IN ('ROLE_ADM_SYS')) B;
+INSERT INTO SYS_ROLE_MENU (RGTR_NO, REG_YMD, ROLE_ID, MENU_ID) SELECT 'system', NOW(), ROLE_ID, MENU_ID FROM (SELECT MENU_ID FROM SYS_MENU WHERE SYS_SE_CD = 'ADM' AND MENU_ID NOT LIKE 'MU_ADM_SYS%') A, (SELECT ROLE_ID FROM SYS_ROLE WHERE ROLE_ID IN ('ROLE_ADM_MNG')) B;
+
+-- 프로그램등록 (관리자시스템,사용자시스템 - 관리자)
+INSERT INTO SYS_ROLE_PROG (RGTR_NO, REG_YMD, ROLE_ID, PRGRM_ID) SELECT 'system', NOW(), 'ROLE_ADM_SYS', PRGRM_ID FROM SYS_PROG;
+INSERT INTO SYS_ROLE_PROG (RGTR_NO, REG_YMD, ROLE_ID, PRGRM_ID) SELECT 'system', NOW(), 'ROLE_ADM_MNG', PRGRM_ID FROM SYS_PROG WHERE PRGRM_ID LIKE 'PG_ADM_%' AND PRGRM_ID NOT LIKE 'PG_ADM_SYS%';
+INSERT INTO SYS_ROLE_PROG (RGTR_NO, REG_YMD, ROLE_ID, PRGRM_ID) SELECT 'system', NOW(), 'ROLE_ADM_MNG', PRGRM_ID FROM SYS_PROG WHERE PRGRM_ID LIKE 'PG_USR_%' AND MENU_ID IS NOT NULL;
+
+-- 프로그램등록 (전체권한)
+INSERT INTO SYS_ROLE_PROG (RGTR_NO, REG_YMD, ROLE_ID, PRGRM_ID) SELECT 'system', NOW(), ROLE_ID, PRGRM_ID FROM 
+(SELECT PRGRM_ID FROM SYS_PROG WHERE PRGRM_ID IN (
+	'PG_USR_INV0101','PG_USR_INF0101','PG_USR_INF0201','PG_USR_INF0301','PG_USR_INF0401','PG_USR_SUP0101',
+	'PG_USR_CUS0101','PG_USR_CUS0201','PG_USR_CUS0301','PG_USR_INT0101','PG_USR_INT0201','PG_USR_INT0301'
+)) A, 
+(SELECT ROLE_ID  FROM SYS_ROLE WHERE ROLE_ID IN ('ROLE_USR_USR','ROLE_USR_EIV','ROLE_USR_EBZ','ROLE_USR_EIS','ROLE_USR_RESTRICTED')) B;
+
+-- 프로그램등록 (설문조사)
+INSERT INTO SYS_ROLE_PROG (RGTR_NO, REG_YMD, ROLE_ID, PRGRM_ID) SELECT 'system', NOW(), ROLE_ID, 'PG_USR_CUS0401' FROM SYS_ROLE WHERE ROLE_ID IN ('ROLE_USR_USR','ROLE_USR_EIV','ROLE_USR_EBZ','ROLE_USR_EIS');
+
+-- 프로그램등록 (투자서비스-매칭서비스)
+INSERT INTO SYS_ROLE_PROG (RGTR_NO, REG_YMD, ROLE_ID, PRGRM_ID) SELECT 'system', NOW(), ROLE_ID, 'PG_USR_INV0301' FROM SYS_ROLE WHERE ROLE_ID IN ('ROLE_USR_EIV','ROLE_USR_EBZ','ROLE_USR_EIS');
+
+-- 프로그램등록 (투자서비스-경영체검색/매칭서비스)
+INSERT INTO SYS_ROLE_PROG (RGTR_NO, REG_YMD, ROLE_ID, PRGRM_ID) 
+SELECT 'system', NOW(), ROLE_ID, PRGRM_ID FROM 
+(SELECT PRGRM_ID FROM SYS_PROG WHERE PRGRM_ID IN ('PG_USR_INV0201','PG_USR_GIS0101')) A, 
+(SELECT ROLE_ID  FROM SYS_ROLE WHERE ROLE_ID  IN ('ROLE_USR_EIV'  ,'ROLE_USR_EIS'  )) B;
+
+-- 프로그램등록 (지원서비스)
+INSERT INTO SYS_ROLE_PROG (RGTR_NO, REG_YMD, ROLE_ID, PRGRM_ID) 
+SELECT 'system', NOW(), ROLE_ID, PRGRM_ID FROM 
+(SELECT PRGRM_ID FROM SYS_PROG WHERE PRGRM_ID IN ('PG_USR_SUP0201','PG_USR_SUP0301')) A, 
+(SELECT ROLE_ID  FROM SYS_ROLE WHERE ROLE_ID  IN ('ROLE_USR_USR'  ,'ROLE_USR_EBZ'  )) B;
+
+-- 프로그램등록 (유관기관커뮤니티)
+INSERT INTO SYS_ROLE_PROG (RGTR_NO, REG_YMD, ROLE_ID, PRGRM_ID) 
+SELECT 'system', NOW(), ROLE_ID, PRGRM_ID FROM 
+(SELECT PRGRM_ID FROM SYS_PROG WHERE PRGRM_ID IN ('PG_USR_INF0501')) A, 
+(SELECT ROLE_ID  FROM SYS_ROLE WHERE ROLE_ID  IN ('ROLE_USR_EIS'  )) B;
+
+-- 사용자메인 프로그램권한 제외
+DELETE FROM SYS_ROLE_PROG WHERE PRGRM_ID = 'PG_USR_MAN0101';
+
+
+

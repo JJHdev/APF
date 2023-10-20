@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Search">
+    
+	<!-- 인기검색어 조회 -->
+    <select id="listSrchWrd" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+        SELECT count(srchwrd) cnt, srchwrd
+          FROM sys_srchwrd 
+          GROUP BY srchwrd
+          ORDER BY cnt DESC
+          LIMIT 3
+    </select>
+
+    <!-- 게시판 등록 -->
+    <insert id="regiSrchWrd" parameterType="java.util.HashMap">
+    	<selectKey keyProperty="sn" resultType="long" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_SRCHWRD')
+    	</selectKey>
+        INSERT 
+          INTO sys_srchwrd 
+             ( sn,
+               srchwrd,
+               ip_addr,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{sn},
+               TRIM(#{srchText}),
+               #{ipAddr},
+               #{gsUserNo},
+               NOW()
+             )
+    </insert>
+    
+    <!-- 통합검색 메뉴목록조회 -->
+    <select id="listSearchMenu" resultType="hashmap" parameterType="hashmap">
+        SELECT A.MENU_ID     AS "menuId",
+               A.MENU_NM     AS "menuNm",
+               A.TRGT_URL    AS "trgtUrl"
+          FROM SYS_MENU A
+         WHERE A.MENU_ID LIKE 'MU_USR_SRC%'
+           AND A.UP_MENU_ID != 'NONE'
+         ORDER
+            BY MENU_ORDR
+    </select>
+
+</mapper>

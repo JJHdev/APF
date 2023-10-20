@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Gis">
+    <!-- ==========================	-->
+    <!--           공통 sql			-->
+    <!-- ==========================	-->
+    <sql id="Sql-Where">
+    </sql>
+    <sql id="Sql-Column">
+    </sql>
+
+    <!-- 업체정보 목록조회 -->
+    <select id="listEnt" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY
+               A.bzenty_no
+    </select>
+    <select id="listEntCount" resultType="int" parameterType="business.usr.invest.service.EntVO">
+        SELECT COUNT(1) 
+          FROM tb_ent A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 업체정보 상세조회 -->
+    <select id="viewEnt" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent A
+         WHERE 1 = 1
+           AND A.bzenty_no = #{bzentyNo}
+    </select>
+    
+    <!-- 경영체 현황 차트 조회 -->
+    <select id="selectMgmtChartDataList" parameterType="EgovMap" resultType="EgovMap">
+		WITH ent AS (
+			SELECT E.lcinfo
+			FROM tb_ent E
+			WHERE (1=1) 
+				AND (SELECT STRING_AGG(R1.fld_cd,',')
+				   	 FROM tb_ent_rlm R1
+				 	 WHERE bzenty_no = E.bzenty_no
+			    		AND fld_se_cd = 'B')  LIKE '%'||#{bizTypeCode}||'%'
+			
+				AND (SELECT STRING_AGG(R2.fld_cd,',')
+			   		 FROM tb_ent_rlm R2
+			  		 WHERE bzenty_no = E.bzenty_no
+			    		AND fld_se_cd = 'I')  LIKE '%'||#{investTypeCode}||'%'
+		    AND E.lcinfo notnull
+		)
+		SELECT 
+			B.sgg_nm, 
+			count(B.sgg_nm) AS mgmtSum
+		FROM ent A, tb_sgg B
+		WHERE 
+			ST_Intersects(ST_SetSRID(A.lcinfo, 4326), B.sgg_lcinfo)
+		GROUP BY B.sgg_nm
+	</select>
+	
+	<!-- 자본규모 현황 차트 조회 -->
+	<select id="selectScaleChartDataList" parameterType="EgovMap" resultType="EgovMap">
+		WITH ent AS (
+		 	SELECT D.BZENTY_NO as BZENTY_NO
+			     , AVG(C.FNNR_AMT) as AVG_FNNR_AMT
+				 , E.LCINFO as LCINFO
+			FROM TB_ENT_FNNR C 
+			  	LEFT OUTER JOIN (SELECT B.BZENTY_NO as BZENTY_NO
+			    	, MAX(IR_NO) AS IR_NO
+			        FROM TB_ENT_IR B
+			        WHERE
+			        	BZENTY_NO IN(
+			        		SELECT BZENTY_NO FROM TB_ENT A
+			        		WHERE 1=1
+							AND (SELECT STRING_AGG(R1.fld_cd,',')
+							   	 FROM tb_ent_rlm R1
+							 	 WHERE bzenty_no = A.bzenty_no
+						    		AND fld_se_cd = 'B')  LIKE '%'||#{bizTypeCode}||'%'
+							AND (SELECT STRING_AGG(R2.fld_cd,',')
+						   		 FROM tb_ent_rlm R2
+						  		 WHERE bzenty_no = A.bzenty_no
+						    		AND fld_se_cd = 'I')  LIKE '%'||#{investTypeCode}||'%'
+			        	)
+		   		GROUP BY B.BZENTY_NO ) D
+		   	ON C.IR_NO = D.IR_NO
+		   	LEFT OUTER JOIN TB_ENT E
+		   	ON D.BZENTY_NO = E.BZENTY_NO
+		   	WHERE D.BZENTY_NO NOTNULL
+			   	AND C.FNNR_ACNT_CD    = '7001170100'    /* 자본금 계정코드 */
+				AND E.LCINFO NOTNULL
+			GROUP BY D.BZENTY_NO, E.LCINFO
+		)
+		 SELECT 
+		 	B.sgg_nm,
+		    ROUND(AVG(A.AVG_FNNR_AMT)*1000) as AVG_FNNR_AMT
+		 FROM ent A, tb_sgg as B
+		 WHERE
+		    ST_Intersects(ST_SetSRID(A.lcinfo, 4326), B.sgg_lcinfo)
+		 GROUP BY B.sgg_nm
+		 ORDER BY B.sgg_nm;
+	</select>
+	
+</mapper>

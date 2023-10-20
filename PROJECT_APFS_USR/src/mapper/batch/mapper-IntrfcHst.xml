@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="IntrfcHst">
+
+    <!-- ======================== -->
+    <!--  공통 sql                 -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(sn)">
+            AND (A.sn = #{sn})
+        </if>
+		<if test="@common.util.CommUtils@isNotEmpty(linkCd)">
+        	AND (A.link_cd = #{linkCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(pvsnInstId)">
+        	AND (A.pvsn_inst_id = #{pvsnInstId})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(rcptnInstId)">
+        	AND (A.rcptn_inst_id = #{rcptnInstId})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(trsmrcvSeCd)">
+        	AND (A.trsmrcv_se_cd = #{trsmrcvSeCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(prcsRsltCd)">
+        	AND (A.prcs_rslt_cd = #{prcsRsltCd})
+        </if>
+    </sql>
+    
+    <sql id="Sql-Column">
+    	A.sn											AS "sn",
+    	A.link_cd										AS "linkCd",
+    	A.pvsn_inst_id									AS "pvsnInstId",
+    	A.rcptn_inst_id									AS "rcptnInstId",
+    	A.trsmrcv_se_cd									AS "trsmrcvSeCd",
+    	A.ocrn_dt										AS "ocrnDt",
+    	A.prcs_rslt_cd									AS "prcsRsltCd",
+    	A.rgtr_no										AS "rgtrNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')	AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')				AS "regDate",
+		A.mdfr_no										AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')	AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')				AS "mdfDate",
+		FN_GET_USERNM(A.rgtr_no)						AS "rgtrNm"
+    </sql>
+
+    <!-- 연계이력 로그 목록조회 -->
+    <select id="listIntrfcHst" resultType="java.util.HashMap" parameterType="business.batch.service.IntrfcHstVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM sys_intrfc_hst A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY 
+               A.sn DESC
+    </select>
+    <select id="listIntrfcHstCount" resultType="int" parameterType="business.batch.service.IntrfcHstVO">
+        SELECT COUNT(1) 
+          FROM sys_intrfc_hst A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 연계이력 로그 상세조회 -->
+    <select id="viewIntrfcHst" resultType="business.batch.service.IntrfcHstVO" parameterType="business.batch.service.IntrfcHstVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM sys_intrfc_hst A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 연계이력 로그 등록 -->
+    <insert id="regiIntrfcHst" parameterType="business.batch.service.IntrfcHstVO">
+    	<selectKey keyProperty="sn" resultType="long" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_INTRFC_HST')
+    	</selectKey>
+        INSERT 
+          INTO sys_intrfc_hst 
+             ( sn,
+               link_cd,
+               pvsn_inst_id,
+               rcptn_inst_id,
+               trsmrcv_se_cd,
+               ocrn_dt,
+               prcs_rslt_cd,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( #{sn},
+               #{linkCd},
+               #{pvsnInstId},
+               #{rcptnInstId},
+               #{trsmrcvSeCd},
+               NOW(),
+               #{prcsRsltCd},
+               '100000',
+               NOW()  
+             )
+    </insert>
+
+    <!-- 연계이력 로그 삭제 -->
+    <update id="deltIntrfcHst" parameterType="business.batch.service.IntrfcHstVO">
+        DELETE 
+          FROM sys_intrfc_hst
+         WHERE sn = #{sn}
+    </update>
+
+</mapper>

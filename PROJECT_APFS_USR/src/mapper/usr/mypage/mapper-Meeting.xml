@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Meeting">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+        A.sn                                           AS "sn",
+        A.aplcnt_no                                    AS "aplcntNo",
+        A.trgt_bzenty_no                               AS "trgtBzentyNo",
+        FN_GET_ENTNM(A.trgt_bzenty_no)                 AS "trgtBzentyNm",
+        A.aply_cn                                      AS "aplyCn",
+        A.aply_ymd                                     AS "aplyYmd",
+        A.rspns_cn                                     AS "rspnsCn",
+        A.rspns_ymd                                    AS "rspnsYmd",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate",
+		FN_GET_USERNM(A.aplcnt_no)                     AS "aplcntNm"
+    </sql>
+    
+    <sql id="Sql-Where">
+    	<!-- 미팅신청자의 사용상태가 활성상태인 항목만 조회 -->
+    	EXISTS (SELECT 1
+    	          FROM tb_user
+    	         WHERE user_no     = A.aplcnt_no
+    	           AND use_stts_cd = '1')
+		<!-- 경영체 기준인 경우 : 마이페이지 - 문의내역 - 투자자의 미팅요청내역 -->
+        <if test='srchMode != null and "E".equals(srchMode)'>
+            AND A.trgt_bzenty_no = #{gsBzentyNo}
+        </if>
+		<!-- 투자자 기준인 경우 : 마이페이지 - 신청내역 - 미팅신청내역 -->
+        <if test='srchMode != null and "I".equals(srchMode)'>
+            AND A.aplcnt_no = #{gsUserNo}
+        </if>
+    </sql>
+
+    <!-- 미팅신청 목록조회 -->
+    <select id="listMeeting" resultType="java.util.HashMap" parameterType="business.usr.mypage.service.MeetingVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_mtg_aply A
+         WHERE <include refid="Sql-Where"/>
+         ORDER BY 
+         	   <if test="@common.util.CommUtils@isNotEmpty(ordrField)">
+         	   		#{ordrField}::NUMERIC #{ordrType}::NUMERIC,
+         	   </if>
+         	   <if test="@common.util.CommUtils@isEmpty(ordrField)">
+		               A.reg_ymd DESC,
+		        </if>
+               A.sn
+    </select>
+    <select id="listMeetingCount" resultType="int" parameterType="business.usr.mypage.service.MeetingVO">
+        SELECT COUNT(1) 
+          FROM tb_mtg_aply A
+         WHERE <include refid="Sql-Where"/>
+    </select>
+    
+    <!-- 미팅신청 상세조회 -->
+    <select id="viewMeeting" resultType="business.usr.mypage.service.MeetingVO" parameterType="business.usr.mypage.service.MeetingVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_mtg_aply A
+         WHERE sn = #{sn}
+    </select>
+
+    <!-- 미팅신청 등록 -->
+    <insert id="regiMeeting" parameterType="business.usr.mypage.service.MeetingVO">
+        INSERT 
+          INTO tb_mtg_aply 
+             ( sn,
+               aplcnt_no,
+               trgt_bzenty_no,
+               aply_cn,
+               aply_ymd,
+               rspns_cn,
+               rspns_ymd,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( NEXTVAL('seq_mtg_aply'),
+               #{aplcntNo},
+               #{trgtBzentyNo},
+               #{aplyCn},
+               TO_CHAR(NOW(),'YYYYMMDD'),
+               #{rspnsCn},
+               #{rspnsYmd},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 미팅신청 수정 -->
+    <update id="updtMeeting" parameterType="business.usr.mypage.service.MeetingVO">
+        UPDATE tb_mtg_aply 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(aplcntNo            )"> aplcnt_no            = #{aplcntNo            },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(trgtBzentyNo        )"> trgt_bzenty_no       = #{trgtBzentyNo        },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(aplyCn              )"> aply_cn              = #{aplyCn              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(aplyYmd             )"> aply_ymd             = #{aplyYmd             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rspnsCn             )"> rspns_cn             = #{rspnsCn             },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rspnsYmd            )"> rspns_ymd            = #{rspnsYmd            },</if>  
+               mdfcn_ymd = NOW()
+         WHERE sn = #{sn}
+    </update>
+
+    <!-- 미팅신청 삭제 -->
+    <delete id="deltMeeting" parameterType="business.usr.mypage.service.MeetingVO">
+        DELETE 
+          FROM tb_mtg_aply 
+         WHERE sn = #{sn}
+    </delete> 
+
+</mapper>

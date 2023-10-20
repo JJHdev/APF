@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="FundInvstr">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(fundNo)">
+            AND A.fund_no = #{fundNo}
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(bzentyNo)">
+            AND A.bzenty_no = #{invtBzentyNo}
+        </if>
+    </sql>
+    <sql id="Sql-Column">
+        A.fund_no                                      AS "fundNo",
+        A.bzenty_no                                    AS "invtBzentyNo",
+        COALESCE(
+            A.invt_bzenty_nm, 
+            FN_GET_ENTNM(A.bzenty_no)
+        )                                              AS "invtBzentyNm",
+        A.brno                                         AS "invtBrno",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 펀드투자자(조합원) 목록조회 -->
+    <select id="listFundInvstr" resultType="java.util.HashMap" parameterType="business.usr.invest.service.FundVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_fund_invstr A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY 
+               A.fund_no,
+               A.bzenty_no
+    </select>
+    <select id="listFundInvstrCount" resultType="int" parameterType="business.usr.invest.service.FundVO">
+        SELECT COUNT(1) 
+          FROM tb_fund_invstr A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 펀드투자자(조합원) 상세조회 -->
+    <select id="viewFundInvstr" resultType="business.usr.invest.service.FundVO" parameterType="business.usr.invest.service.FundVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_fund_invstr A
+         WHERE fund_no   = #{fundNo}
+           AND bzenty_no = #{invtBzentyNo}
+    </select>
+
+    <!-- 펀드투자자(조합원) 등록 -->
+    <insert id="regiFundInvstr" parameterType="business.usr.invest.service.FundVO">
+        INSERT 
+          INTO tb_fund_invstr 
+             ( fund_no,
+               bzenty_no,
+               invt_bzenty_nm,
+               brno,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{fundNo},
+               #{invtBzentyNo},
+               #{invtBzentyNm},
+               #{invtBrno},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 펀드투자자(조합원) 수정 -->
+    <update id="updtFundInvstr" parameterType="business.usr.invest.service.FundVO">
+        UPDATE tb_fund_invstr 
+           SET MDFR_NO   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(invtBzentyNm        )"> invt_bzenty_nm       = #{invtBzentyNm        },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(brno                )"> brno                 = #{invtBrno            },</if>  
+               MDFCN_YMD = NOW()
+         WHERE fund_no   = #{fundNo}
+           AND bzenty_no = #{invtBzentyNo}
+    </update>
+
+    <!-- 펀드투자자(조합원) 삭제 -->
+    <delete id="deltFundInvstr" parameterType="business.usr.invest.service.FundVO">
+        DELETE 
+          FROM tb_fund_invstr 
+         WHERE fund_no   = #{fundNo}
+           AND bzenty_no = #{invtBzentyNo}
+    </delete> 
+
+</mapper>

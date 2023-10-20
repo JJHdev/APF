@@ -1,0 +1,22 @@
+##========================================================================================
+## 버튼리스트 HTML 영역
+## [각 프로젝트별로 퍼블리싱 HTML 적용]
+##========================================================================================
+
+#if (${isBtnAuth} == true)
+    #if ($type && $type == 'button')
+      <button type="button" id='${id}' class='${cls}' style='${style}'>
+      #if ($iconCls)
+        <i class="${iconCls}"></i>
+      #end
+      ${title}
+      </button>
+    #else
+      <a href='#' id='${id}' class='${cls}' style='${style}'>
+      #if ($iconCls)
+        <i class="${iconCls}"></i>
+      #end
+      ${title}
+      </a>
+    #end
+#end

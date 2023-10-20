@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Survey">
+    <!-- ==========================	-->
+    <!--           공통 sql			-->
+    <!-- ==========================	-->
+    <select id="selectSurveyList" resultType="EgovMap" parameterType="EgovMap">
+    	<![CDATA[
+			SELECT A.srvy_no, A.srvy_cn, A.srvy_trgt_cd, A.srvy_bgng_ymd, A.srvy_end_ymd, B.user_nm
+			FROM tb_qstnn_mng as A, tb_user as B
+			WHERE A.rgtr_no = B.user_no
+			AND A.SRVY_TRGT_CD IN (#{trgtCode}, '')
+				ORDER BY A.reg_ymd
+				LIMIT #{size}
+				OFFSET (#{page} - 1) * #{size}
+		]]>
+	</select>
+	
+	<select id="selectParticiSurveyList" resultType="EgovMap" parameterType="EgovMap">
+    	SELECT srvy_no FROM tb_qstnn_rspns WHERE user_no = #{gsUserNo}
+			GROUP BY srvy_no, user_no
+	</select>
+	
+	
+	<select id="selectSurveyListPagnation" resultType="java.util.HashMap" parameterType="business.usr.inform.service.SurveyVO">
+	    SELECT
+	        A.srvy_no AS "srvyNo",
+	        A.srvy_cn AS "srvyCn",
+	        A.srvy_trgt_cd AS "srvyTrgtCd",
+	        A.srvy_bgng_ymd AS "srvyBgngYmd",
+	        A.srvy_end_ymd AS "srvyEndYmd",
+	        B.user_nm AS "userNm",
+	        CASE
+	            WHEN
+	                (SELECT C.srvy_no
+	                 FROM tb_qstnn_rspns C
+	                 WHERE C.user_no = #{gsUserNo} AND C.srvy_no = A.srvy_no
+	                 GROUP BY C.srvy_no, C.user_no) IS NOT NULL THEN '참여완료'
+	            ELSE '미참여'
+	        END AS "particiPation"
+	    FROM tb_qstnn_mng A, tb_user B
+	    WHERE A.rgtr_no = B.user_no
+	    AND A.SRVY_TRGT_CD IN (#{trgtCode}, '')
+	    ORDER BY A.reg_ymd DESC
+	</select>
+    <select id="selectSurveyListPagnationCount" resultType="int" parameterType="business.usr.inform.service.SurveyVO">
+		SELECT COUNT(1) 
+		FROM tb_qstnn_mng as A, tb_user as B
+		WHERE A.rgtr_no = B.user_no
+		AND A.SRVY_TRGT_CD IN (#{trgtCode}, '')
+    </select>
+	
+	<select id="selectSurveyInfoList" resultType="EgovMap" parameterType="EgovMap">
+    	SELECT * 
+		FROM tb_qstnn_qesitm 
+		WHERE srvy_no = #{srvyNo}
+		ORDER BY qitem_no
+	</select>
+	
+	<select id="selectSurveyInfoItemList" resultType="EgovMap" parameterType="EgovMap">
+    	SELECT * 
+		FROM tb_qesitm_item 
+		WHERE qitem_no = #{qitemNo}
+		ORDER BY qitem_no
+	</select>
+	
+	<select id="selectSurveyAttendCnt" resultType="EgovMap" parameterType="EgovMap">
+    	SELECT count(A.user_no) FROM(
+			SELECT distinct user_no FROM tb_qstnn_rspns 
+			WHERE srvy_no = #{srvyNo} 
+			AND user_no is not null) A
+	</select>
+	
+	<select id="selectSurveyPopHeadInfo" resultType="EgovMap" parameterType="EgovMap">
+    	SELECT A.srvy_no, A.srvy_cn, A.srvy_bgng_ymd, A.srvy_end_ymd, B.user_nm
+		FROM tb_qstnn_mng as A, tb_user as B
+		WHERE A.rgtr_no = B.user_no
+		AND A.srvy_no = #{srvyNo}
+	</select>
+	
+	<insert id="insertSurveyData" parameterType="EgovMap">
+		INSERT INTO tb_qstnn_rspns(
+			rspns_no, srvy_no, user_no, rgtr_no, reg_ymd, mdfr_no, mdfcn_ymd)
+			VALUES (nextval('seq_qstnn_rspns'), #{srvyNo}, #{userNo}, #{userNo}, now(), null, null);
+	</insert>
+	
+	<insert id="insertSurveyDetail" parameterType="EgovMap">
+		INSERT INTO tb_qstnn_rspns_dtls(
+			sn, rspns_no, qitem_no, artcl_no, rspns_cn, rgtr_no, reg_ymd, mdfr_no, mdfcn_ymd)
+			VALUES (nextval('seq_qstnn_rspns_dtls'), (SELECT last_value FROM seq_qstnn_rspns), #{qitemNo}, #{artclNo}, null, #{userNo}, now(), null, null);
+	</insert>
+	
+	<insert id="insertSurveyDetailText" parameterType="EgovMap">
+		INSERT INTO tb_qstnn_rspns_dtls(
+			sn, rspns_no, qitem_no, artcl_no, rspns_cn, rgtr_no, reg_ymd, mdfr_no, mdfcn_ymd)
+			VALUES (nextval('seq_qstnn_rspns_dtls'), (SELECT last_value FROM seq_qstnn_rspns), #{qitemNo}, #{artclNo}, #{rspnsCn}, #{userNo}, now(), null, null);
+	</insert>
+	
+</mapper>

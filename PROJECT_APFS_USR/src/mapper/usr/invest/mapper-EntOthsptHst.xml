@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EntOthsptHst">
+
+    <sql id="Sql-Column">
+        A.ir_no                                        AS "irNo",
+        A.sn                                           AS "sn",
+        A.biz_nm                                       AS "bizNm",
+        A.inst_nm                                      AS "instNm",
+        A.fld_cn                                       AS "fldCn",
+        A.dtl_cn                                       AS "dtlCn",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 정부기타지원이력 목록조회 -->
+    <select id="listEntOthsptHst" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_othspt_hst A
+         WHERE A.ir_no    = #{irNo}
+         ORDER BY 
+               A.ir_no,
+               A.sn
+    </select>
+
+    <!-- 정부지원이력 기관별 합계건수 조회 -->
+    <select id="listEntOthsptHstSummary" resultType="java.util.HashMap" parameterType="business.usr.invest.service.EntVO">
+    	SELECT C.cd_id    AS "code"
+    	     , C.cd_nm    AS "text"
+    	     , CASE WHEN C.cd_id = '99'
+    	            THEN (SELECT COUNT(*)
+                            FROM tb_ent_othspt_hst D
+                           WHERE ir_no     = #{irNo}
+    	                  )
+    	            ELSE (SELECT COUNT(*)
+                            FROM tb_sprt_biz
+                           WHERE bzenty_no       = #{bzentyNo}
+                             AND crdns_bzenty_no = C.cd_cn
+                             AND rls_yn          = 'Y'
+                             AND del_yn          = 'N')
+    	       END        AS "count"
+    	  FROM sys_code C
+    	 WHERE up_cd_id = 'CT.CRDNS_SE'
+    	 ORDER BY
+    	       cd_id
+    </select>
+
+    <!-- 정부지원이력 기관별 년도별 건수 조회 -->
+    <select id="listEntOthsptHstYears" resultType="java.util.HashMap" parameterType="business.usr.invest.service.EntVO">
+    	SELECT biz_yr   AS "year"
+    	      ,COUNT(*) AS "count"
+    	  FROM tb_sprt_biz A
+         WHERE bzenty_no       = #{bzentyNo}
+           AND rls_yn          = 'Y'
+           AND del_yn          = 'N'
+           AND EXISTS (
+               SELECT 1
+                 FROM sys_code
+                WHERE up_cd_id = 'CT.CRDNS_SE'
+                  AND cd_id    = #{crdnsCd}
+                  AND cd_cn    = A.crdns_bzenty_no
+               )
+               <!-- 이전년도기준 3년까지 조회 -->
+           AND biz_yr BETWEEN CAST(EXTRACT(YEAR FROM NOW())-3 AS TEXT) 
+                          AND CAST(EXTRACT(YEAR FROM NOW())   AS TEXT)
+    	 GROUP BY
+    	       biz_yr
+    	 ORDER BY
+    	       biz_yr
+    </select>
+
+    <!-- 정부기타지원이력 상세조회 -->
+    <select id="viewEntOthsptHst" resultType="business.usr.invest.service.EntVO" parameterType="business.usr.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent_othspt_hst A
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </select>
+
+    <!-- 정부기타지원이력 등록 -->
+    <insert id="regiEntOthsptHst" parameterType="business.usr.invest.service.EntVO">
+        INSERT 
+          INTO tb_ent_othspt_hst 
+             ( ir_no,
+               sn,
+               biz_nm,
+               inst_nm,
+               fld_cn,
+               dtl_cn,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{irNo},
+			   NEXTVAL('seq_ent_othspt_hst'),
+               #{bizNm},
+               #{instNm},
+               #{fldCn},
+               #{dtlCn},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 정부기타지원이력 수정 -->
+    <update id="updtEntOthsptHst" parameterType="business.usr.invest.service.EntVO">
+        UPDATE tb_ent_othspt_hst 
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(bizNm               )"> biz_nm               = #{bizNm               },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(instNm              )"> inst_nm              = #{instNm              },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fldCn               )"> fld_cn               = #{fldCn               },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(dtlCn               )"> dtl_cn               = #{dtlCn               },</if>  
+               mdfcn_ymd = NOW()
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </update>
+
+    <!-- 정부기타지원이력 삭제 -->
+    <delete id="deltEntOthsptHst" parameterType="business.usr.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent_othspt_hst 
+         WHERE ir_no     = #{irNo}
+           AND sn        = #{sn}
+    </delete> 
+
+</mapper>

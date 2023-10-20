@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="OpnnIr">
+
+    <!-- ======================== -->
+    <!--  공통 sql                 -->
+    <!-- ======================== -->
+    <sql id="Sql-Where-OpnnIr">
+        <if test="@common.util.CommUtils@isNotEmpty(evntNo)">
+            AND (A.evnt_no = #{evntNo})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(bzentyNo)">
+            AND (A.bzenty_no = #{bzentyNo})
+        </if>
+    </sql>
+    
+    <sql id="Sql-Column-OpnnIr">
+		B.evnt_no					AS "evntNo",
+		(SELECT evnt_nm
+		   FROM tb_event_mng
+		  WHERE evnt_no = B.evnt_no
+		)							AS "evntNm",
+		(SELECT bzenty_no
+		   FROM tb_user
+		  WHERE user_no = #{gsUserNo}
+		)							AS "bzentyNo",
+		FN_GET_ENTNM(#{bzentyNo})	AS "bzentyInvtNm",	/* 투자자(운용사)명 */
+		A.evnt_partcptn_no			AS "evntPartcptnNo",
+		(SELECT bzenty_nm
+		   FROM tb_event_ent
+		  WHERE evnt_partcptn_no = A.evnt_partcptn_no
+		)							AS "bzentyNm",		/* 경영체명 */
+		A.user_no					AS "userNo",
+		A.biz_cn					AS "bizCn",
+		A.prdct_cn					AS "prdctCn",
+		A.co_cn						AS "coCn",
+		A.gnrlz_opnn				AS "gnrlzOpnn",
+		A.invt_itrst_dgree_cd		AS "invtItrstDgreeCd",
+		A.fllw_mtg_inten_yn			AS "fllwMtgIntenYn",
+		A.prgrs_stts_cd				AS "prgrsSttsCd",
+		A.rgtr_no														 AS "rgtrNo",
+		FN_GET_USERNM(#{gsUserNo})||'('||FN_GET_USERID(#{gsUserNo})||')' AS "rgtrNmNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')					 AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy.mm.dd')								 AS "regDate",
+		A.mdfr_no														 AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')					 AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')								 AS "mdfDate"
+    </sql>
+
+    <!-- IR검토의견서 목록조회 -->
+    <select id="listOpnnIr" resultType="java.util.HashMap" parameterType="business.usr.invest.service.EventVO">
+        SELECT 
+        	<include refid="Sql-Column-OpnnIr"/>
+        FROM 
+        	tb_event_ent B LEFT OUTER JOIN tb_opinion_ir A 
+        ON 
+        	B.evnt_no = A.evnt_no
+        	AND A.user_no = #{gsUserNo}
+        	AND A.evnt_partcptn_no = B.evnt_partcptn_no
+        WHERE 
+         	B.evnt_no = #{evntNo}
+         ORDER BY 
+            A.evnt_partcptn_no
+    </select>
+    <select id="listOpnnIrCount" resultType="int" parameterType="business.usr.invest.service.EventVO">
+        SELECT COUNT(1) 
+          FROM tb_opinion_ir A
+         WHERE 1 = 1
+               <include refid="Sql-Where-OpnnIr"/>
+    </select>
+    
+    <!-- IR검토의견서 상세조회 -->
+    <!-- <select id="viewOpnnIr" resultType="business.usr.invest.service.EventVO" parameterType="business.usr.invest.service.EventVO">
+        SELECT <include refid="Sql-Column-OpnnIr"/>
+          FROM tb_opinion_ir A
+         WHERE 1 = 1
+         	   <include refid="Sql-Where-OpnnIr"/>
+         	   and user_no = #{gsUserNo}
+    </select> -->
+    
+    <!-- IR 검토의견 등록 -->
+    <insert id="regiOpnnIr" parameterType="business.usr.invest.service.EventVO">
+    	INSERT 
+    		INTO tb_opinion_ir
+    			( evnt_no,
+    			  bzenty_no,
+    			  user_no,
+    			  evnt_partcptn_no,
+    			  biz_cn,
+    			  prdct_cn,
+    			  co_cn,
+    			  gnrlz_opnn,
+    			  invt_itrst_dgree_cd,
+    			  fllw_mtg_inten_yn,
+    			  prgrs_stts_cd,
+    			  rgtr_no,
+    			  reg_ymd
+    			)
+    	VALUES
+    		(  #{evntNo},
+    		   #{bzentyNo},
+    		   #{gsUserNo},
+    		   #{evntPartcptnNo},
+    		   #{bizCn},
+    		   #{prdctCn},
+    		   #{coCn},
+    		   #{gnrlzOpnn},
+    		   #{invtItrstDgreeCd},
+    		   #{fllwMtgIntenYn},
+    		   #{prgrsSttsCd},
+    		   #{gsUserNo},
+    		   NOW()
+    		)
+    		
+    </insert>
+    
+    <!-- IR 검토의견 수정 -->
+    <update id="updtOpnnIr" parameterType="business.usr.invest.service.EventVO">
+    	UPDATE tb_opinion_ir A SET 
+   			mdfr_no   			= #{gsUserNo},
+   			biz_cn 		 	 	= #{bizCn},				
+   			prdct_cn 	 	 	= #{prdctCn},			
+   			co_cn 		 	 	= #{coCn},				
+   			gnrlz_opnn 	 	 	= #{gnrlzOpnn},			
+   			invt_itrst_dgree_cd = #{invtItrstDgreeCd},	
+   			fllw_mtg_inten_yn 	= #{fllwMtgIntenYn},	
+   			<if test="@common.util.CommUtils@isNotEmpty(prgrsSttsCd	   		)"> prgrs_stts_cd	 	= #{prgrsSttsCd},		</if>
+   			mdfcn_ymd = NOW()
+    	WHERE 1=1
+    		<include refid="Sql-Where-OpnnIr"/>
+    		AND evnt_partcptn_no = #{evntPartcptnNo}
+    		AND user_no = #{gsUserNo}
+    </update>
+</mapper>
