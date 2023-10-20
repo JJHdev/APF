@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Authority">
+
+    <!-- 프로그램 접근 권한 체크 조회 for postgresql -->
+    <select id="getAuthorityUser" parameterType="java.util.Map" resultType="java.util.HashMap">
+		WITH RECURSIVE T_AUTH AS (
+			SELECT ROLE_ID
+			     , UP_ROLE_ID
+			     , 0 as LEVEL
+			  FROM SYS_ROLE		
+			 WHERE ROLE_ID   = #{roleId}
+			   AND SYS_SE_CD = '${@business.com.CommConst@SYSTEM_CODE}'
+			
+			UNION ALL
+			
+			SELECT R.ROLE_ID
+			     , R.UP_ROLE_ID
+			     , level + 1
+			  FROM SYS_ROLE R		
+			  JOIN T_AUTH H ON H.ROLE_ID = R.UP_ROLE_ID   
+			   AND R.ROLE_ID <![CDATA[<>]]>  #{roleId}
+			   AND SYS_SE_CD = '${@business.com.CommConst@SYSTEM_CODE}'
+		)
+        SELECT CASE WHEN AUTH_CNT = 0 THEN 'X'
+               ELSE 'O'
+               END                                  AS "auth"
+          FROM (SELECT SIGN(COUNT(b.ROLE_ID))       AS AUTH_TRGT_CNT	<!-- 1이면 권한체크 대상. -->
+                     , SIGN(COUNT(h.ROLE_ID))       AS AUTH_CNT			<!-- 1이면 권한 있음, 0이면 권한 없음. -->
+                  FROM SYS_PROG a
+                     , SYS_ROLE_PROG b 
+                  LEFT OUTER JOIN T_AUTH h 
+                    ON b.ROLE_ID = h.ROLE_ID
+                 WHERE a.PRGRM_ID           = b.PRGRM_ID
+                   AND a.PRGRM_TYPE         = 'url'
+                   AND a.USE_YN             = 'Y'
+				   AND a.SYS_SE_CD          = '${@business.com.CommConst@SYSTEM_CODE}'
+                   AND a.PRGRM_URL 			= #{url}
+               ) AA
+         WHERE AUTH_TRGT_CNT > 0         
+    </select>
+
+    <!-- 메뉴포함 프로그램 정보 -->
+    <select id="getProgInfoWithMenu" resultType="java.util.HashMap" parameterType="java.util.Map">
+		WITH RECURSIVE T_TBL (
+		      MENU_ID
+		    , UP_MENU_ID
+		    , MENU_NM
+		    , LEVEL
+		    , ARR_MENU_ID
+		    , ARR_MENU_NM
+		    , ARR_MENU_URL
+		) 
+		AS (
+		    SELECT MENU_ID
+		         , UP_MENU_ID
+		         , MENU_NM
+		         , 0
+		         , ''||MENU_ID
+		         , ''||MENU_NM
+		         , ''||TRGT_URL
+		      FROM SYS_MENU     
+		     WHERE SYS_SE_CD = '${@business.com.CommConst@SYSTEM_CODE}'
+		       AND MENU_ID   = (SELECT DISTINCT MENU_ID
+		                        FROM SYS_PROG
+		                       WHERE PRGRM_URL like #{url}||'%'
+		                         AND SYS_SE_CD = '${@business.com.CommConst@SYSTEM_CODE}'
+		                         AND USE_YN    = 'Y')
+		    
+		    UNION ALL
+		    
+		    SELECT R.MENU_ID
+		         , R.UP_MENU_ID
+		         , R.MENU_NM
+		         , level + 1
+		         , R.MENU_ID  || ',' || T.ARR_MENU_ID
+		         , R.MENU_NM  || ',' || T.ARR_MENU_NM
+		         , R.TRGT_URL || ',' || T.ARR_MENU_URL
+		      FROM SYS_MENU R       
+		         , T_TBL T 
+		     WHERE R.MENU_ID   = T.UP_MENU_ID
+		       AND R.SYS_SE_CD = '${@business.com.CommConst@SYSTEM_CODE}'
+		)
+		SELECT A.PRGRM_ID                                           AS "progId"
+		     , A.PRGRM_NM                                           AS "progNm"
+		     , A.PRGRM_URL                                          AS "progUrl"
+		     , A.PRGRM_TYPE                                         AS "progTy"
+		     , A.MENU_ID                                            AS "menuId"
+		     , COALESCE((SELECT MENU_NM
+		                   FROM SYS_MENU
+		                  WHERE MENU_ID = A.MENU_ID), PRGRM_NM)     AS "titleNm"
+		     , A.PRGRM_ORDR                                         AS "progOrdr"
+		     , SPLIT_PART(B.ARR_MENU_ID, ',', 1)                    AS "firstMenuId"
+		     , SPLIT_PART(B.ARR_MENU_NM, ',', 1)                    AS "firstMenuNm"
+		     , SPLIT_PART(B.ARR_MENU_ID, ',', 2)                    AS "secondMenuId"
+		     , SPLIT_PART(B.ARR_MENU_NM, ',', 2)                    AS "secondMenuNm"
+		     , SPLIT_PART(B.ARR_MENU_ID, ',', 3)                    AS "thirdMenuId"
+		     , SPLIT_PART(B.ARR_MENU_NM, ',', 3)                    AS "thirdMenuNm"
+		     , B.ARR_MENU_NM                                        AS "menuPath"
+		     , B.ARR_MENU_URL                                       AS "urlPath"
+		     , LPAD((SELECT CAST(MENU_LEVEL AS VARCHAR)
+		               FROM SYS_MENU
+		              WHERE MENU_ID     = A.MENU_ID
+		              LIMIT 1), 2, '0')                             AS "menuIcon"
+		  FROM (SELECT *
+		          FROM SYS_PROG
+		         WHERE PRGRM_URL like #{url}||'%'
+		           AND PRGRM_TYPE  = 'url'
+		           AND SYS_SE_CD   = '${@business.com.CommConst@SYSTEM_CODE}'
+		           AND USE_YN      = 'Y'
+		         LIMIT 1) A
+		      ,(SELECT * 
+		          FROM T_TBL
+		         ORDER BY LEVEL DESC
+		         LIMIT 1) B
+		 LIMIT 1
+    </select>
+
+    <!-- 프로그램 정보 -->
+    <select id="getProgInfo" resultType="java.util.HashMap" parameterType="java.util.Map">
+		SELECT A.PRGRM_ID                                           AS "progId"
+		     , A.PRGRM_NM                                           AS "progNm"
+		     , A.PRGRM_URL                                          AS "progUrl"
+		     , A.PRGRM_TYPE                                         AS "progTy"
+		     , A.MENU_ID                                            AS "menuId"
+		     , COALESCE((SELECT MENU_NM
+		                   FROM SYS_MENU
+		                  WHERE MENU_ID = A.MENU_ID), PRGRM_NM)     AS "titleNm"
+		     , A.PRGRM_ORDR                                         AS "progOrdr"
+		  FROM SYS_PROG A
+         WHERE PRGRM_URL like #{url}||'%'
+           AND SYS_SE_CD   = '${@business.com.CommConst@SYSTEM_CODE}'
+           AND PRGRM_TYPE  = 'url'
+           AND USE_YN      = 'Y'
+         LIMIT 1
+    </select>
+
+    <!-- 탑메뉴, 좌측메뉴 정보 -->
+    <select id="getMenuList" resultType="java.util.HashMap" parameterType="java.util.Map">
+		WITH RECURSIVE T_TBL (
+		      MENU_ID
+		    , UP_MENU_ID
+		    , MENU_NM
+		    , LEVEL
+		    , ARR_MENU_ID
+		    , ARR_MENU_NM
+		    , ARR_MENU_URL
+		    , MENU_LEVEL
+		    , MENU_ORDR
+		    , TRGT_URL
+		    , POPUP_YN    
+		) 
+		AS (
+		    SELECT MENU_ID
+		         , UP_MENU_ID
+		         , MENU_NM
+		         , 0
+		         , ''||MENU_ID
+		         , ''||MENU_NM
+		         , ''||TRGT_URL
+		         , MENU_LEVEL
+		         , MENU_ORDR
+		         , TRGT_URL
+		         , POPUP_YN
+		      FROM SYS_MENU     
+		     WHERE UP_MENU_ID = 'NONE'
+		       AND SYS_SE_CD  = '${@business.com.CommConst@SYSTEM_CODE}'
+			<if test="@common.util.CommUtils@isEmpty(useYn)">
+		       AND USE_YN     = 'Y'
+			</if>
+			<if test="@common.util.CommUtils@isNotEmpty(useYn)">
+		       AND USE_YN     = #{useYn}
+			</if>
+		    
+		    UNION ALL
+		    
+		    SELECT R.MENU_ID
+		         , R.UP_MENU_ID
+		         , R.MENU_NM
+		         , level + 1
+		         , T.ARR_MENU_ID  || ',' || R.MENU_ID
+		         , T.ARR_MENU_NM  || ',' || R.MENU_NM
+		         , T.ARR_MENU_URL || ',' || R.TRGT_URL
+		         , R.MENU_LEVEL
+		         , R.MENU_ORDR
+		         , R.TRGT_URL
+		         , R.POPUP_YN         
+		      FROM SYS_MENU R       
+		         , T_TBL T 
+		     WHERE R.UP_MENU_ID = T.MENU_ID
+		       AND R.SYS_SE_CD  = '${@business.com.CommConst@SYSTEM_CODE}'
+			<if test="@common.util.CommUtils@isEmpty(useYn)">
+		       AND R.USE_YN     = 'Y'
+			</if>
+			<if test="@common.util.CommUtils@isNotEmpty(useYn)">
+		       AND R.USE_YN     = #{useYn}
+			</if>
+		       AND R.UP_MENU_ID <![CDATA[<>]]> 'NONE'
+		)
+		SELECT DISTINCT
+		       T.MENU_ID                                           AS "menuId"
+		     , T.UP_MENU_ID                                        AS "upMenuId"
+		     , T.MENU_LEVEL                                        AS "menuLvl"
+		     , T.MENU_ORDR                                         AS "menuOrdr"
+		     , TRIM(T.MENU_NM)                                     AS "menuNm"
+		     , TRIM(T.TRGT_URL)                                    AS "trgtUrl"
+		     , T.POPUP_YN                                          AS "popupYn"
+		     , T.LEVEL + 1                                         AS "level"
+		     , SPLIT_PART(T.ARR_MENU_ID, ',', 1)                   AS "firstMenuId"
+		     , CASE WHEN MAX(MENU_LEVEL) OVER() = MENU_LEVEL THEN 'true'
+		       ELSE 'false'
+		       END                                                 AS "isLast"
+		     , CASE WHEN (SELECT COUNT(*) 
+		                    FROM SYS_MENU 
+		                   WHERE UP_MENU_ID = T.MENU_ID) > 0 
+		            THEN 1
+		            ELSE 0 
+		       END                                                 AS "isSubLast"
+		     , LEAD(T.MENU_LEVEL, 1) OVER(ORDER BY T.MENU_LEVEL, T.MENU_ORDR)      AS "nextMenuLvl"
+		  FROM T_TBL T
+		     , SYS_ROLE_MENU RM
+		     , SYS_ROLE R
+		 WHERE T.MENU_LEVEL   <![CDATA[<=]]> 10
+		   AND T.MENU_ID    = RM.MENU_ID
+		   AND R.SYS_SE_CD  = '${@business.com.CommConst@SYSTEM_CODE}'
+		   AND RM.ROLE_ID   = R.ROLE_ID
+		   AND RM.ROLE_ID   = #{roleId}
+		   AND T.LEVEL 		<![CDATA[<=]]> 1
+		 ORDER BY T.MENU_LEVEL, T.MENU_ORDR
+    </select>
+
+</mapper>

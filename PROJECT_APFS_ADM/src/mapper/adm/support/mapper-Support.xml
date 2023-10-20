@@ -1,0 +1,1010 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Support">
+
+    <!-- ======================== -->
+    <!--  공통 sql                 -->
+    <!-- ======================== -->
+    <sql id="Sql-Where-InvtSprt">
+        <if test="@common.util.CommUtils@isNotEmpty(sprtAplySeCd)">
+            AND (A.sprt_aply_se_cd = #{sprtAplySeCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(prgrmClsfCd)">
+            AND (A.prgrm_clsf_cd = #{prgrmClsfCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(delYn)">
+            AND (A.del_yn = #{delYn})
+        </if>
+    </sql>
+    <sql id="Sql-Where-InvtSprtAply">
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+            AND (A.bzenty_nm	LIKE '%'|| #{srchText} || '%'
+             OR  A.rprsv_nm		LIKE '%'|| #{srchText} || '%'
+             OR  A.lctn_addr	LIKE '%'|| #{srchText} || '%'
+             OR  A.lctn_daddr	LIKE '%'|| #{srchText} || '%'
+             OR  A.biz_fld		LIKE '%'|| #{srchText} || '%'
+             OR  A.main_biz_cn	LIKE '%'|| #{srchText} || '%'
+             OR  A.core_itm_cn	LIKE '%'|| #{srchText} || '%'
+             OR  A.biz_cn		LIKE '%'|| #{srchText} || '%'
+             OR  A.pic_nm		LIKE '%'|| #{srchText} || '%'
+             OR  A.pic_dept_nm	LIKE '%'|| #{srchText} || '%'
+             OR  A.rgtr_id		LIKE '%'|| #{srchText} || '%'
+                )
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchBgngYmd)">
+            AND (TO_DATE(A.rcpt_ymd, 'YYYYMMDD') >= TO_DATE(#{srchBgngYmd}, 'YYYY-MM-DD')) 
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchEndYmd)">
+        	AND (TO_DATE(A.rcpt_ymd, 'YYYYMMDD') <![CDATA[<=]]> TO_DATE(#{srchEndYmd}, 'YYYY-MM-DD'))
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(sprtAplySeCd)">
+        	AND (A.sprt_aply_se_cd = #{sprtAplySeCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(prgrmNo)">
+        	AND (A.prgrm_no = #{prgrmNo})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(prgrsSttsCd)">
+        	AND (A.prgrs_stts_cd = #{prgrsSttsCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(prgrmClsfCd)">
+        	AND (B.prgrm_clsf_cd = #{prgrmClsfCd})
+        </if>
+    </sql>
+    <sql id="Sql-Where-Pbanc">
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+            AND (A.biz_pbanc_nm LIKE '%'|| #{srchText} || '%'
+             OR  A.crdns_bzenty_nm LIKE '%'|| #{srchText} || '%'
+             OR  A.tkcg_dept_nm LIKE '%'|| #{srchText} || '%'
+             OR  A.pic_nm LIKE '%'|| #{srchText} || '%'
+             OR  A.sprt_cn LIKE '%'|| #{srchText} || '%'
+                )
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(bizPbancNo)">
+            AND (A.biz_pbanc_no = #{bizPbancNo}) 
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(bizFld)">
+            AND (A.biz_fld LIKE '%'||#{bizFld}||'%') 
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(bizTrgt)">
+            AND (A.biz_trgt LIKE '%'||#{bizTrgt}||'%') 
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(bizTrgtAge)">
+            AND (A.biz_trgt_age <![CDATA[<=]]> #{bizTrgtAge}) 
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(bizTrgtFntnPd)">
+            AND (A.biz_trgt_fntn_pd <![CDATA[<=]]> #{bizTrgtFntnPd}) 
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(rcptSeCd)">
+        	AND (A.rcpt_se_cd = #{rcptSeCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(rcptBgngYmd)">
+            AND (TO_DATE(A.rcpt_bgng_dt, 'YYYYMMDDHH24MI') >= TO_DATE(FN_FMT_STRTODATE(#{rcptBgngYmd}, ''), 'YYYYMMDD')) 
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(rcptEndYmd)">
+        	AND (TO_DATE(A.rcpt_end_dt, 'YYYYMMDDHH24MI') <![CDATA[<=]]> TO_DATE(FN_FMT_STRTODATE(#{rcptEndYmd}, ''), 'YYYYMMDD'))
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchBgngYmd)">
+            AND (A.reg_ymd >= TO_DATE(FN_FMT_STRTODATE(#{srchBgngYmd}, ''), 'YYYYMMDD')) 
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchEndYmd)">
+        	AND (A.reg_ymd <![CDATA[<=]]> TO_DATE(FN_FMT_STRTODATE(#{srchEndYmd}, ''), 'YYYYMMDD'))
+        </if>
+    </sql>
+    
+    <sql id="Sql-Column-InvtSprt">
+		A.prgrm_no										AS "prgrmNo",
+		A.sprt_aply_se_cd								AS "sprtAplySeCd",
+		A.prgrm_clsf_cd									AS "prgrmClsfCd",
+		FN_GET_CODENM('CT.PROG_TY', A.prgrm_clsf_cd)	AS "prgrmClsfCdNm",
+		A.prgrm_nm										AS "prgrmNm",
+		FN_FMT_STRTODATE(A.sprt_bgng_ymd, '-')			AS "sprtBgngYmd",
+		FN_FMT_STRTODATE(A.sprt_end_ymd, '-')			AS "sprtEndYmd",
+		A.use_yn										AS "useYn",
+		A.rgtr_no										AS "rgtrNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')	AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')				AS "regDate",
+		A.mdfr_no										AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')	AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')				AS "mdfDate",
+		( SELECT user_nm
+		    FROM tb_user
+	       WHERE user_no = A.rgtr_no )					AS "rgtrNm"
+    </sql>
+    <sql id="Sql-Column-InvtSprtAply">
+		A.sprt_aply_no										AS "sprtAplyNo",
+		A.sprt_aply_se_cd									AS "sprtAplySeCd",
+		FN_GET_CODENM('CT.SPRT_APLY_SE', A.sprt_aply_se_cd)	AS "sprtAplySeCdNm",
+		A.prgrm_no											AS "prgrmNo",
+		COALESCE(NULLIF(B.prgrm_clsf_cd, ''), '-')			AS "prgrmClsfCd",
+		COALESCE(COALESCE(FN_GET_CODENM('CT.PROG_TY', B.prgrm_clsf_cd), '-'), '-')	AS "prgrmClsfCdNm",
+		COALESCE(B.prgrm_nm, '-')													AS "prgrmNm",
+		A.aply_bzenty_no															AS "aplyBzentyNo",
+		( SELECT bzenty_se_cd
+		    FROM tb_ent
+		   WHERE bzenty_no = A.aply_bzenty_no
+		)													AS "bzentySeCd",
+		CASE
+			WHEN A.bzenty_nm IS NULL THEN '개인회원'
+			ELSE '경영체'
+		END													AS "bzentySeCdNm", <!-- 23.08.25 LHB. 초기 데이터 업체번호 NULL인 관계로 업체명으로 경영체/개인회원 구분 -->
+		A.aply_bzenty_no									AS "bzentySe",
+		A.bzenty_nm											AS "bzentyNm",
+		A.prvc_clct_agre_yn									AS "prvcClctAgreYn",
+		A.unity_mng_sys_agre_yn								AS "unityMngSysAgreYn",
+		A.brno												AS "brno",
+		FN_FMT_DATA('RNO', A.brno)							AS "brnoForm",
+		FN_FMT_STRTODATE(A.fndn_ymd, '-')					AS "fndnYmd",
+		A.rprsv_nm											AS "rprsvNm",
+		A.emp_cnt											AS "empCnt",
+		A.crno												AS "crno",
+		FN_FMT_STRTODATE(A.brdt, '-')						AS "brdt",
+		A.sexdstn											AS "sexdstn",
+		A.lctn_addr											AS "lctnAddr",
+		A.lctn_daddr										AS "lctnDaddr",
+		FN_FMT_DATA('TEL', A.rprs_telno)					AS "rprsTelno",
+		FN_FMT_DATA('TEL', A.fxno)							AS "fxno",
+		A.bzenty_type_cd									AS "bzentyTypeCd",
+		FN_GET_CODENM('CT.BZENTY_TYPE', A.bzenty_type_cd)	AS "bzentyTypeCdNm",
+		A.biz_fld						AS "bizFld",
+		A.hmpg_addr						AS "hmpgAddr",
+		A.invt_hope_amt					AS "invtHopeAmt",
+		A.main_biz_cn					AS "mainBizCn",
+		A.core_itm_cn					AS "coreItmCn",
+		A.biz_cn						AS "bizCn",
+		A.pic_nm						AS "picNm",
+		A.pic_dept_nm					AS "picDeptNm",
+		FN_FMT_DATA('TEL', A.pic_telno)	AS "picTelno",
+		A.pic_eml_addr					AS "picEmlAddr",
+		A.fund_link_url					AS "fundLinkUrl",
+		FN_FMT_STRTODATE(A.rcpt_ymd, '-')					AS "rcptYmd",
+		A.prcs_ymd											AS "prcsYmd",
+		A.rmrk												AS "rmrk",
+		A.prgrs_stts_cd										AS "prgrsSttsCd",
+		FN_GET_CODENM('CT.PRGRS_STTS1', A.prgrs_stts_cd)	AS "prgrsSttsCdNm",
+		A.prcs_rslt_cn										AS "prcsRsltCn",
+		A.del_yn											AS "delYn",
+		A.rgtr_no											AS "rgtrNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')		AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')					AS "regDate",
+		A.mdfr_no											AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')		AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')					AS "mdfDate",
+		( SELECT user_nm
+		    FROM tb_user
+	       WHERE user_no = A.aply_user_no )					AS "rgtrNm",
+	    A.RGTR_ID											AS "rgtrId"
+    </sql>
+    <!-- 2023.09.21 JH 파일정보 관련 조회용 -->
+    <sql id="Sql-Column-InvtSprtAplyFileInfo">
+		A.sprt_aply_no										AS "sprtAplyNo",
+		A.sprt_aply_se_cd									AS "sprtAplySeCd",
+		FN_GET_CODENM('CT.SPRT_APLY_SE', A.sprt_aply_se_cd)	AS "sprtAplySeCdNm",
+		A.prgrm_no											AS "prgrmNo",
+		COALESCE(NULLIF(B.prgrm_clsf_cd, ''), '-')			AS "prgrmClsfCd",
+		COALESCE(COALESCE(FN_GET_CODENM('CT.PROG_TY', B.prgrm_clsf_cd), '-'), '-')	AS "prgrmClsfCdNm",
+		COALESCE(B.prgrm_nm, '-')													AS "prgrmNm",
+		A.aply_bzenty_no															AS "aplyBzentyNo",
+		( SELECT bzenty_se_cd
+		    FROM tb_ent
+		   WHERE bzenty_no = A.aply_bzenty_no)										AS "bzentySeCd",
+		CASE
+			WHEN A.bzenty_nm IS NULL THEN '개인회원'
+			ELSE '경영체'
+		END													AS "bzentySeCdNm", <!-- 23.08.25 LHB. 초기 데이터 업체번호 NULL인 관계로 업체명으로 경영체/개인회원 구분 -->
+		A.aply_bzenty_no									AS "bzentySe",
+		A.bzenty_nm											AS "bzentyNm",
+		A.prvc_clct_agre_yn									AS "prvcClctAgreYn",
+		A.unity_mng_sys_agre_yn								AS "unityMngSysAgreYn",
+		A.bzenty_nm											AS "bzentyNm",
+		A.brno												AS "brno",
+		FN_FMT_DATA('RNO', A.brno)							AS "brnoForm",
+		FN_FMT_STRTODATE(A.fndn_ymd, '-')					AS "fndnYmd",
+		A.rprsv_nm											AS "rprsvNm",
+		A.emp_cnt											AS "empCnt",
+		A.crno												AS "crno",
+		FN_FMT_STRTODATE(A.brdt, '-')						AS "brdt",
+		A.sexdstn											AS "sexdstn",
+		A.lctn_addr											AS "lctnAddr",
+		A.lctn_daddr										AS "lctnDaddr",
+		FN_FMT_DATA('TEL', A.rprs_telno)					AS "rprsTelno",
+		FN_FMT_DATA('TEL', A.fxno)							AS "fxno",
+		A.bzenty_type_cd									AS "bzentyTypeCd",
+		FN_GET_CODENM('CT.BZENTY_TYPE', A.bzenty_type_cd)	AS "bzentyTypeCdNm",
+		A.biz_fld						AS "bizFld",
+		A.hmpg_addr						AS "hmpgAddr",
+		A.invt_hope_amt					AS "invtHopeAmt",
+		A.main_biz_cn					AS "mainBizCn",
+		A.core_itm_cn					AS "coreItmCn",
+		A.biz_cn						AS "bizCn",
+		A.pic_nm						AS "picNm",
+		A.pic_dept_nm					AS "picDeptNm",
+		FN_FMT_DATA('TEL', A.pic_telno)	AS "picTelno",
+		A.pic_eml_addr					AS "picEmlAddr",
+		A.fund_link_url					AS "fundLinkUrl",
+		FN_FMT_STRTODATE(A.rcpt_ymd, '-')					AS "rcptYmd",
+		A.prcs_ymd											AS "prcsYmd",
+		A.rmrk												AS "rmrk",
+		A.prgrs_stts_cd										AS "prgrsSttsCd",
+		FN_GET_CODENM('CT.PRGRS_STTS1', A.prgrs_stts_cd)	AS "prgrsSttsCdNm",
+		A.prcs_rslt_cn										AS "prcsRsltCn",
+		A.del_yn											AS "delYn",
+		A.rgtr_no											AS "rgtrNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')		AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')					AS "regDate",
+		A.mdfr_no											AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')		AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')					AS "mdfDate",
+		( SELECT user_nm
+		    FROM tb_user
+	       WHERE user_no = A.aply_user_no )					AS "rgtrNm",
+	    A.RGTR_ID											AS "rgtrId"
+    </sql>
+    
+    <sql id="Sql-Column-InvtSprtAplyExcl">
+		FN_FMT_DATA('RNO', A.BRNO)																				AS "brno",
+		A.RPRSV_NM																								AS "rprsvNm",
+		FN_FMT_DATA('TEL', A.RPRS_TELNO)																		AS "rprsTelno",
+		A.PIC_EML_ADDR																							AS "picEmlAddr",
+		FN_GET_CODENMLIST('CT.BIZ_RLM', A.BIZ_FLD, ',', ', ')													AS "bizFldNm",
+		(SELECT STRING_AGG( (SELECT invt_fld_nm FROM tb_invtrlm_code WHERE invt_fld_cd = R2.fld_cd),',')
+		   FROM TB_ENT_RLM R2
+		  WHERE BZENTY_NO = A.APLY_BZENTY_NO
+		    AND FLD_SE_CD = 'I')																				AS "fldSeNm",
+		A.CRNO																									AS "crno",
+		A.LCTN_ADDR																								AS "lctnAddr",
+		FN_FMT_STRTODATE(A.FNDN_YMD, '-')																		AS "fndnYmd",
+		A.EMP_CNT																								AS "empCnt",
+		A.HMPG_ADDR																								AS "hmpgAddr",
+		FN_FMT_DATA('TEL', A.FXNO)																				AS "fxno",
+		A.INVT_HOPE_AMT																							AS "invtHopeAmt",
+		A.MAIN_BIZ_CN																							AS "mainBizCn",
+		A.CORE_ITM_CN																							AS "coreItmCn",
+		A.BIZ_CN																									AS "bizCn",
+		FN_FMT_STRTODATE(A.BRDT, '-')																			AS "brdt",
+		A.SEXDSTN																								AS "sexdstn",
+	    ( SELECT FNNR_AMT
+	        FROM TB_INVTSPRT_SLS
+	       WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	       ORDER
+	          BY FNNR_YMD DESC
+	       LIMIT 1
+	      OFFSET 0
+	    )																										AS "fnnrAmt1",
+	    ( SELECT FNNR_AMT
+	        FROM TB_INVTSPRT_SLS
+	       WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	       ORDER
+	          BY FNNR_YMD DESC
+	       LIMIT 1
+	      OFFSET 1
+	    )																										AS "fnnrAmt2",
+	    ( SELECT FNNR_AMT
+	        FROM TB_INVTSPRT_SLS
+	       WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	       ORDER
+	          BY FNNR_YMD DESC 
+	       LIMIT 1
+  	      OFFSET 2
+  	    )																										AS "fnnrAmt3",
+	    ( SELECT FNNR_YMD
+	        FROM TB_INVTSPRT_SLS
+	       WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	       ORDER
+	          BY FNNR_YMD DESC
+	       LIMIT 1
+	      OFFSET 0
+	    )																										AS "fnnrYmd",
+	    FN_GET_USERNM(A.APLY_USER_NO)																			AS "aplyUserNm",
+	    FN_GET_USERID(A.APLY_USER_NO)																			AS "aplyUserId",
+	    CASE
+	        WHEN A.BZENTY_NM IS NULL THEN '개인회원'
+	        ELSE '경영체'
+	    END																										AS "roleNm",
+	    A.BZENTY_NM																								AS "bzentyNm",
+	    FN_GET_CODENM('CT.SPRT_APLY_SE', A.SPRT_APLY_SE_CD)														AS "sprtAplySeNm",
+	    COALESCE(COALESCE(FN_GET_CODENM('CT.PROG_TY', B.PRGRM_CLSF_CD), '-'), '-')								AS "prgrmClsfNm",
+	    COALESCE(B.PRGRM_NM, '-')																				AS "prgrmNm",
+	    A.RCPT_YMD																								AS "rcptYmd",
+	    FN_GET_CODENM('CT.PRGRS_STTS1', A.PRGRS_STTS_CD)															AS "prgrsSttsCd",
+	    (SELECT PIC_NM
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB01'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	      LIMIT 1
+	    )																										AS "dscsnPicNm",
+	    (SELECT PRCS_YMD
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB01'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	      LIMIT 1
+	    )																										AS "dscsnYmd",
+	    (SELECT PRGRS_CN
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB01'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	      LIMIT 1
+	    )																										AS "dscsnCn",
+	    (SELECT PIC_NM
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB02'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	      LIMIT 1
+	    )																										AS "coachPicNm",
+	    (SELECT PRCS_YMD
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB02'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	      LIMIT 1
+	    )																										AS "coachYmd",
+	    (SELECT PRGRS_CN
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB02'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	      LIMIT 1
+	    )																										AS "coachCn",
+	    (SELECT PIC_NM
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB03'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	        AND PRCS_CYCL = 1
+	      LIMIT 1
+	    )																										AS "consultPicNm1",
+	    (SELECT PRCS_YMD
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB03'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	        AND PRCS_CYCL = 1
+	      LIMIT 1
+	    )																										AS "consultYmd1",
+	    (SELECT PRGRS_CN
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB03'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+ 	        AND PRCS_CYCL = 1
+	      LIMIT 1
+	    )																										AS "consultCn1",
+	    (SELECT PIC_NM
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB03'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	        AND PRCS_CYCL = 2
+	      LIMIT 1
+	    )																										AS "consultPicNm2",
+	    (SELECT PRCS_YMD
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB03'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	        AND PRCS_CYCL = 2
+	      LIMIT 1
+	    )																										AS "consultYmd2",
+	    (SELECT PRGRS_CN
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB03'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	        AND PRCS_CYCL = 2
+	      LIMIT 1
+	    )																										AS "consultCn2",
+	    (SELECT PIC_NM
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB03'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	        AND PRCS_CYCL = 3
+	      LIMIT 1
+	    )																										AS "consultPicNm3",
+	    (SELECT PRCS_YMD
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB03'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	        AND PRCS_CYCL = 3
+	      LIMIT 1
+	    )																										AS "consultYmd3",
+	    (SELECT PRGRS_CN
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB03'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	        AND PRCS_CYCL = 3
+	      LIMIT 1
+	    )																										AS "consultCn3",
+	    (SELECT PIC_NM
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB03'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	        AND PRCS_CYCL = 4
+	      LIMIT 1
+	    )																										AS "consultPicNm4",
+	    (SELECT PRCS_YMD
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB03'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	        AND PRCS_CYCL = 4
+	      LIMIT 1
+	    )																										AS "consultYmd4",
+	    (SELECT PRGRS_CN
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB03'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	       AND PRCS_CYCL = 4
+	      LIMIT 1
+	    )																										AS "consultCn4",
+	    (SELECT (SELECT EVNT_NM FROM TB_EVENT_MNG WHERE EVNT_NO = TEMP.EVNT_NO) EVNT_NM
+	       FROM TB_SPRT_BIZ_PRGRE TEMP
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB04'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	      LIMIT 1
+	    )																										AS "irEvntNm",
+	    (SELECT PIC_NM
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB04'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	      LIMIT 1
+	    )																										AS "irPicNm",
+		(SELECT PRGRS_CN
+	       FROM TB_SPRT_BIZ_PRGRE
+	      WHERE SPRT_APLY_NO = A.SPRT_APLY_NO
+	        AND PRGRM_SE_CD = 'SB04'
+	        AND PRGRS_DETAIL_STTS_CD = '40'
+	     LIMIT 1
+		)																										AS "irYmd",
+		FN_FMT_STRTODATE(A.PRCS_YMD, '-')																		AS "prcsYmd"
+    </sql>
+    <sql id="Sql-Column-SprtBizPrgre">
+		A.sn			AS "sn",
+		A.sprt_aply_no	AS "sprtAplyNo",
+		A.prgrm_se_cd													AS "prgrmSeCd",
+		COALESCE(FN_GET_CODENM('CT.PRGRM_SE', prgrm_se_cd), '사업종료')	AS "prgrmSeCdNm",
+		A.dscsn_cntr_cd													AS "dscsnCntrCd",
+		FN_GET_CODENM('CT.DSCSN_CNTR', A.dscsn_cntr_cd)					AS "dscsnCntrCdNm",
+		A.prcs_cycl		AS "prcsCycl",
+		A.ftf_yn		AS "ftfYn",
+		A.prgrs_cn		AS "prgrsCn",
+		A.pic_nm		AS "picNm",
+		A.pic_telno		AS "picTelno",
+		A.evnt_no		AS "evntNo",
+		( SELECT evnt_nm
+		    FROM tb_event_mng
+	       WHERE evnt_no = A.evnt_no ) AS "evntNm",
+		CASE
+			WHEN A.prgrm_se_cd = 'SB03' AND A.prgrs_detail_stts_cd != '40' THEN FN_GET_CODENM('CT.PRCS_CYCL', A.prcs_cycl::varchar)
+			WHEN A.prgrm_se_cd = 'SB03' AND A.prgrs_detail_stts_cd  = '40' THEN FN_GET_CODENM('CT.PRCS_CYCL', A.prcs_cycl::varchar) || ', ' || CASE WHEN A.ftf_yn = 'Y' THEN '대면' ELSE '비대면' END
+			WHEN A.prgrm_se_cd = 'SB04' AND A.prgrs_detail_stts_cd IN ('20', '40') AND A.evnt_no IS NOT NULL THEN ( SELECT evnt_nm
+		    																		        						  FROM tb_event_mng
+	       																				   							 WHERE evnt_no = A.evnt_no )
+			ELSE '-'
+		END																									AS "detailInfo",
+		A.prgrs_stts_cd																						AS "prgrsSttsCd",
+		FN_GET_CODENM('CT.PRGRS_STTS1', A.prgrs_stts_cd)													AS "prgrsSttsCdNm",
+		COALESCE(A.prgrs_detail_stts_cd, A.prgrs_stts_cd)													AS "prgrsDetailSttsCd",
+		CASE
+			WHEN A.prgrs_detail_stts_cd IS NULL THEN FN_GET_CODENM('CT.PRGRS_STTS1', A.prgrs_stts_cd)
+			ELSE FN_GET_CODENM('CT.PRGRS_DETAIL_STTS', A.prgrs_detail_stts_cd)
+		END																									AS "prgrsDetailSttsCdNm",
+		FN_FMT_STRTODATE(A.prcs_ymd, '-')				AS "prcsYmd",
+		A.rgtr_no										AS "rgtrNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')	AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')				AS "regDate",
+		A.mdfr_no										AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')	AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')				AS "mdfDate",
+		( SELECT user_nm
+		    FROM tb_user
+	       WHERE user_no = A.rgtr_no )					AS "rgtrNm"
+    </sql>
+	<sql id="Sql-Column-Pbanc">
+		FN_GET_PRGRS(SUBSTRING(A.rcpt_bgng_dt, 1, 8), SUBSTRING(A.rcpt_end_dt, 1, 8))    AS "prgrsSttsCd", <!-- 모집상태 -->
+        A.biz_pbanc_no													AS "bizPbancNo",
+        A.biz_pbanc_nm													AS "bizPbancNm",
+        A.crdns_bzenty_no												AS "crdnsBzentyNo",
+        COALESCE(FN_GET_ENTNM(A.crdns_bzenty_no), A.crdns_bzenty_nm)	AS "crdnsBzentyNm",
+        A.brno															AS "brno",
+        A.tkcg_dept_nm													AS "tkcgDeptNm",
+        A.pic_nm														AS "picNm",
+        A.pic_telno														AS "picTelno",
+		FN_FMT_DATA('TEL', A.pic_telno)									AS "picTelnoForm",
+        A.biz_guidance_url												AS "bizGuidanceUrl",
+        A.rcpt_se_cd													AS "rcptSeCd",
+        CASE A.rcpt_se_cd
+        	WHEN '30' THEN FN_FMT_STRTODATE(A.rcpt_bgng_dt, '-') || ' ~ ' || FN_FMT_STRTODATE(A.rcpt_end_dt, '-')
+        	WHEN '10' THEN FN_FMT_STRTODATE(SUBSTRING(A.RCPT_BGNG_DT, 0, 7), '-') || ' ~ ' || FN_FMT_STRTODATE(SUBSTRING(A.RCPT_END_DT, 0, 7), '-')
+        	ELSE FN_GET_CODENM('CT.RCPT_WHL_SE', A.rcpt_se_cd)
+        END														AS "rcptSeCdNm",
+        A.rcpt_bgng_dt											AS "rcptBgngDt",
+        CASE
+        	WHEN A.RCPT_SE_CD = '10' THEN FN_FMT_STRTODATE(SUBSTRING(A.rcpt_bgng_dt, 0, 7), '-')
+        	ELSE FN_FMT_STRTODATE(SUBSTRING(A.rcpt_bgng_dt, 0, 9), '-')
+		END														AS "rcptBgngYmd",
+        SUBSTRING(A.rcpt_bgng_dt, 9, 2)							AS "rcptBgngTm",
+        A.rcpt_end_dt											AS "rcptEndDt",
+        CASE
+        	WHEN A.RCPT_SE_CD = '10' THEN FN_FMT_STRTODATE(SUBSTRING(A.rcpt_end_dt,  0, 7), '-')
+        	ELSE FN_FMT_STRTODATE(SUBSTRING(A.rcpt_end_dt,  0, 9), '-')
+        END														AS "rcptEndYmd",
+        SUBSTRING(A.rcpt_end_dt,  9, 2)							AS "rcptEndTm",
+        A.sprt_fld_cd											AS "sprtFldCd",
+        A.biz_fld												AS "bizFld",
+        FN_GET_CODENMLIST('CT.BIZ_RLM', A.biz_fld, ',', ', ')	AS "bizFldNm",
+        A.biz_trgt												AS "bizTrgt",
+        FN_GET_CODENMLIST('CT.SPRT_TRGT', A.biz_trgt, ',', ', ')AS "bizTrgtNm",
+        A.biz_trgt_age											AS "bizTrgtAge",
+        FN_GET_CODENM('CT.SPRT_AGE', A.biz_trgt_age)			AS "bizTrgtAgeNm",
+        A.biz_trgt_fntn_pd										AS "bizTrgtFntnPd",
+        FN_GET_CODENM('CT.FNTN_WHL', A.biz_trgt_fntn_pd)		AS "bizTrgtFntnPdNm",
+        A.rcpt_mthd_cd											AS "rcptMthdCd",
+        A.rcpt_mthd_cn											AS "rcptMthdCn",
+        A.aply_qlfc_cn											AS "aplyQlfcCn",
+        A.aply_excl_trgt_cn										AS "aplyExclTrgtCn",
+        A.sbmsn_dcmnt_cn										AS "sbmsnDcmntCn",
+        A.sprt_cn												AS "sprtCn",
+        A.pbanc_stts_cd											AS "pbancSttsCd",
+        A.del_yn												AS "delYn",
+        A.rgtr_no												AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  	AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             	AS "mdfDate"
+    </sql>
+
+    <!-- 세부지원사업관리 목록조회 -->
+    <select id="listInvtSprt" resultType="java.util.HashMap" parameterType="business.adm.support.service.SupportVO">
+        SELECT <include refid="Sql-Column-InvtSprt"/>
+          FROM tb_invtsprt_mng A
+         WHERE 1 = 1
+               <include refid="Sql-Where-InvtSprt"/>
+         ORDER BY 
+               A.prgrm_clsf_cd, A.prgrm_no
+    </select>
+    <select id="listInvtSprtCount" resultType="int" parameterType="business.adm.support.service.SupportVO">
+        SELECT COUNT(1) 
+          FROM tb_invtsprt_mng A
+         WHERE 1 = 1
+               <include refid="Sql-Where-InvtSprt"/>
+    </select>
+
+    <!-- 세부지원사업관리 상세조회 -->
+    <select id="viewInvtSprt" resultType="business.adm.support.service.SupportVO" parameterType="business.adm.support.service.SupportVO">
+        SELECT <include refid="Sql-Column-InvtSprt"/>
+          FROM tb_invtsprt_mng A
+         WHERE A.prgrm_no = #{prgrmNo}
+    </select>
+
+    <!-- 세부지원사업관리 등록 -->
+    <insert id="regiInvtSprt" parameterType="business.adm.support.service.SupportVO">
+    	<selectKey keyProperty="prgrmNo" resultType="string" order="BEFORE">
+    		SELECT #{sprtAplySeCd}||LPAD(NEXTVAL('SEQ_INVTSPRT_MNG')::text, 3, '0')
+    	</selectKey>
+        INSERT 
+          INTO tb_invtsprt_mng
+             ( prgrm_no,
+               sprt_aply_se_cd,
+               prgrm_clsf_cd,
+               prgrm_nm,
+               sprt_bgng_ymd,
+               sprt_end_ymd,
+               use_yn,
+               del_yn,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( #{prgrmNo},
+               #{sprtAplySeCd},
+               COALESCE(#{prgrmClsfCd}, ''),
+               #{prgrmNm},
+               FN_FMT_STRTODATE(#{sprtBgngYmd}, ''),
+               FN_FMT_STRTODATE(#{sprtEndYmd }, ''),
+               #{useYn},
+               'N',
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 세부지원사업관리 수정 -->
+    <update id="updtInvtSprt" parameterType="business.adm.support.service.SupportVO">
+		UPDATE tb_invtsprt_mng 
+           SET MDFR_NO = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(prgrmClsfCd)">prgrm_clsf_cd		= #{prgrmClsfCd},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(prgrmNm    )">prgrm_nm			= #{prgrmNm},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(sprtBgngYmd)">sprt_bgng_ymd		= FN_FMT_STRTODATE(#{sprtBgngYmd}, ''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(sprtEndYmd )">sprt_end_ymd		= FN_FMT_STRTODATE(#{sprtEndYmd }, ''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(useYn      )">use_yn			= #{useYn},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(delYn      )">del_yn			= #{delYn},</if>
+               MDFCN_YMD = NOW()
+         WHERE prgrm_no = #{prgrmNo}
+    </update>
+
+    <!-- 세부지원사업관리 삭제 -->
+    <update id="deltInvtSprt" parameterType="business.adm.support.service.SupportVO">
+        UPDATE tb_invtsprt_mng
+           SET del_yn = 'Y'
+         WHERE prgrm_no = #{prgrmNo}
+    </update>
+    
+    
+    
+    <!-- 신청현황 목록조회 -->
+    <select id="listInvtSprtAply" resultType="java.util.HashMap" parameterType="business.adm.support.service.SupportVO">
+        SELECT <include refid="Sql-Column-InvtSprtAply"/>
+          FROM (SELECT *,
+                       FN_GET_USERID(APLY_USER_NO) RGTR_ID
+                  FROM TB_INVTSPRT_APLY
+               ) A
+    LEFT OUTER
+          JOIN TB_INVTSPRT_MNG B
+            ON A.prgrm_no = B.prgrm_no
+         WHERE 1 = 1
+           AND A.del_yn = 'N'
+               <include refid="Sql-Where-InvtSprtAply"/>
+         ORDER BY 
+               A.sprt_aply_no DESC
+    </select>
+    <select id="listInvtSprtAplyCount" resultType="int" parameterType="business.adm.support.service.SupportVO">
+        SELECT COUNT(1) 
+          FROM (SELECT *,
+                       FN_GET_USERID(APLY_USER_NO) RGTR_ID
+                  FROM TB_INVTSPRT_APLY
+               ) A
+    LEFT OUTER
+          JOIN TB_INVTSPRT_MNG B
+            ON A.prgrm_no = B.prgrm_no
+         WHERE 1 = 1
+           AND A.del_yn = 'N'
+               <include refid="Sql-Where-InvtSprtAply"/>
+    </select>
+    
+    <!-- 신청현황 상세조회 -->
+    <select id="viewInvtSprtAply" resultType="business.adm.support.service.SupportVO" parameterType="business.adm.support.service.SupportVO">
+        SELECT <include refid="Sql-Column-InvtSprtAply"/>
+          FROM (SELECT *,
+                       FN_GET_USERID(APLY_USER_NO) RGTR_ID
+                  FROM TB_INVTSPRT_APLY
+               ) A
+    LEFT OUTER
+          JOIN tb_invtsprt_mng B
+            ON A.prgrm_no = B.prgrm_no
+         WHERE (1=1)
+           AND A.sprt_aply_no = #{sprtAplyNo}
+    </select>
+    
+    <!--2023.09.21 JH 파일정보 조회-->
+    <select id="viewInvtSprtAplyFileInfo" resultType="business.adm.support.service.SupportVO" parameterType="business.adm.support.service.SupportVO">
+        SELECT <include refid="Sql-Column-InvtSprtAplyFileInfo"/>
+          FROM (SELECT *,
+                       FN_GET_USERID(APLY_USER_NO) RGTR_ID
+                  FROM TB_INVTSPRT_APLY
+               ) A
+    LEFT OUTER
+          JOIN tb_invtsprt_mng B
+            ON A.prgrm_no = B.prgrm_no
+         WHERE (1=1)
+           AND A.sprt_aply_no = #{sprtAplyNo}
+    </select>
+    
+    
+    
+    <!-- 신청현황 수정 -->
+    <update id="updtInvtSprtAply" parameterType="business.adm.support.service.SupportVO">
+		UPDATE tb_invtsprt_aply 
+           SET MDFR_NO = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(prcsYmd    )">prcs_ymd		= FN_FMT_STRTODATE(#{prcsYmd}, ''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(prgrsSttsCd)">prgrs_stts_cd = #{prgrsSttsCd},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(prcsRsltCn )">prcs_rslt_cn  = #{prcsRsltCn},</if>
+               MDFCN_YMD = NOW()
+         WHERE sprt_aply_no = #{sprtAplyNo}
+    </update>
+    
+    <!-- 신청현황 삭제 -->
+    <update id="deltInvtSprtAply" parameterType="business.adm.support.service.SupportVO">
+        UPDATE tb_invtsprt_aply
+           SET del_yn = 'Y'
+         WHERE sprt_aply_no = #{sprtAplyNo}
+    </update>
+    
+    <!-- 신청현황 엑셀 목록조회 -->
+    <select id="listInvtSprtAplyExcl" resultType="java.util.HashMap" parameterType="business.adm.support.service.SupportVO">
+        SELECT <include refid="Sql-Column-InvtSprtAplyExcl"/>
+          FROM (SELECT *,
+                       FN_GET_USERID(APLY_USER_NO) RGTR_ID
+                  FROM TB_INVTSPRT_APLY
+               ) A
+    LEFT OUTER
+          JOIN TB_INVTSPRT_MNG B
+            ON A.PRGRM_NO = B.PRGRM_NO
+         WHERE 1 = 1
+           AND A.DEL_YN = 'N'
+               <include refid="Sql-Where-InvtSprtAply"/>
+         ORDER BY 
+               A.SPRT_APLY_NO DESC
+    </select>
+    
+    
+    
+    <!-- 신청현황 매출액 목록조회 -->
+    <select id="listInvtSprtSls" resultType="java.util.HashMap" parameterType="business.adm.support.service.SupportVO">
+        SELECT A.sn							AS "sn",
+        	   A.sprt_aply_no				AS "sprtAplyNo",
+        	   A.fnnr_ymd					AS "fnnrYmd",
+        	   SUBSTRING(A.fnnr_ymd, 1, 4)	AS "fnnrYear",
+        	   A.fnnr_amt					AS "fnnrAmt",
+        	   A.rgtr_no										AS "rgtrNo",
+				TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')	AS "regDttm",
+				TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')				AS "regDate",
+				A.mdfr_no										AS "mdfrNo",
+				TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')	AS "mdfDttm",
+				TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')				AS "mdfDate",
+				( SELECT user_nm
+				    FROM tb_user
+			       WHERE user_no = A.rgtr_no )					AS "rgtrNm"
+          FROM tb_invtsprt_sls A
+         WHERE 1 = 1
+           AND A.sprt_aply_no = #{sprtAplyNo}
+         ORDER BY 
+               A.sn DESC
+    </select>
+    <select id="listInvtSprtSlsCount" resultType="int" parameterType="business.adm.support.service.SupportVO">
+        SELECT COUNT(1) 
+          FROM tb_invtsprt_sls A
+         WHERE 1 = 1
+           AND A.sprt_aply_no = #{sprtAplyNo}
+    </select>
+    
+    <!-- 농식품 투자조합 목록조회 -->
+    <select id="listInvtMxtr" resultType="java.util.HashMap" parameterType="business.adm.support.service.SupportVO">
+        SELECT A.sn												AS "sn",
+        	   A.sprt_aply_no									AS "sprtAplyNo",
+        	   A.invt_mxtr_nm									AS "invtMxtrNm",
+        	   FN_FMT_STRTODATE(A.invt_ymd, '-')				AS "invtYmd",
+        	   A.invstr_nm										AS "invstrNm",
+        	   A.invt_amt										AS "invtAmt",
+        	   A.rgtr_no										AS "rgtrNo",
+			   TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')	AS "regDttm",
+			   TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')				AS "regDate",
+			   A.mdfr_no										AS "mdfrNo",
+			   TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')	AS "mdfDttm",
+			   TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')				AS "mdfDate",
+			   FN_GET_USERNM(A.rgtr_no)							AS "rgtrNm"
+          FROM tb_invt_mxtr A
+         WHERE 1 = 1
+           AND A.sprt_aply_no = #{sprtAplyNo}
+         ORDER BY 
+               A.sn DESC
+    </select>
+    <select id="listInvtMxtrCount" resultType="int" parameterType="business.adm.support.service.SupportVO">
+        SELECT COUNT(1) 
+          FROM tb_invt_mxtr A
+         WHERE 1 = 1
+           AND A.sprt_aply_no = #{sprtAplyNo}
+    </select>
+    
+    <!-- 지원사업 진행현황 목록조회 -->
+    <select id="listSprtBizPrgre" resultType="java.util.HashMap" parameterType="business.adm.support.service.SupportProgressVO">
+        SELECT <include refid="Sql-Column-SprtBizPrgre"/>
+          FROM tb_sprt_biz_prgre A
+         WHERE 1 = 1
+           AND A.sprt_aply_no = #{sprtAplyNo}
+         ORDER BY 
+               A.sn
+    </select>
+    <select id="listSprtBizPrgreCount" resultType="int" parameterType="business.adm.support.service.SupportProgressVO">
+        SELECT COUNT(1) 
+          FROM tb_sprt_biz_prgre A
+         WHERE 1 = 1
+           AND A.sprt_aply_no = #{sprtAplyNo}
+    </select>
+    
+    <!-- 지원사업 진행현황 등록 -->
+    <insert id="regiSprtBizPrgre" parameterType="business.adm.support.service.SupportProgressVO">
+        INSERT 
+          INTO tb_sprt_biz_prgre
+             ( sn,
+               sprt_aply_no,
+               prgrm_se_cd,
+               dscsn_cntr_cd,
+               prcs_cycl,
+               ftf_yn,
+               prgrs_cn,
+               pic_nm,
+               pic_telno,
+               evnt_no,
+               prgrs_stts_cd,
+               prgrs_detail_stts_cd,
+               prcs_ymd,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( NEXTVAL('SEQ_SPRT_BIZ_PRGRE'),
+               #{sprtAplyNo},
+               #{prgrmSeCd},
+               #{dscsnCntrCd},
+               #{prcsCycl}::numeric,
+               <if test="@common.util.CommUtils@isNotEmpty(ftfYn)">#{ftfYn},</if>
+               <if test="@common.util.CommUtils@isEmpty(ftfYn   )">'N',</if>
+               #{prgrsCn},
+               #{picNm},
+               #{picTelno},
+               #{evntNo},
+               #{prgrsSttsCd},
+               #{prgrsDetailSttsCd},
+               <if test="@common.util.CommUtils@isNotEmpty(prcsYmd)">FN_FMT_STRTODATE(#{prcsYmd}, ''),</if>
+               <if test="@common.util.CommUtils@isEmpty(prcsYmd   )">TO_CHAR(NOW(), 'YYYYMMDD'),</if>
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+    
+    <!-- 지원사업 진행현황 삭제 -->
+    <delete id="deltSprtBizPrgre" parameterType="business.adm.support.service.SupportProgressVO">
+        DELETE 
+          FROM tb_sprt_biz_prgre 
+         WHERE sn = #{sn}
+    </delete>
+    
+    
+    <!-- 사업공고 목록조회 -->
+    <select id="listPbanc" resultType="java.util.HashMap" parameterType="business.adm.support.service.PbancVO">
+        SELECT <include refid="Sql-Column-Pbanc"/>
+          FROM tb_biz_pbanc A
+         WHERE 1 = 1
+           AND del_yn = 'N'
+               <include refid="Sql-Where-Pbanc"/>
+         ORDER BY 
+               A.biz_pbanc_no DESC
+    </select>
+    <select id="listPbancCount" resultType="int" parameterType="business.adm.support.service.PbancVO">
+        SELECT COUNT(1) 
+          FROM tb_biz_pbanc A
+         WHERE 1 = 1
+           AND del_yn = 'N'
+               <include refid="Sql-Where-Pbanc"/>
+    </select>
+    
+    <!-- 사업공고 상세조회 -->
+    <select id="viewPbanc" resultType="business.adm.support.service.PbancVO" parameterType="business.adm.support.service.PbancVO">
+        SELECT <include refid="Sql-Column-Pbanc"/>
+          FROM tb_biz_pbanc A
+         WHERE 1 = 1
+           AND del_yn = 'N'
+               <include refid="Sql-Where-Pbanc"/>
+    </select>
+    
+    <!-- 사업공고 등록 -->
+    <insert id="regiPbanc" parameterType="business.adm.support.service.PbancVO">
+    	<selectKey keyProperty="bizPbancNo" resultType="string" order="BEFORE">
+    		SELECT 'B'||TO_CHAR(NOW(), 'YY')||LPAD(NEXTVAL('SEQ_BIZ_PBANC')::text, 7, '0')
+    	</selectKey>
+        INSERT 
+          INTO tb_biz_pbanc
+             ( biz_pbanc_no,
+               biz_pbanc_nm,
+               crdns_bzenty_no,
+               crdns_bzenty_nm,
+               brno,
+               tkcg_dept_nm,
+               pic_nm,
+               pic_telno,
+               biz_guidance_url,
+               rcpt_se_cd,
+               rcpt_bgng_dt,
+               rcpt_end_dt,
+               sprt_fld_cd,
+               biz_fld,
+               biz_trgt,
+               biz_trgt_age,
+               biz_trgt_fntn_pd,
+               rcpt_mthd_cd,
+               rcpt_mthd_cn,
+               aply_qlfc_cn,
+               aply_excl_trgt_cn,
+               sbmsn_dcmnt_cn,
+               sprt_cn,
+               pbanc_stts_cd,
+               del_yn,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( #{bizPbancNo},
+               #{bizPbancNm},
+               #{crdnsBzentyNo},
+               FN_GET_ENTNM(#{crdnsBzentyNo}),
+               #{brno},
+               #{tkcgDeptNm},
+               #{picNm},
+               #{picTelno},
+               #{bizGuidanceUrl},
+               #{rcptSeCd},
+               FN_FMT_STRTODATE(#{rcptBgngYmd}, '')||#{rcptBgngTm}||'00',
+               FN_FMT_STRTODATE(#{rcptEndYmd }, '')||#{rcptEndTm }||'00',
+               #{sprtFldCd},
+               #{bizFld},
+               #{bizTrgt},
+               #{bizTrgtAge},
+               #{bizTrgtFntnPd},
+               NULL,
+               #{rcptMthdCn},
+               #{aplyQlfcCn},
+               #{aplyExclTrgtCn},
+               #{sbmsnDcmntCn},
+               #{sprtCn},
+               '10',
+               'N',
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+    
+    <!-- 신청현황 수정 -->
+    <update id="updtPbanc" parameterType="business.adm.support.service.SupportVO">
+		UPDATE tb_biz_pbanc 
+           SET MDFR_NO = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(bizPbancNm    )">biz_pbanc_nm		= #{bizPbancNm},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(crdnsBzentyNo )">crdns_bzenty_no	= #{crdnsBzentyNo},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(crdnsBzentyNo )">crdns_bzenty_nm	= FN_GET_ENTNM(#{crdnsBzentyNo}),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(tkcgDeptNm    )">tkcg_dept_nm		= #{tkcgDeptNm},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(picNm         )">pic_nm				= #{picNm},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(picTelno      )">pic_telno			= #{picTelno},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bizGuidanceUrl)">biz_guidance_url	= #{bizGuidanceUrl},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rcptSeCd      )">rcpt_se_cd			= #{rcptSeCd},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rcptBgngDt    )">rcpt_bgng_dt		= FN_FMT_STRTODATE(#{rcptBgngYmd}, '')||#{rcptBgngTm}||'00',</if>
+		<if test="@common.util.CommUtils@isEmpty(rcptBgngDt       )">rcpt_bgng_dt		= NULL,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rcptEndDt     )">rcpt_end_dt		= FN_FMT_STRTODATE(#{rcptEndYmd }, '')||#{rcptEndTm }||'00',</if>
+		<if test="@common.util.CommUtils@isEmpty(rcptEndDt        )">rcpt_end_dt		= NULL,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bizFld        )">biz_fld			= #{bizFld},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bizTrgt       )">biz_trgt			= #{bizTrgt},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bizTrgtAge    )">biz_trgt_age		= #{bizTrgtAge},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bizTrgtFntnPd )">biz_trgt_fntn_pd	= #{bizTrgtFntnPd},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rcptMthdCn    )">rcpt_mthd_cn		= #{rcptMthdCn},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(aplyQlfcCn    )">aply_qlfc_cn		= #{aplyQlfcCn},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(aplyExclTrgtCn)">aply_excl_trgt_cn	= #{aplyExclTrgtCn},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(sbmsnDcmntCn  )">sbmsn_dcmnt_cn		= #{sbmsnDcmntCn},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(sprtCn        )">sprt_cn			= #{sprtCn},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pbancSttsCd   )">pbanc_stts_cd		= #{pbancSttsCd},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(delYn         )">del_yn				= #{delYn},</if>
+               MDFCN_YMD = NOW()
+         WHERE biz_pbanc_no = #{bizPbancNo}
+    </update>
+    
+    <!-- 2023.09.21 JH 파일정보 수정관련 -->
+    <update id="updtSprt" parameterType= "business.adm.support.service.SupportVO">
+        UPDATE tb_invtsprt_aply 
+           SET mdfr_no   = #{gsUserNo},
+	  <if test="@common.util.CommUtils@isNotEmpty(prvcClctAgreYn      )"> prvc_clct_agre_yn    = #{prvcClctAgreYn      },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(mainBizCn           )"> main_biz_cn          = #{mainBizCn           },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(coreItmCn           )"> core_itm_cn          = #{coreItmCn           },</if>
+	  <if test="@common.util.CommUtils@isNotEmpty(delYn               )"> del_yn               = #{delYn               },</if>  
+               mdfcn_ymd = NOW()
+         WHERE sprt_aply_no = #{sprtAplyNo}
+    </update>
+    
+    <!-- 세부지원사업관리 삭제 -->
+    <update id="deltPbanc" parameterType="business.adm.support.service.SupportVO">
+        UPDATE tb_biz_pbanc
+           SET del_yn = 'Y'
+         WHERE biz_pbanc_no = #{bizPbancNo}
+    </update>
+    
+</mapper>

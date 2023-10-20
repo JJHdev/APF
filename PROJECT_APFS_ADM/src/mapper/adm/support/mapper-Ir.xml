@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Ir">
+
+    <!-- ======================== -->
+    <!--  공통 sql                 -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(fundNo)">
+            AND (A.fund_no = #{fundNo})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(bzentyNo)">
+            AND (A.bzenty_no = #{bzentyNo})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(fundNm)">
+            AND (B.fund_nm like '%'||#{fundNm}||'%')
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(sprtSttsCd)">
+            AND (A.sprt_stts_cd = #{sprtSttsCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchBgngYmd)">
+            AND (A.sprt_ymd >= FN_FMT_STRTODATE(#{srchBgngYmd}, ''))
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchEndYmd)">
+            AND (A.sprt_ymd <![CDATA[<=]]> FN_FMT_STRTODATE(#{srchEndYmd}, ''))
+        </if>
+    </sql>
+    
+    <sql id="Sql-Column">
+		A.fund_no										AS "fundNo",
+		B.fund_nm										AS "fundNm",
+		A.bzenty_no										AS "bzentyNo",
+		FN_GET_ENTNM(A.bzenty_no)						AS "bzentyNm",
+		A.ir_rls_yn										AS "irRlsYn",
+		A.sprt_stts_cd									AS "sprtSttsCd",
+		FN_GET_CODENM('CT.SPRT_STUS', A.sprt_stts_cd)	AS "sprtSttsCdNm",
+		FN_FMT_STRTODATE(A.sprt_ymd, '-')				AS "sprtYmd",
+		FN_FMT_STRTODATE(A.rvw_ymd, '-')				AS "rvwYmd",
+		A.rgtr_no										AS "rgtrNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')	AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')				AS "regDate",
+		A.mdfr_no										AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')	AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')				AS "mdfDate",
+		FN_GET_USERNM(A.rgtr_no)						AS "rgtrNm",
+		FN_GET_USERID(A.rgtr_no)						AS "rgtrId",
+		(SELECT mbl_telno
+		   FROM tb_user
+		  WHERE user_no = A.rgtr_no)					AS "mblTelno",
+		/* EntVO 생기기 이전 임시 경영체 정보 쿼리 */
+		(SELECT FN_FMT_DATA('RNO', brno) FROM tb_ent WHERE bzenty_no = A.bzenty_no)			AS "brno",
+		(SELECT rprsv_nm FROM tb_ent WHERE bzenty_no = A.bzenty_no)							AS "rprsvNm",
+		(SELECT FN_FMT_STRTODATE(fndn_ymd, '-') FROM tb_ent WHERE bzenty_no = A.bzenty_no)	AS "fndnYmd",
+		(SELECT FN_FMT_DATA('TEL', rprs_telno) FROM tb_ent WHERE bzenty_no = A.bzenty_no)	AS "rprsTelno"
+    </sql>
+
+    <!-- 세부지원사업관리 목록조회 -->
+    <select id="listIr" resultType="java.util.HashMap" parameterType="business.adm.support.service.IrVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_fund_sprt A
+    INNER JOIN tb_fund_info B
+            ON A.fund_no = B.fund_no
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY 
+               A.reg_ymd DESC
+    </select>
+    <select id="listIrCount" resultType="int" parameterType="business.adm.support.service.IrVO">
+        SELECT COUNT(1) 
+          FROM tb_fund_sprt A
+    INNER JOIN tb_fund_info B
+            ON A.fund_no = B.fund_no
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 세부지원사업관리 상세조회 -->
+    <select id="viewIr" resultType="business.adm.support.service.IrVO" parameterType="business.adm.support.service.IrVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_fund_sprt A
+    INNER JOIN tb_fund_info B
+            ON A.fund_no = B.fund_no
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 세부지원사업관리 등록 -->
+    <insert id="regiIr" parameterType="business.adm.support.service.IrVO">
+        INSERT 
+          INTO tb_fund_sprt
+             ( fund_no,
+               bzenty_no,
+               ir_rls_yn,
+               sprt_stts_cd,
+               sprt_ymd,
+               rvw_ymd,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( #{fundNo},
+               #{bzentyNo},
+               #{irRlsYn},
+               #{sprtSttsCd},
+               FN_FMT_STRTODATE(#{sprtYmd}, ''),
+               FN_FMT_STRTODATE(#{rvwYmd }, ''),
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 세부지원사업관리 수정 -->
+    <update id="updtIr" parameterType="business.adm.support.service.IrVO">
+		UPDATE tb_fund_sprt 
+           SET MDFR_NO = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(irRlsYn   )">ir_rls_yn		= #{irRlsYn},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(sprtSttsCd)">sprt_stts_cd	= #{sprtSttsCd},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(sprtYmd   )">sprt_ymd		= FN_FMT_STRTODATE(#{sprtYmd}, ''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rvwYmd    )">rvw_ymd		= FN_FMT_STRTODATE(#{rvwYmd }, ''),</if>
+               MDFCN_YMD = NOW()
+         WHERE fund_no = #{fundNo}
+           AND bzenty_no = #{bzentyNo}
+    </update>
+
+    <!-- 세부지원사업관리 삭제 -->
+    <update id="deltIr" parameterType="business.adm.support.service.IrVO">
+        DELETE 
+          FROM tb_fund_sprt
+         WHERE fund_no = #{fundNo}
+           AND bzenty_no = #{bzentyNo}
+    </update>
+    
+</mapper>

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="AplyFile">
+
+    <sql id="Sql-Column">
+           A.SN              AS "sn"                          /*번호*/
+         , A.DTY_SE_CD       AS "dtySeCd"                     /*업무구분*/
+         , FN_GET_CODENM('CT034', A.DTY_SE_CD) AS "dtySeNm"   /*업무구분명*/
+         , A.DCMT_NO         AS "dcmtNo"                      /*접수번호*/
+         , B.UP_PAPE_CD      AS "upPapeCd"                    /*서류분류*/
+         , B1.PAPE_NM        AS "upPapeNm"                    /*서류분류명*/
+         , A.PAPE_CD         AS "papeCd"                      /*세부분류코드*/
+         , B.PAPE_NM         AS "papeNm"                      /*세부분류명*/
+         , A.FILE_PATH       AS "filePath"
+         , A.STRG_FILE_NM    AS "strgNm"
+         , A.FILE_NM         AS "fileNm"
+         , A.FILE_SZ         AS "fileSz"
+         , A.PRCS_STUS_CD                                 AS "prcsStusCd"
+         , FN_GET_CODENM('CT028', A.PRCS_STUS_CD)         AS "prcsStusNm"
+         , A.MNGR_REG_YN                                  AS "mngrRegYn" 
+         , A.DEL_YN                                       AS "delYn"
+         , A.RGTR_NO                                      AS "rgtrNo"
+         , TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm"
+         , TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')             AS "regDate"
+         , A.MDFR_NO                                      AS "mdfrNo"
+         , TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm"
+         , TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+    <sql id="Sql-FromWhere">
+       FROM TB_APLY_FILE A
+          , TB_PAPE_CODE B
+          , TB_PAPE_CODE B1
+      WHERE A.PAPE_CD    = B.PAPE_CD
+        AND B.UP_PAPE_CD = B1.PAPE_CD
+        AND A.DEL_YN     = 'N'
+        AND B.USE_YN     = 'Y'
+    </sql>
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(srchDtySeCd)">
+            AND A.DTY_SE_CD       = #{srchDtySeCd}
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchUpPapeCd)">
+            AND B.UP_PAPE_CD      = #{srchUpPapeCd}
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchPapeCd)">
+            AND B.PAPE_CD         = #{srchPapeCd}
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchDcmtNo)">
+            AND A.DCMT_NO         = #{srchDcmtNo}
+        </if>
+    </sql>
+
+    <!-- 신청첨부파일 목록조회 -->
+    <select id="listAplyFile" resultType="java.util.HashMap" parameterType="business.sys.file.service.AplyFileVO">
+        SELECT <include refid="Sql-Column"/>
+          <include refid="Sql-FromWhere"/>
+          <include refid="Sql-Where"/>
+         ORDER BY A.SN
+    </select>
+
+    <select id="listAplyFileCount" resultType="int" parameterType="business.sys.file.service.AplyFileVO">
+        SELECT COUNT(1)
+          <include refid="Sql-FromWhere"/>
+          <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 신청첨부파일 상세조회 -->
+    <select id="viewAplyFile" resultType="business.sys.file.service.AplyFileVO"  parameterType="string">
+        SELECT <include refid="Sql-Column"/>
+          <include refid="Sql-FromWhere"/>
+           AND A.SN = #{sn}
+    </select>
+    <!-- 신청첨부파일 등록 -->
+    <insert id="regiAplyFile" parameterType="business.sys.file.service.AplyFileVO">
+        <selectKey keyProperty="sn" resultType="string" order="BEFORE">
+            SELECT NEXTVAL('SEQ_APLY_FILE')
+        </selectKey>
+        INSERT
+          INTO TB_APLY_FILE
+             ( SN,
+               DTY_SE_CD,
+               DCMT_NO,
+               DTL_DCMT_NO,
+               PAPE_CD,
+               FILE_PATH,
+               STRG_FILE_NM,
+               FILE_NM,
+               FILE_SZ,
+               PRCS_STUS_CD,
+               PRCS_CN,
+               DEL_YN,
+               MNGR_REG_YN,
+               RGTR_NO,
+               REG_YMD
+             )
+        VALUES
+             ( #{sn},
+               #{dtySeCd},
+               #{dcmtNo},
+               #{dtlDcmtNo},
+               #{papeCd},
+               #{filePath},
+               #{strgNm},
+               #{fileNm},
+               #{fileSz},
+               #{prcsStusCd},
+               #{prcsCn},
+               #{delYn},
+               #{mngrRegYn},
+               #{gsUserNo},
+               SYSDATE
+             )
+    </insert>
+
+    <!-- 신청첨부파일 수정 -->
+    <update id="updtAplyFile" parameterType="business.sys.file.service.AplyFileVO">
+        UPDATE TB_APLY_FILE
+           SET MDFR_NO   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(dtySeCd)"   > DTY_SE_CD    = #{dtySeCd},   </if>
+        <if test="@common.util.CommUtils@isNotEmpty(dcmtNo)"    > DCMT_NO      = #{dcmtNo},    </if>
+        <if test="@common.util.CommUtils@isNotEmpty(dtlDcmtNo)" > DTL_DCMT_NO  = #{dtlDcmtNo}, </if>
+        <if test="@common.util.CommUtils@isNotEmpty(papeCd)"    > PAPE_CD      = #{papeCd},    </if>
+        <if test="@common.util.CommUtils@isNotEmpty(filePath)"  > FILE_PATH    = #{filePath},  </if>
+        <if test="@common.util.CommUtils@isNotEmpty(strgNm)"    > STRG_FILE_NM = #{strgNm},    </if>
+        <if test="@common.util.CommUtils@isNotEmpty(fileNm)"    > FILE_NM      = #{fileNm},    </if>
+        <if test="@common.util.CommUtils@isNotEmpty(fileSz)"    > FILE_SZ      = #{fileSz},    </if>
+        <if test="@common.util.CommUtils@isNotEmpty(prcsStusCd)"> PRCS_STUS_CD = #{prcsStusCd},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(prcsCn)"    > PRCS_CN      = #{prcsCn},    </if>
+        <if test="@common.util.CommUtils@isNotEmpty(delYn)"     > DEL_YN       = #{delYn},     </if>
+        <if test="@common.util.CommUtils@isNotEmpty(mngrRegYn)" > MNGR_REG_YN  = #{mngrRegYn}, </if>
+        <if test="@common.util.CommUtils@isNotEmpty(rgtrNo)"    > RGTR_NO      = #{rgtrNo},    </if>
+               MDFCN_YMD = SYSDATE
+         WHERE SN        = #{sn}
+    </update>
+
+    <!-- 신청첨부파일 삭제 -->
+    <delete id="deltAplyFile" parameterType="business.sys.file.service.AplyFileVO">
+        DELETE
+          FROM TB_APLY_FILE
+         WHERE SN = #{sn}
+    </delete>
+</mapper>

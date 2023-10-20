@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd">
+
+	<bean id="LinkKodataService" class="business.batch.service.LinkKodataService"/>
+	
+	<!-- SFTP로 KODATA 서버에서 .jar 파일 NAS에 저장 -->
+    <bean id="downloadKodataBatch" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="LinkKodataService"/>
+        <property name="targetMethod" value="downloadKodata" />
+        <property name="concurrent"   value="false" />
+    </bean>
+    
+    <!-- NAS에 .jar 파일 압축해제 후 IF 테이블에 INSERT, 프로시저 호출, 위치정보 수정 -->
+    <bean id="regiKodataBatch" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="LinkKodataService"/>
+        <property name="targetMethod" value="regiKodata"     />
+        <property name="concurrent"   value="false" />
+    </bean>
+    
+    <!-- NAS에 생성된 .txt 파일 KODATA SFTP 서버에 업로드 -->
+    <bean id="uploadKodataBatch" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="LinkKodataService"/>
+        <property name="targetMethod" value="uploadKodata"   />
+        <property name="concurrent"   value="false" />
+    </bean>
+    
+    
+    <!-- 화,수,토 / 6,9,12,15시 5분에 실행 -->
+    <bean id="downloadKodataTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail"      ref="downloadKodataBatch" />
+        <property name="cronExpression" value="0 5 6,9,12,15 ? * TUE,WED,SAT" />
+    </bean>
+    
+    <!-- 화,수,토 / 6,9,12,15시 30분에 실행 -->
+    <bean id="regiKodataTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail"      ref="regiKodataBatch" />
+        <!-- <property name="cronExpression" value="0 30 6,9,12,15 ? * TUE,WED,SAT" />-->
+        <property name="cronExpression" value="0 17 6,9,12,15 ? * FRI" />
+    </bean>
+    
+    <!-- 매일 18시 55분에 실행 -->
+    <bean id="uploadKodataTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail"      ref="uploadKodataBatch" />
+        <property name="cronExpression" value="0 55 18 * * ?"   />
+    </bean>
+    
+    
+    <!-- 스케쥴러 실행 -->
+    <bean id="jobFileManageScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <ref bean="downloadKodataTrigger" />
+                <ref bean="regiKodataTrigger"     />
+                <ref bean="uploadKodataTrigger"   />
+            </list>
+        </property>
+    </bean>
+
+	<!--
+	===========================================================================
+	CRON 표현식
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	초   |   분 |   시 |   일 |   월 |요일 | 연도
+	0~59 | 0~59 | 0~23 | 1~31 | 1~12 | 0~6 | 생략가능
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	요일 : 0 (일요일) ~ 6( 토요일)
+	? : 설정 값 없을 때 - 일과 요일 에서만 사용가능
+	* : 모든조건
+	시작시간/단위 : 시작시간부터 해당 단위 때
+	시작범위-끝범위 : 시작범위 부터 끝범위까지
+	L : 마지막 - 일, 요일 에서만 사용가능
+	W : 가장 가까운 평일 찾는다 - 일 에서만 사용가능
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	ex) 10W
+	-10일이 평일 일 때 : 10일에 실행
+	-10일이 토요일 일 때 : 가장 가까운 평일인 금요일(9일)에 참
+	-10일이 일요일 일 때 : 가장 가까운 평일인 월요일(11일)에 참
+	# : 몇주 째인지 찾는다 - 요일 에서만 사용가능
+	ex) 3#2 : 수요일#2째주 에 참
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	예제
+	1) 매월 10일 오전 11시
+	   0  1  1  10  *  *
+	2) 매일 오후 2시 5분 0초
+	   0  5  14  *  *  *
+	3) 10분마다 도는 스케줄러 : 10분 0초, 20분 0초...
+	   0  0/10  *  *  *
+	4) 조건에서만 실행되는 스케줄러 : 10분 0초, 11분 0초 ~ 15분 0초까지 실행
+	   0  10-15  *  *  *
+	===========================================================================
+	-->
+</beans>

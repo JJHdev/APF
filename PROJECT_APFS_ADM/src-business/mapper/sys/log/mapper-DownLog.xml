@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="DownLog">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+        A.SN              AS "sn",
+        A.ATCH_FILE_SN    AS "atchFileSn",
+        A.PROG_URL        AS "progUrl",
+        A.USER_NO         AS "userNo",
+        (SELECT USER_NM
+           FROM TMP_USER
+          WHERE USER_NO = A.USER_NO) AS "userNm",
+        A.DOWN_RESN       AS "downResn",
+        TO_CHAR(CNTN_DT,'YYYY-MM-DD HH24:MI:SS')
+                          AS "cntnDt",
+        A.CNTN_YR         AS "cntnYr",
+        A.CNTN_MM         AS "cntnMm",
+        A.CNTN_DD         AS "cntnDd",
+        A.IP_ADDR         AS "ipAddr",
+        A.SRVR_NM         AS "srvrNm",
+        <!-- 2023.01.30 살샐물제품 신청파일 추가 -->
+        <!-- 2023.03.22 OCR 분석항목 추가 -->
+        (CASE WHEN INSTR(A.PROG_URL, 'AplyFile'   ) > 0 THEN B.FILE_NM
+              ELSE NULL END ) AS "fileNm",
+        (CASE WHEN INSTR(A.PROG_URL, 'AplyFile'   ) > 0 THEN '신청첨부파일-'    ||FN_GET_CODENM('CT034', B.DTY_SE_CD)
+              ELSE NULL END ) AS "dtySeNm",
+        A.SYS_SE_CD       AS "sysSeCd"
+    </sql>
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(srchStDt)">
+            AND A.CNTN_DT <![CDATA[ >= ]]> TO_TIMESTAMP(#{srchStDt}||'00:00:00', 'YYYY-MM-DD HH24:MI:SS')
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchEnDt)">
+            AND A.CNTN_DT <![CDATA[ <= ]]> TO_TIMESTAMP(#{srchEnDt}||'23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+            AND(A.PROG_URL   LIKE '%'||#{srchText}||'%'
+             OR A.USER_NO    LIKE '%'||#{srchText}||'%'
+             OR A.USER_NO    IN   (SELECT USER_NO FROM TMP_USER WHERE USER_NM LIKE '%'||#{srchText}||'%')
+             OR A.DOWN_RESN  LIKE '%'||#{srchText}||'%'
+             OR (CASE WHEN INSTR(A.PROG_URL, 'AplyFile'   ) > 0 AND INSTR(B.FILE_NM, #{srchText}) > 0 THEN 1
+                      ELSE 0 END ) = 1
+             OR (CASE WHEN INSTR(A.PROG_URL, 'AplyFile'   ) > 0 AND INSTR(B.DCMT_NO, #{srchText}) > 0 THEN 1
+                      ELSE 0 END ) = 1
+            )
+        </if>
+    </sql>
+
+    <!-- 대상파일 키 목록조회 -->
+    <select id="listDownFile" resultType="string" parameterType="business.sys.log.service.LogVO">
+        SELECT SN       AS "atchFileSn"
+          FROM TMP_APLY_FILE
+         WHERE DTY_SE_CD = #{dtySeCd}
+           AND DCMT_NO   = #{dcmtNo}
+        <if test="@common.util.CommUtils@isNotEmpty(dtlDcmtNo)">
+           AND DTL_DCMT_NO = #{dtlDcmtNo}
+        </if>
+         ORDER BY
+               SN
+    </select>
+
+    <!-- 다운로드이력 목록조회 -->
+    <select id="listDownLog" resultType="java.util.HashMap" parameterType="business.sys.log.service.LogVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM            SYS_DOWN_HST A
+          LEFT OUTER JOIN TMP_APLY_FILE B
+                       ON A.ATCH_FILE_SN = B.SN
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY
+               A.SN DESC
+    </select>
+    <select id="listDownLogCount" resultType="int" parameterType="business.sys.log.service.LogVO">
+        SELECT COUNT(1)
+          FROM SYS_DOWN_HST A
+          LEFT OUTER JOIN TB_APLY_FILE B
+                       ON A.ATCH_FILE_SN = B.SN
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 다운로드이력 등록 -->
+    <insert id="regiDownLog" parameterType="business.sys.log.service.LogVO">
+        INSERT
+          INTO SYS_DOWN_HST
+             ( SN,
+               ATCH_FILE_SN,
+               PROG_URL,
+               USER_NO,
+               DOWN_RESN,
+               CNTN_DT,
+               CNTN_YR,
+               CNTN_MM,
+               CNTN_DD,
+               IP_ADDR,
+               SRVR_NM,
+               SYS_SE_CD
+             )
+        VALUES
+             ( nextval('SEQ_DOWN_HST'),
+               #{atchFileSn},
+               #{progUrl},
+               #{userNo},
+               #{downResn},
+               SYSTIMESTAMP,
+               TO_CHAR(SYSDATE, 'yyyy'),
+               TO_CHAR(SYSDATE, 'mm'),
+               TO_CHAR(SYSDATE, 'dd') ,
+               #{ipAddr},
+               #{srvrNm},
+               #{sysCd}
+             )
+    </insert>
+
+    <!-- 다운로드이력 삭제 -->
+    <delete id="deltDownLog" parameterType="business.sys.log.service.LogVO">
+        DELETE
+          FROM SYS_DOWN_HST
+         WHERE SN = #{sn}
+    </delete>
+
+</mapper>

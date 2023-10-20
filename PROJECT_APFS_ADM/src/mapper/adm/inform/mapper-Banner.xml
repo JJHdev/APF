@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Banner">
+
+    <!-- ======================== -->
+    <!--  공통 sql                 -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+        	<if test="@common.util.CommUtils@isEqual(srchType,'all')">
+	            AND (A.banner_nm    LIKE '%' || #{srchText} || '%'
+	             OR  A.banner_url   LIKE '%' || #{srchText} || '%'
+	             OR  A.banner_expln LIKE '%' || #{srchText} || '%'
+	                )
+	        </if>
+	        <if test="@common.util.CommUtils@isEqual(srchType,'title')">
+				AND  A.banner_nm     LIKE '%'|| #{srchText} || '%'
+	        </if>
+	        <if test="@common.util.CommUtils@isEqual(srchType,'content')">
+				AND  A.banner_expln  LIKE '%'|| #{srchText} || '%'
+	        </if>
+        </if>
+    </sql>
+    
+    <sql id="Sql-Column">
+		A.banner_no										AS "bannerNo",
+		A.banner_nm										AS "bannerNm",
+		A.banner_url									AS "bannerUrl",
+		A.banner_expln									AS "bannerExpln",
+		FN_FMT_STRTODATE(A.pstg_bgng_ymd, '-')			AS "pstgBgngYmd",
+		FN_FMT_STRTODATE(A.pstg_end_ymd,  '-')			AS "pstgEndYmd",
+		A.ordr											AS "ordr",
+		A.use_yn										AS "useYn",
+		A.rgtr_no										AS "rgtrNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')	AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')				AS "regDate",
+		A.mdfr_no										AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')	AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')				AS "mdfDate",
+		( SELECT user_nm
+		    FROM tb_user
+	       WHERE user_no = A.rgtr_no)					AS "rgtrNm"
+    </sql>
+
+    <!-- 배너관리 목록조회 -->
+    <select id="listBanner" resultType="java.util.HashMap" parameterType="business.adm.inform.service.BannerVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_banner A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY 
+               A.banner_no DESC
+    </select>
+    <select id="listBannerCount" resultType="int" parameterType="business.adm.inform.service.BannerVO">
+        SELECT COUNT(1) 
+          FROM tb_banner A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 배너관리 상세조회 -->
+    <select id="viewBanner" resultType="business.adm.inform.service.BannerVO" parameterType="business.adm.inform.service.BannerVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_banner A
+         WHERE banner_no = #{bannerNo}
+    </select>
+
+    <!-- 배너관리 등록 -->
+    <insert id="regiBanner" parameterType="business.adm.inform.service.BannerVO">
+    	<selectKey keyProperty="bannerNo" resultType="long" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_BANNER')
+    	</selectKey>
+        INSERT 
+          INTO tb_banner 
+             ( banner_no,
+               banner_nm,
+               banner_url,
+               banner_expln,
+               pstg_bgng_ymd,
+               pstg_end_ymd,
+               ordr,
+               use_yn,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{bannerNo},
+               #{bannerNm},
+               #{bannerUrl},
+               #{bannerExpln},
+               FN_FMT_STRTODATE(#{pstgBgngYmd}, ''),
+               FN_FMT_STRTODATE(#{pstgEndYmd }, ''),
+               #{ordr},
+               <if test="@common.util.CommUtils@isNotEmpty(useYn)">#{useYn}</if><if test="@common.util.CommUtils@isEmpty(useYn)">'N'</if>,
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 배너관리 수정 -->
+    <update id="updtBanner" parameterType="business.adm.inform.service.BannerVO">
+		UPDATE tb_banner 
+           SET MDFR_NO = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(bannerNm   )">banner_nm		= #{bannerNm},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bannerUrl  )">banner_url	= #{bannerUrl},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(bannerExpln)">banner_expln	= #{bannerExpln},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pstgBgngYmd)">pstg_bgng_ymd	= FN_FMT_STRTODATE(#{pstgBgngYmd}, ''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pstgEndYmd )">pstg_end_ymd	= FN_FMT_STRTODATE(#{pstgEndYmd}, ''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(ordr       )">ordr			= #{ordr},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(useYn      )">use_yn		= #{useYn},</if>
+		<if test="@common.util.CommUtils@isEmpty(useYn         )">use_yn		= 'N',</if>
+               MDFCN_YMD = NOW()
+         WHERE banner_no = #{bannerNo}
+    </update>
+
+    <!-- 배너관리 삭제 -->
+    <update id="deltBanner" parameterType="business.adm.inform.service.BannerVO">
+        DELETE
+          FROM tb_banner
+         WHERE banner_no = #{bannerNo}
+    </update>
+
+</mapper>

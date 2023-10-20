@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Role">
+
+    <sql id="Sql-RoleTable">
+		WITH RECURSIVE T_ROLE AS (
+			SELECT C.*
+			     , 0 as LEVEL
+			  FROM SYS_ROLE C		
+			 WHERE UP_ROLE_ID = 'NONE'
+			
+			UNION ALL
+			
+			SELECT R.*
+			     , level + 1
+			  FROM SYS_ROLE R		
+			  JOIN T_ROLE T ON T.ROLE_ID = R.UP_ROLE_ID   
+			   AND R.UP_ROLE_ID <![CDATA[<>]]> 'NONE'
+		) 
+    </sql>    
+    <sql id="Sql-Where">
+        <if test="gsRoleId != 'ROLE_AUTH_SYS'">
+            AND A.ROLE_ID <![CDATA[<>]]> 'ROLE_AUTH_SYS'
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchNotId)">
+            AND A.ROLE_ID <![CDATA[<>]]> #{srchNotId}
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchUpId)">
+            AND A.UP_ROLE_ID = #{srchUpId}
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+            AND(A.ROLE_ID LIKE '%' || #{srchText} || '%'
+             OR A.ROLE_NM LIKE '%' || #{srchText} || '%') 
+        </if>
+    </sql>
+    <sql id="Sql-Column">
+		ROLE_ID              							AS "roleId",
+        ROLE_NM              							AS "roleNm",
+        UP_ROLE_ID           							AS "upRoleId",
+        SYS_SE_CD            							AS "sysCd",
+       (SELECT ROLE_NM
+          FROM SYS_ROLE
+         WHERE ROLE_ID = A.ROLE_ID
+        )                    AS "upRoleNm",
+        RGTR_NO              AS "rgtrNo",
+        TO_CHAR(REG_YMD,   'yyyy-mm-dd hh24:mi:ss')  	AS "regDttm",
+        TO_CHAR(REG_YMD,   'yyyy-mm-dd')             	AS "regDate",
+        MDFR_NO              AS "mdfrNo",
+        TO_CHAR(MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')  	AS "mdfDttm",
+        TO_CHAR(MDFCN_YMD, 'yyyy-mm-dd')             	AS "mdfDate"
+    </sql>
+    
+    <!-- 롤관리] 롤 리스트조회 -->
+    <select id="listRole" parameterType="business.sys.role.service.RoleVO" resultType="java.util.HashMap">
+    	<include refid="Sql-RoleTable"/>
+        SELECT ROLE_ID              AS "code",
+               ROLE_NM              AS "text",
+               <include refid="Sql-Column"/>
+          FROM T_ROLE A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY A.ROLE_ID
+    </select>
+        <!-- 코드리스트 카운트-->
+    <select id="listRoleCount" parameterType="business.sys.role.service.RoleVO" resultType="java.lang.Integer">
+    	<include refid="Sql-RoleTable"/>
+    	SELECT COUNT(*)
+    	  FROM T_ROLE A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 역할관리 상세조회 -->
+    <select id="viewRole" resultType="business.sys.role.service.RoleVO" parameterType="business.sys.role.service.RoleVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM SYS_ROLE A
+         WHERE ROLE_ID = #{roleId}
+    </select>
+
+    <!-- 롤 중복확인(하위롤) -->
+    <select id="confLowerRole" parameterType="string" resultType="int">
+        SELECT COUNT(*)
+          FROM SYS_ROLE
+         WHERE UP_ROLE_ID = #{roleId}
+    </select>
+
+    <!-- 롤관리] 롤 저장 -->
+    <insert id="regiRole" parameterType="business.sys.role.service.RoleVO">
+        INSERT 
+          INTO SYS_ROLE 
+             ( ROLE_ID,
+               SYS_SE_CD,
+               UP_ROLE_ID,
+               ROLE_NM,
+               RGTR_NO,
+               REG_YMD
+             )
+        VALUES
+             ( #{roleId},
+               #{sysCd},
+               'NONE',
+               #{roleNm},
+               #{userNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 롤관리] 롤 수정 -->
+    <update id="updtRole" parameterType="business.sys.role.service.RoleVO">
+        UPDATE SYS_ROLE 
+           SET SYS_SE_CD            = #{sysCd},
+               ROLE_NM              = #{roleNm},
+               UP_ROLE_ID           = 'NONE',
+               MDFR_NO              = #{userNo},
+               MDFCN_YMD            = NOW()  
+         WHERE ROLE_ID              = #{roleId}
+    </update>
+
+    <!-- 롤관리] 롤 삭제 -->
+    <delete id="deltRole" parameterType="business.sys.role.service.RoleVO">
+        DELETE 
+          FROM SYS_ROLE 
+         WHERE ROLE_ID = #{roleId}
+    </delete>
+
+</mapper>

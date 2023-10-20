@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Survey">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(srchTrgtCd)">
+            AND A.srvy_trgt_cd = #{srchTrgtCd}
+        </if>
+    	<if test="@common.util.CommUtils@isNotEmpty(srchSrvyCn)">
+			AND A.srvy_cn LIKE '%' || #{srchSrvyCn} || '%'
+		</if>
+    </sql>
+    <sql id="Sql-Where-No">
+        <if test="@common.util.CommUtils@isNotEmpty(srvyNo)">
+            AND A.srvy_no = cast(#{srvyNo} as varchar)
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(qitemNo)">
+            AND A.qitem_no = #{qitemNo}
+        </if>
+    </sql>
+    <sql id="Sql-Column">
+        A.srvy_no                                       AS "srvyNo",
+        A.srvy_cn                                    	AS "srvyCn",
+        FN_GET_CODENM('CT.QSTNN_TRGT', A.srvy_trgt_cd)	AS "srvyTrgtNm",
+        A.srvy_trgt_cd                                  AS "srvyTrgtCd",
+        FN_FMT_STRTODATE(A.srvy_bgng_ymd,'-')          	AS "srvyBgngYmd",
+        FN_FMT_STRTODATE(A.srvy_end_ymd ,'-')          	AS "srvyEndYmd",
+        A.rgtr_no                                     	AS "rgtrNo",
+        FN_GET_USERNM(A.rgtr_no)					   	AS "rgtrNm",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  	AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             	AS "regDate",
+        A.mdfr_no                                     	AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  	AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             	AS "mdfDate",
+		(SELECT COUNT(qitem_no) FROM tb_qstnn_qesitm 
+		WHERE srvy_no = A.srvy_no)					   	AS "qtNum",
+		EXISTS (SELECT 1
+                FROM tb_qstnn_rspns B
+               	WHERE B.srvy_no = A.srvy_no)		   	AS "srvyRspn"
+    </sql>
+    <sql id="Sql-QstnnColumn">
+        A.srvy_no                                       AS "srvyNo",
+        A.qitem_no 										AS "qitemNo",
+		A.qitem_cn 										AS "qitemCn",
+		A.qitem_type 									AS "qitemType",
+		A.mark_no 										AS "qitemMarkNo"
+    </sql>
+	<sql id="Sql-QitemColumn">
+	    A.qitem_no 										AS "qitemNo",
+	    A.qitem_cn 										AS "qitemCn",
+		A.qitem_type 									AS "qitemType",
+		A.mark_no 										AS "qitemMarkNo",
+		B.artcl_no 										AS "artclNo",
+		B.artcl_cn 										AS "artclCn",
+		B.mark_no 										AS "artclMarkNo"
+	</sql>
+    
+    <!-- 설문관리 목록조회 -->
+    <select id="listSurvey" resultType="java.util.HashMap" parameterType="business.adm.inform.service.SurveyVO">
+        SELECT <include refid="Sql-Column"/>
+         FROM tb_qstnn_mng A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY 
+	         A.srvy_no DESC
+    </select>
+    
+    <select id="listSurveyCount" resultType="int" parameterType="business.adm.inform.service.SurveyVO">
+        SELECT COUNT(1) 
+          FROM tb_qstnn_mng A
+         WHERE 1 = 1        
+              <include refid="Sql-Where"/>
+    </select>
+    
+    <!-- 설문관리 상세조회 -->
+    <select id="viewSurvey" resultType="business.adm.inform.service.SurveyVO" parameterType="business.adm.inform.service.SurveyVO">
+        SELECT <include refid="Sql-Column"/>
+         FROM tb_qstnn_mng A
+         WHERE 1 = 1
+         	<include refid="Sql-Where-No" />
+    </select>
+    
+    <!-- 설문관리 상세목록조회(문제) -->
+    <select id="listSurveyQstnn" resultType="java.util.HashMap" parameterType="business.adm.inform.service.SurveyVO">
+		SELECT <include refid="Sql-QstnnColumn"/>
+		FROM tb_qstnn_qesitm A 
+        WHERE 1 = 1
+        	<include refid="Sql-Where-No" />
+        ORDER BY 
+	        A.qitem_no
+    </select>
+    
+    <!-- 설문관리 상세목록조회(항목) -->
+    <select id="listSurveyQitem" resultType="java.util.HashMap" parameterType="business.adm.inform.service.SurveyVO">
+		SELECT <include refid="Sql-QitemColumn"/>
+		FROM tb_qstnn_qesitm A join tb_qesitm_item B using(qitem_no)
+        WHERE 1 = 1
+               <include refid="Sql-Where-No"/>
+         ORDER BY 
+	         A.qitem_no, B.mark_no
+    </select>
+	
+	<!-- 설문번호 생성 -->
+	<select id="getSrvyNo" resultType="long">
+		SELECT NEXTVAL('SEQ_QSTNN_MNG') AS "srvyNo"
+	</select>
+	
+	<!-- 문항번호 조회 -->
+	<select id="getQitemNo" resultType="long" parameterType="business.adm.inform.service.SurveyVO">
+		SELECT qitem_no
+		FROM tb_qstnn_qesitm A
+		WHERE 
+			A.srvy_no = cast(#{srvyNo} as varchar)
+	</select>
+    
+    <!-- 설문관리 등록 -->
+    <insert id="regiSurvey" parameterType="business.adm.inform.service.SurveyVO">
+        INSERT
+          INTO tb_qstnn_mng 
+             ( srvy_no,
+               srvy_cn,
+               srvy_trgt_cd,
+               srvy_bgng_ymd,
+               srvy_end_ymd,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( #{srvyNo},
+               #{srvyCn},
+               #{srvyTrgtCd},
+               FN_FMT_STRTODATE(#{srvyBgngYmd},''),
+               FN_FMT_STRTODATE(#{srvyEndYmd },''),
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+    <!-- 설문문항관리 등록 -->
+    <insert id="regiQesitm" parameterType="business.adm.inform.service.SurveyVO">
+    	<selectKey keyProperty="qitemNo" resultType="long" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_QSTNN_QESITM')
+    	</selectKey>
+        INSERT
+          INTO tb_qstnn_qesitm 
+             ( qitem_no,
+               srvy_no,
+               qitem_cn,
+               qitem_type,
+               mark_no,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( #{qitemNo},
+               #{srvyNo},
+               #{qitemCn},
+               #{qitemType},
+               #{markNo},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+    <!-- 설문문항항목 등록 -->
+    <insert id="regiItem" parameterType="business.adm.inform.service.SurveyVO">
+    	<selectKey keyProperty="artclNo" resultType="long" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_QESITM_ITEM')
+    	</selectKey>
+        INSERT
+          INTO tb_qesitm_item
+             ( qitem_no,
+               artcl_no,
+               artcl_cn,
+               mark_no,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( #{qitemNo},
+               #{artclNo},
+               #{artclCn},
+               #{markNo},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 설문 수정 -->
+    <update id="updtSurvey" parameterType="business.adm.inform.service.SurveyVO">
+        UPDATE tb_qstnn_mng A
+           SET mdfr_no   	 = #{gsUserNo},
+			   srvy_trgt_cd	 = #{srvyTrgtCd}, 						
+		<if test="@common.util.CommUtils@isNotEmpty(srvyCn	    )"> srvy_cn 		 = #{srvyCn},	  						</if>
+		<if test="@common.util.CommUtils@isNotEmpty(srvyBgngYmd )"> srvy_bgng_ymd 	 = FN_FMT_STRTODATE(#{srvyBgngYmd}, ''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(srvyEndYmd  )"> srvy_end_ymd 	 = FN_FMT_STRTODATE(#{srvyEndYmd}, ''), </if>
+               mdfcn_ymd = NOW()
+         WHERE 1 = 1
+         	<include refid="Sql-Where-No" />
+    </update>
+
+    <!-- 설문 삭제 -->
+    <delete id="deltSurvey" parameterType="business.adm.inform.service.SurveyVO">
+        DELETE FROM tb_qesitm_item
+        	WHERE qitem_no IN (SELECT qitem_no FROM tb_qstnn_qesitm WHERE srvy_no = #{srvyNo}::VARCHAR);
+        DELETE FROM tb_qstnn_qesitm A
+        	WHERE 1 = 1
+        		<include refid="Sql-Where-No"/>;
+        DELETE FROM tb_qstnn_mng A
+        	WHERE 1 = 1
+        		<include refid="Sql-Where-No"/>;
+    </delete> 
+	<delete id="deltSurveyItems" parameterType="business.adm.inform.service.SurveyVO">
+		DELETE FROM tb_qesitm_item
+        	WHERE qitem_no IN (SELECT qitem_no FROM tb_qstnn_qesitm WHERE srvy_no = #{srvyNo}::VARCHAR);
+        DELETE FROM tb_qstnn_qesitm A
+        	WHERE 1 = 1
+        		<include refid="Sql-Where-No"/>;
+	</delete>
+	
+	<!-- 설문 응답 조회 -->
+	<select id="selectSurveyAnswer" resultType="EgovMap" parameterType="business.adm.inform.service.SurveyVO">
+    	SELECT A.srvy_no, A.user_no, B.qitem_no, B.artcl_no, B.rspns_cn, C.qitem_type, D.artcl_cn, count(B.artcl_no)
+		FROM tb_qstnn_rspns as A, tb_qstnn_rspns_dtls as B, tb_qstnn_qesitm as C, tb_qesitm_item as D
+			WHERE A.srvy_no = #{srvyNo}::VARCHAR
+			AND A.rspns_no = B.rspns_no
+			AND C.srvy_no = A.srvy_no
+			AND C.qitem_no = B.qitem_no
+			AND B.qitem_no = D.qitem_no
+			AND B.artcl_no = D.artcl_no
+			GROUP BY A.srvy_no, A.user_no, B.qitem_no, B.artcl_no, B.rspns_cn, C.qitem_type, D.artcl_cn
+	</select>
+	
+	<!-- 설문 참여인원 조회 -->
+	<select id="selectSurveyAnswerCnt" resultType="EgovMap" parameterType="business.adm.inform.service.SurveyVO">
+    	SELECT count(*) FROM(
+			SELECT user_no FROM tb_qstnn_rspns WHERE srvy_no = #{srvyNo}::VARCHAR GROUP BY user_no) A
+	</select>
+	
+</mapper>

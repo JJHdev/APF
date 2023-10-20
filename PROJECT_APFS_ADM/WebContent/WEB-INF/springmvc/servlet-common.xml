@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd">
+
+    <!-- The controllers are autodetected POJOs labeled with the @Controller annotation.  -->
+    <context:component-scan base-package="business">
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Service"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Repository"/>
+    </context:component-scan>
+
+    <!-- View resolver -->
+    <!-- org.springframework.web.servlet.view.InternalResourceViewResolver -->
+    <bean id="viewResolver" class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+        <property name="viewClass" value="org.springframework.web.servlet.view.JstlView" />
+        <property name="prefix"    value="/WEB-INF/jsp/" />
+        <property name="suffix"    value=".jsp" />
+        <property name="order"     value="2" />
+        <property name="cache"     value="false" />
+    </bean>
+	<!-- 2021.07.07 Apache Tiles --> 
+	<bean id="tilesViewResolver" class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+		<property name="viewClass" value="org.springframework.web.servlet.view.tiles3.TilesView" />
+		<property name="order" value="1" />
+	</bean>
+	<bean id="tilesConfigurer" class="org.springframework.web.servlet.view.tiles3.TilesConfigurer">
+	    <property name="definitions">
+	        <list>
+	            <value>/WEB-INF/springmvc/tiles-config.xml</value>
+	        </list>
+	    </property>
+	</bean>
+	
+    <bean class="org.springframework.web.servlet.view.BeanNameViewResolver" >
+       <property name="order"><value>1</value></property>
+    </bean>
+
+    <!-- 2023.03.01 XDocReport Template (beanNameViewResolver) -->
+    <bean id="PDFView" class="common.view.PDFView" />
+
+    <!-- Excel Template (beanNameViewResolver) -->
+    <bean id="excelTempView" class="common.view.ExcelTempView" />
+
+    <!-- Excel (beanNameViewResolver) -->
+    <bean id="excelView" class="common.view.ExcelView" />
+
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="maxInMemorySize" value="100000000" />
+        <!--<property name="maxUploadSize" value="1048576"  /> 1MB -->
+        <property name="maxUploadSize" value="524288000"/> <!-- 500MB -->
+        <!--<property name="maxUploadSize"   value="209715200"/> 200MB : 구비서류용량에 따른 용량제한 증가 -->
+        <!--<property name="maxUploadSize" value="104857600"/> 100MB -->
+    </bean>
+    
+    <!-- 2023.08.04 jsonView 사용을 위한 benn 추가 -->
+    <bean id="jsonView" class="org.springframework.web.servlet.view.json.MappingJackson2JsonView">
+		<property name="contentType" value="text/html;charset=UTF-8"/>
+	</bean>
+
+	<!-- <bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver"> -->
+	<bean class="common.resolver.BaseExceptionResolver">
+        <property name="defaultErrorView" value="forward:/com/error/500.do"/>
+        <property name="exceptionMappings">
+            <props>
+                <prop key="java.lang.Exception">forward:/com/error/500.do</prop><!-- error/errorPage -->
+                <prop key="DataAccessException">forward:/com/error/500.do</prop><!-- error/dbErrorPage -->
+                <prop key="PopupBusinessException">forward:/com/error/popup.do</prop><!-- error/BusinessException -->
+                <prop key="ModalBusinessException">forward:/com/error/modal.do</prop><!-- error/BusinessException -->
+                <prop key="BusinessException">forward:/com/error/500.do</prop><!-- error/BusinessException -->
+                <prop key="EgovBizException">forward:/com/error/500.do</prop><!-- error/egovBizException -->
+            </props>
+        </property>
+    </bean>
+	
+	<!-- 2023.05.26 JSON XSS 방지 -->
+	<bean id="xssDefendObjectMapper" class="business.com.interceptor.XSSDefendObjectMapperFactory" />
+
+    <mvc:resources mapping="/plugins/**"   location="/plugins/" />
+    <mvc:resources mapping="/jquery/**"    location="/jquery/" />
+    <mvc:resources mapping="/js/**"        location="/js/" />
+    <mvc:resources mapping="/html/**"      location="/html/" />
+   	<mvc:resources mapping="/images/**"    location="/images/" />
+   	<mvc:resources mapping="/css/**"       location="/css/"    />
+
+    <mvc:default-servlet-handler />
+
+	<!-- json -->    
+    <mvc:annotation-driven>
+        <mvc:message-converters>
+            <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+            	<!-- 2023.05.26 JSON XSS 방지 -->
+                <property name="objectMapper" ref="xssDefendObjectMapper"></property>
+                <property name="supportedMediaTypes">
+                    <list>
+                        <value>application/json; charset=UTF-8</value>
+                    </list>
+                </property>
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+
+</beans>

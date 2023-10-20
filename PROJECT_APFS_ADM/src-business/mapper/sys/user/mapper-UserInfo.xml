@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="UserInfo">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+        /* 사용자정보 조회 */
+        U.user_no                                      AS "userNo",
+        U.bzenty_no                                    AS "bzentyNo",
+        FN_GET_ENTNM(U.bzenty_no)                      AS "bzentyNm",
+        (SELECT bzenty_se_cd
+           FROM tb_ent
+          WHERE bzenty_no = U.bzenty_no)               AS "bzentySeCd",
+        U.user_id                                      AS "userId",
+        U.user_nm                                      AS "userNm",
+        U.eml_addr                                     AS "emlAddr",
+        U.telno                                        AS "telno",
+        U.mbl_telno                                    AS "mblTelno",
+        U.brdt                                         AS "brdt",
+        U.zip                                          AS "zip",
+        U.addr                                         AS "addr",
+        U.daddr                                        AS "daddr",
+        U.sexdstn                                      AS "sexdstn",
+        U.dept_cd                                      AS "deptCd",
+        U.dept_nm                                      AS "deptNm",
+        U.empl_no                                      AS "emplNo",
+        U.idntf_id                                     AS "idntfId",
+        U.lgn_se_cd                                    AS "lgnSeCd",
+        FN_FMT_STRTODATE(U.join_ymd,     '-')          AS "joinYmd",
+        FN_FMT_STRTODATE(U.whdwl_ymd,    '-')          AS "whdwlYmd",
+        U.cntn_psblty_ip_addr                          AS "cntnPsbltyIpAddr",
+        U.pswd_err_cnt                                 AS "pswdErrCnt",
+        FN_FMT_STRTODATE(U.pswd_lock_ymd,'-')          AS "pswdLockYmd",
+        FN_FMT_STRTODATE(U.pswd_chg_ymd, '-')          AS "pswdChgYmd",
+        FN_FMT_STRTODATE(U.pswd_next_ymd,'-')          AS "pswdNextYmd",
+        TO_CHAR(COALESCE(U.last_lgn_dt, NOW()),
+        	'yyyy-mm-dd hh24:mi:ss'
+        )                                              AS "lastLgnDt",
+        U.moblphon_rcptn_agre_yn                       AS "moblphonRcptnAgreYn",
+        U.prvc_clct_agre_yn                            AS "prvcClctAgreYn",
+        U.thpty_pvsn_agre_yn                           AS "thptyPvsnAgreYn",
+        U.use_stts_cd                                  AS "useSttsCd",
+        U.test_use_yn                                  AS "testUseYn",
+		U.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(U.reg_ymd, 'yyyy-mm-dd hh24:mi:ss')    AS "regDttm",
+        TO_CHAR(U.reg_ymd, 'yyyy-mm-dd')               AS "regDate",
+		U.mdfr_no                                      AS "mdfrNo",
+		TO_CHAR(U.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+        TO_CHAR(U.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate",
+        R.role_id                                      AS "roleId",
+        (SELECT role_nm
+          FROM SYS_ROLE
+         WHERE role_id = R.role_id)                    AS "roleNm",
+        (SELECT rprs_yn
+           FROM TB_GRP_USR
+          WHERE user_no = U.user_no)                   AS "rprsYn",
+        CURRENT_DATE - 
+        COALESCE(COALESCE(
+        			TO_DATE(NULLIF(U.pswd_chg_ymd,''), 
+        			'yyyymmdd'
+        		 ), U.reg_ymd::DATE
+        ), TO_DATE('20000101', 'yyyymmdd'))            AS "diffDays",
+        CURRENT_DATE - 
+        COALESCE(
+        	TO_DATE(U.pswd_next_ymd, 'yyyymmdd'), 
+        	CURRENT_DATE
+        )                                              AS "diffNextDays"
+    </sql>
+    
+    
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+            AND(U.user_id   LIKE '%' || #{srchText} || '%'
+             OR U.user_nm   LIKE '%' || #{srchText} || '%'
+             OR U.eml_addr  LIKE '%' || #{srchText} || '%'
+             OR U.mbl_telno LIKE '%' || #{srchText} || '%'
+             OR U.BZENTY_NM LIKE '%' || #{srchText} || '%')
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchRoleId)">
+            AND EXISTS (
+                SELECT 1
+                  FROM SYS_ROLE_USER
+                 WHERE user_no = U.user_no
+                   AND role_id = #{srchRoleId}
+                )
+        </if>
+        <if test="@common.util.CommUtils@isEqual(srchRoleYn,'N')">
+            AND NOT EXISTS (
+                SELECT 1
+                  FROM SYS_ROLE_USER
+                 WHERE user_no = U.user_no
+                )
+        </if>
+        <if test="gsRoleId != 'ROLE_ADM_SYS'">
+            AND R.role_id NOT IN ('ROLE_ADM_SYS')
+        </if>
+    </sql>
+    <sql id="Sql-From-Role">
+         SELECT A.user_no
+              , ARRAY_TO_STRING(ARRAY_AGG(A.role_id), ',') AS role_id
+           FROM SYS_ROLE_USER A
+              , SYS_ROLE      B
+          WHERE A.role_id   = B.role_id
+          GROUP BY 
+                A.user_no
+    </sql>
+
+    <!-- 사용자정보 목록조회 -->
+    <select id="listUserInfo" resultType="business.sys.user.service.UserInfoVO" parameterType="java.util.HashMap">
+        SELECT <include refid="Sql-Column"/>,
+               ( SELECT ROLE_ID
+                   FROM SYS_ROLE_USER
+                  WHERE USER_NO = U.USER_NO
+                    AND ROLE_ID LIKE 'ROLE_ADM%'
+               )	AS "admRoleId",
+               ( SELECT ROLE_NM
+                   FROM SYS_ROLE
+                  WHERE ROLE_ID = ( SELECT ROLE_ID
+				                      FROM SYS_ROLE_USER
+				                     WHERE USER_NO = U.USER_NO
+				                       AND ROLE_ID LIKE 'ROLE_ADM%'
+				                     LIMIT 1
+                                  )
+               )	AS "admRoleNm",
+               ( SELECT ROLE_ID
+                   FROM SYS_ROLE_USER
+                  WHERE USER_NO = U.USER_NO
+                    AND ROLE_ID LIKE 'ROLE_USR%'
+               )	AS "usrRoleId",
+               ( SELECT ROLE_NM
+                   FROM SYS_ROLE
+                  WHERE ROLE_ID = ( SELECT ROLE_ID
+				                      FROM SYS_ROLE_USER
+				                     WHERE USER_NO = U.USER_NO
+				                       AND ROLE_ID LIKE 'ROLE_USR%'
+				                     LIMIT 1
+                                  )
+               )	AS "usrRoleNm"
+          FROM (SELECT *,
+                       FN_GET_ENTNM(BZENTY_NO) BZENTY_NM
+                  FROM TB_USER
+               ) U
+          LEFT OUTER JOIN
+              ( <include refid="Sql-From-Role"/> ) R
+            ON U.user_no = R.user_no
+         WHERE U.use_stts_cd = '1'
+               <include refid="Sql-Where"/>
+         ORDER BY U.reg_ymd DESC
+    </select>
+    <select id="listUserInfoCount" resultType="int" parameterType="java.util.HashMap">
+        SELECT COUNT(1)
+          FROM (SELECT *,
+                       FN_GET_ENTNM(BZENTY_NO) BZENTY_NM
+                  FROM TB_USER
+               ) U
+          LEFT OUTER JOIN
+              ( <include refid="Sql-From-Role"/> ) R
+            ON U.user_no = R.user_no
+         WHERE U.use_stts_cd = '1'
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 사용자정보 상세조회 -->
+    <select id="viewUserInfo" resultType="business.sys.user.service.UserInfoVO" parameterType="string">
+        SELECT <include refid="Sql-Column"/>
+          FROM TB_USER U
+          LEFT OUTER JOIN
+              ( <include refid="Sql-From-Role"/> ) R
+            ON U.user_no = R.user_no
+         WHERE U.user_no = #{userNo}
+    </select>
+
+    <!-- 로그인시 사용자정보 조회 -->
+    <select id="viewUserInfoById" resultType="common.user.UserInfo" parameterType="string">
+        SELECT <include refid="Sql-Column"/>
+          FROM TB_USER U
+         INNER JOIN
+              ( <include refid="Sql-From-Role"/> ) R
+            ON U.user_no = R.user_no
+         WHERE U.user_id = #{userId}
+         LIMIT 1
+    </select>
+
+    <!-- 사용자정보 등록 -->
+    <insert id="regiUserInfo" parameterType="business.sys.user.service.UserInfoVO">
+    	<selectKey keyProperty="userNo" resultType="string" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_USER')
+    	</selectKey>
+        INSERT 
+          INTO tb_user 
+             ( user_no,
+               <if test="@common.util.CommUtils@isNotEmpty(bzentyNo)"> bzenty_no, </if>
+               user_id,
+               user_nm,
+               pswd,
+               eml_addr,
+               telno,
+               mbl_telno,
+               brdt,
+               zip,
+               addr,
+               daddr,
+               sexdstn,
+               dept_cd,
+               dept_nm,
+               empl_no,
+               idntf_id,
+               lgn_se_cd,
+               join_ymd,
+               whdwl_ymd,
+               cntn_psblty_ip_addr,
+               pswd_lock_ymd,
+               pswd_err_cnt,
+               pswd_chg_ymd,
+               pswd_next_ymd,
+               last_lgn_dt,
+               moblphon_rcptn_agre_yn,
+               prvc_clct_agre_yn,
+               thpty_pvsn_agre_yn,
+               use_stts_cd,
+               test_use_yn,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( #{userNo},
+               <if test="@common.util.CommUtils@isNotEmpty(bzentyNo)"> #{bzentyNo}, </if>
+               #{userId},
+               #{userNm},
+               #{pswd},
+               #{userId},
+               #{telno},
+               #{mblTelno},
+               #{brdt},
+               #{zip},
+               #{addr},
+               #{daddr},
+               #{sexdstn},
+               #{deptCd},
+               #{deptNm},
+               #{emplNo},
+               #{idntfId},
+               COALESCE(#{lgnSeCd}, 'P'),
+               TO_CHAR(NOW(),'YYYYMMDD'),
+               #{whdwlYmd},
+               #{cntnPsbltyIpAddr},
+               #{pswdLockYmd},
+               COALESCE(#{pswdErrCnt}, 0),
+               #{pswdChgYmd},
+               #{pswdNextYmd},
+               #{lastLgnDt},
+               #{moblphonRcptnAgreYn},
+               COALESCE(#{prvcClctAgreYn }, 'Y'),
+               COALESCE(#{thptyPvsnAgreYn}, 'Y'),
+               #{useSttsCd},
+               COALESCE(#{testUseYn}, 'N'),
+               #{gsUserNo},
+               NOW()
+             )
+    </insert>
+
+    <!-- 사용자정보 수정 -->
+    <update id="updtUserInfo" parameterType="business.sys.user.service.UserInfoVO">
+        UPDATE TB_USER
+           SET mdfr_no     = #{gsUserNo},
+               <if test="@common.util.CommUtils@isNotEmpty(userNm    )">user_nm		= #{userNm},</if>
+               <if test="@common.util.CommUtils@isNotEmpty(mblTelno  )">mbl_telno	= #{mblTelno},</if>
+               <if test="@common.util.CommUtils@isNotEmpty(bzentyNo  )">bzenty_no	= #{bzentyNo},</if>
+               <if test="@common.util.CommUtils@isEmpty(bzentyNo     )">bzenty_no	= NULL,</if>
+               mdfcn_ymd   = NOW()
+         WHERE user_no     = #{userNo}
+    </update>
+
+    <!-- 사용자정보 삭제 -->
+    <update id="deltUserInfo" parameterType="string">
+    	UPDATE tb_user
+    	   SET mdfr_no     = #{gsUserNo},
+    	       use_stts_cd = '0',
+    	       mdfcn_ymd   = NOW()
+    	 WHERE user_no     = #{userNo}
+    </update>
+
+    <!-- 사용자아이디 중복체크 -->
+    <select id="existUserId" resultType="int" parameterType="string">
+        SELECT COUNT(*)
+          FROM TB_USER A
+         WHERE user_id = #{userId}
+    </select>
+
+    <!-- 사용자 비밀번호변경 -->
+    <update id="updtUserPswd" parameterType="business.sys.user.service.UserInfoVO">
+        UPDATE TB_USER
+           SET pswd          = #{pswd},
+               pswd_chg_ymd  = TO_CHAR(NOW(), 'YYYYMMDD'),
+               pswd_next_ymd = null,
+               pswd_lock_ymd = null,
+               pswd_err_cnt  = 0,
+               mdfr_no       = #{gsUserNo},
+               mdfcn_ymd     = NOW()
+         WHERE user_no       = #{userNo}
+    </update>
+    
+</mapper>

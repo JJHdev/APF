@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Code">
+
+    <sql id="Sql-CodeTable">
+		WITH RECURSIVE T_CODE AS (
+			SELECT C.*
+			     , 1 	AS LEVEL
+	             , CASE WHEN UP_CD_ID = 'NONE' THEN CD_ID 
+	               ELSE UP_CD_ID 
+	               END 	AS ORDR_GRP_ID			     
+			  FROM SYS_CODE C		
+			 WHERE UP_CD_ID = 'NONE'
+			
+			UNION ALL
+			
+			SELECT R.*
+			     , LEVEL + 1
+	             , CASE WHEN R.UP_CD_ID = 'NONE' THEN R.CD_ID 
+	               ELSE R.UP_CD_ID 
+	               END 	AS ORDR_GRP_ID				     
+			  FROM SYS_CODE R		
+			  JOIN T_CODE T ON T.CD_ID = R.UP_CD_ID   
+			   AND R.UP_CD_ID <![CDATA[<>]]> 'NONE'
+		) 
+    </sql>
+    <sql id="Sql-Column">
+		   A.CD_ID               							AS "cdId"
+		 , A.CD_NM               							AS "cdNm"
+		 , A.CD_CN               							AS "cdCn"
+		 , A.UP_CD_ID            							AS "upCdId"
+		 , A.CD_ORDR             							AS "cdOrdr"
+		 , A.USE_YN              							AS "useYn"
+		 , A.RGTR_NO             							AS "rgtrNo"
+		 , A.MDFR_NO             							AS "mdfrNo"
+		 , FN_FMT_STRTODATE(A.VLD_BGNG_YMD,'-')				AS "vldBgngYmd"
+         , FN_FMT_STRTODATE(A.VLD_END_YMD,'-')				AS "vldEndYmd"
+		 , TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss') 	AS "regDttm"
+		 , TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')           	AS "regDate"
+		 , TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss') 	AS "mdfDttm"
+		 , TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')           	AS "mdfDate"
+		 ,(SELECT CD_NM
+		     FROM SYS_CODE
+		    WHERE UP_CD_ID = 'NONE'
+		      AND CD_ID    = A.UP_CD_ID) AS "upCdNm"
+    </sql>
+    <sql id="Sql-Where">
+		   AND A.USE_YN   = 'Y'
+         <if test="@common.util.CommUtils@isNotEmpty(upCdId)">
+           AND A.UP_CD_ID = #{upCdId}
+         </if>
+         <if test="@common.util.CommUtils@isNotEmpty(cdNm)">
+           AND A.CD_NM LIKE '%' || #{cdNm} || '%'
+         </if>
+         <if test="@common.util.CommUtils@isNotEmpty(srchUseYn)">
+           AND A.USE_YN = #{srchUseYn}
+         </if>
+         <if test="@common.util.CommUtils@isNotEmpty(srchType)">
+           AND A.UP_CD_ID = #{srchType}
+         </if>
+         <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+           AND(A.CD_ID         LIKE '%' || #{srchText} || '%'
+            OR A.CD_NM         LIKE '%' || #{srchText} || '%'
+            OR A.CD_CN         LIKE '%' || #{srchText} || '%'
+              )
+         </if>
+    </sql>    
+    
+    <!-- 코드리스트 -->
+    <select id="listCode" parameterType="business.sys.code.service.CodeVO" resultType="java.util.HashMap">
+    	<include refid="Sql-CodeTable"/>
+        SELECT LEVEL  	AS "level",
+		       <include refid="Sql-Column"/>
+          FROM T_CODE A
+         WHERE 0 = 0
+               <include refid="Sql-Where"/>
+		 ORDER BY A.ORDR_GRP_ID, A.LEVEL, A.CD_ORDR               
+    </select>
+    <!-- 코드리스트 카운트-->
+    <select id="listCodeCount" parameterType="business.sys.code.service.CodeVO" resultType="java.lang.Integer">
+    	<include refid="Sql-CodeTable"/>
+    	SELECT COUNT(*)
+    	  FROM T_CODE A
+         WHERE 0 = 0
+               <include refid="Sql-Where"/>
+    </select>
+    
+    <!-- 메뉴관리] 메뉴리스트 -->
+    <select id="listUnderCode" parameterType="business.sys.code.service.CodeVO" resultType="java.util.HashMap">
+        SELECT <include refid="Sql-Column"/>
+          FROM SYS_CODE A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 코드상세조회 -->
+    <select id="viewCode" parameterType="business.sys.code.service.CodeVO" resultType="business.sys.code.service.CodeVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM SYS_CODE A
+         WHERE A.UP_CD_ID = #{upCdId}
+           AND A.CD_ID    = #{cdId}
+    </select>
+
+    <!-- 코드 중복확인(코드) -->
+    <select id="confCode" parameterType="business.sys.code.service.CodeVO" resultType="int">
+        SELECT COUNT(*)
+          FROM SYS_CODE
+         WHERE CD_ID    = #{cdId}
+        <if test="@common.util.CommUtils@isNotEmpty(upCdId) ">
+           AND UP_CD_ID = #{upCdId}
+        </if>
+    </select>
+
+    <!-- 코드 중복확인(상위코드) -->
+    <select id="confUpperCode" parameterType="string" resultType="int">
+        SELECT COUNT(*)
+          FROM SYS_CODE
+         WHERE UP_CD_ID = #{cdId}
+    </select>
+
+    <!-- 코드 중복확인(하위코드) -->
+    <select id="confLowerCode" parameterType="string" resultType="int">
+        SELECT COUNT(*)
+          FROM SYS_CODE
+         WHERE UP_CD_ID = #{cdId}
+    </select>
+
+    <!-- 코드저장 -->
+    <insert id="regiCode" parameterType="business.sys.code.service.CodeVO">
+        INSERT INTO SYS_CODE (
+              CD_ID
+            , UP_CD_ID
+            , CD_NM
+            , CD_CN
+            , CD_ORDR
+            , USE_YN
+            , RGTR_NO  
+            , REG_YMD
+            , VLD_BGNG_YMD
+            , VLD_END_YMD
+        ) VALUES (
+              #{cdId}
+            , COALESCE(#{upCdId}, 'NONE')
+            , #{cdNm}
+            , #{cdCn}
+            , COALESCE(#{cdOrdr}, (
+                SELECT COALESCE(MAX(CD_ORDR), 0) + 1
+                  FROM SYS_CODE
+                 WHERE UP_CD_ID = COALESCE(#{upCdId}, 'NONE')
+              ))
+            , COALESCE(#{useYn}, 'Y')
+            , #{gsUserNo}
+            , NOW()
+            , FN_FMT_STRTODATE(#{vldBgngYmd },'')
+            , FN_FMT_STRTODATE(#{vldEndYmd },'')
+        )
+    </insert>
+
+    <!-- 코드수정 -->
+    <update id="updtCode" parameterType="business.sys.code.service.CodeVO">
+        UPDATE SYS_CODE A
+           SET CD_NM     = #{cdNm}
+             , CD_CN     = #{cdCn}
+             , CD_ORDR   = COALESCE(#{cdOrdr}, (
+                               SELECT COALESCE(MAX(B.CD_ORDR), 0) + 1
+                                 FROM SYS_CODE B
+                                WHERE B.UP_CD_ID = COALESCE(#{upCdId}, 'NONE')
+                           ))
+             , USE_YN    = COALESCE(#{useYn}, 'Y')
+             , MDFR_NO   = #{gsUserNo}
+             , MDFCN_YMD = NOW()
+             , VLD_BGNG_YMD = FN_FMT_STRTODATE(#{vldBgngYmd },'')
+             , VLD_END_YMD  = FN_FMT_STRTODATE(#{vldEndYmd },'')
+         WHERE UP_CD_ID  = #{upCdId}
+           AND CD_ID     = #{cdId}
+    </update>
+
+    <!-- 코드삭제 -->
+    <delete id="deltCode" parameterType="business.sys.code.service.CodeVO">
+        DELETE FROM SYS_CODE A
+         WHERE A.UP_CD_ID = COALESCE(#{upCdId}, 'NONE')
+           AND A.CD_ID    = #{cdId}
+    </delete>
+          <!-- 코드삭제시 전부다 삭제하게 하기 -->
+</mapper>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC
+       "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN"
+       "http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+ 
+<tiles-definitions>
+
+    <!-- 공통 레이아웃 -->
+    <definition name="tiles-modal" template="/WEB-INF/jsp/tiles/modal.jsp">
+        <put-attribute name="body"     value="" />
+    </definition>
+	<definition name="tiles-popup" template="/WEB-INF/jsp/tiles/popup.jsp">
+        <put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+		<put-attribute name="body"     value="" />
+	</definition>
+    <!-- 공통 URL 패턴 -->
+    <definition name="com/common/loginCheck" extends="tiles-popup">
+        <put-attribute name="body" value="/WEB-INF/jsp/com/common/loginCheck.jsp" />
+    </definition>
+    <definition name="com/common/login" template="/WEB-INF/jsp/com/common/login.jsp">
+        <put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+        <put-attribute name="header"   value="/WEB-INF/jsp/tiles/header.jsp" />
+        <put-attribute name="footer"   value="/WEB-INF/jsp/tiles/footer.jsp" />
+    </definition>
+    <definition name="com/*/popup*" extends="tiles-popup">
+        <put-attribute name="body" value="/WEB-INF/jsp/com/{1}/popup{2}.jsp" />
+    </definition>
+    <definition name="com/*/modal*" extends="tiles-modal">
+        <put-attribute name="body" value="/WEB-INF/jsp/com/{1}/modal{2}.jsp" />
+    </definition>
+    <definition name="error/error" template="/WEB-INF/jsp/error/error.jsp">
+        <put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+        <put-attribute name="header"   value="/WEB-INF/jsp/tiles/header.jsp" />
+        <put-attribute name="footer"   value="/WEB-INF/jsp/tiles/footer.jsp" />
+    </definition>
+    <definition name="error/modal" extends="tiles-modal">
+    	<put-attribute name="body" value="/WEB-INF/jsp/error/modal.jsp" />
+    </definition>
+    <definition name="error/popup" extends="tiles-popup">
+    	<put-attribute name="body" value="/WEB-INF/jsp/error/popup.jsp" />
+    </definition>
+
+	<!-- 업무시스템 레이아웃 -->
+    <definition name="tiles-page" template="/WEB-INF/jsp/tiles/layout.jsp">
+        <put-attribute name="body"     value="" />
+        <put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+        <put-attribute name="header"   value="/WEB-INF/jsp/tiles/header.jsp" />
+        <put-attribute name="footer"   value="/WEB-INF/jsp/tiles/footer.jsp" />
+    </definition>
+    <!-- 
+    <definition name="tiles-subpage" template="/WEB-INF/jsp/tiles/sublayout.jsp">
+        <put-attribute name="body"     value="" />
+        <put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+        <put-attribute name="header"   value="/WEB-INF/jsp/tiles/header.jsp" />
+        <put-attribute name="footer"   value="/WEB-INF/jsp/tiles/footer.jsp" />
+    </definition>
+     -->
+	<definition name="tiles-main" template="/WEB-INF/jsp/tiles/main.jsp">
+		<put-attribute name="body"     value="" />
+		<put-attribute name="resource" value="/WEB-INF/jsp/tiles/resource.jsp" />
+		<put-attribute name="footer"   value="/WEB-INF/jsp/tiles/footer.jsp" />
+	</definition>
+
+    <!-- 업무시스템 URL 패턴 -->
+	<definition name="adm/main/main" extends="tiles-main">
+		<put-attribute name="body" value="/WEB-INF/jsp/adm/main/main.jsp" />
+	</definition>
+	<definition name="adm/*/popup*" extends="tiles-popup">
+		<put-attribute name="body" value="/WEB-INF/jsp/adm/{1}/popup{2}.jsp" />
+	</definition>
+	<definition name="adm/*/*/popup*" extends="tiles-popup">
+		<put-attribute name="body" value="/WEB-INF/jsp/adm/{1}/{2}/popup{3}.jsp" />
+	</definition>
+    <definition name="adm/*/modal*" extends="tiles-modal">
+        <put-attribute name="body" value="/WEB-INF/jsp/adm/{1}/modal{2}.jsp" />
+    </definition>
+    <definition name="adm/*/*/modal*" extends="tiles-modal">
+        <put-attribute name="body" value="/WEB-INF/jsp/adm/{1}/{2}/modal{3}.jsp" />
+    </definition>
+    <definition name="adm/*/*" extends="tiles-page">
+        <put-attribute name="body" value="/WEB-INF/jsp/adm/{1}/{2}.jsp" />
+    </definition>
+    <definition name="adm/*/*/*" extends="tiles-page">
+        <put-attribute name="body" value="/WEB-INF/jsp/adm/{1}/{2}/{3}.jsp" />
+    </definition>
+    <definition name="com/*/*" extends="tiles-page">
+        <put-attribute name="body" value="/WEB-INF/jsp/com/{1}/{2}.jsp" />
+    </definition>
+
+</tiles-definitions>

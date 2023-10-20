@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BbsFile">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+        A.sn                                           AS "sn",
+        A.task_se_cd                                   AS "taskSeCd",
+        A.pst_no                                       AS "pstNo",
+        A.file_se_cd                                   AS "fileSeCd",
+        A.file_path                                    AS "filePath",
+        A.strg_file_nm                                 AS "strgFileNm",
+        A.file_nm                                      AS "fileNm",
+        A.file_sz                                      AS "fileSz",
+        A.dwnld_cnt                                    AS "dwnldCnt",
+        A.del_yn                                       AS "delYn",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 게시판첨부파일 목록조회 -->
+    <select id="listBbsFile" resultType="business.adm.file.service.BbsFileVO" parameterType="business.adm.file.service.BbsFileVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_bbs_file A
+         WHERE A.del_yn = 'N'
+           AND A.pst_no = #{pstNo}
+           AND A.file_se_cd = #{fileSeCd}
+         ORDER BY 
+               A.sn
+    </select>
+    
+    <!-- 게시판Save용 첨부파일 목록조회 -->
+    <select id="listSaveBbsFile" resultType="business.adm.file.service.BbsFileVO" parameterType="business.adm.file.service.BbsFileVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_bbs_file A
+         WHERE A.del_yn = 'N'
+           AND A.pst_no = #{pstNo}
+         ORDER BY 
+               A.sn
+    </select>
+
+    <!-- 게시판첨부파일 상세조회 -->
+    <select id="viewBbsFile" resultType="business.adm.file.service.BbsFileVO" parameterType="business.adm.file.service.BbsFileVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_bbs_file A
+         WHERE sn = #{sn}
+    </select>
+
+    <!-- 게시판첨부파일 등록 -->
+    <insert id="regiBbsFile" parameterType="business.adm.file.service.BbsFileVO">
+    	<selectKey keyProperty="sn" resultType="long" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_BBS_FILE')
+    	</selectKey>
+        INSERT 
+          INTO tb_bbs_file 
+             ( sn,
+		<if test="@common.util.CommUtils@isNotEmpty(fileSeCd  )"> file_se_cd   ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(taskSeCd  )"> task_se_cd   ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pstNo     )"> pst_no       ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(filePath  )"> file_path    ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(strgFileNm)"> strg_file_nm ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileNm    )"> file_nm      ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileSz    )"> file_sz      ,</if>
+               dwnld_cnt,
+               del_yn,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{sn},
+		<if test="@common.util.CommUtils@isNotEmpty(fileSeCd  )"> #{fileSeCd   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(taskSeCd  )"> #{taskSeCd   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pstNo     )"> #{pstNo      },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(filePath  )"> #{filePath   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(strgFileNm)"> #{strgFileNm },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileNm    )"> #{fileNm     },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileSz    )"> #{fileSz     },</if>
+               0,
+               'N',
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 게시판첨부파일 수정 -->
+    <update id="updtBbsFile" parameterType="business.adm.file.service.BbsFileVO">
+        UPDATE tb_bbs_file 
+           SET MDFR_NO   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(fileSeCd  )"> file_se_cd   = #{fileSeCd   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(taskSeCd  )"> task_se_cd   = #{taskSeCd   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(pstNo     )"> pst_no       = #{pstNo      },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(filePath  )"> file_path    = #{filePath   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(strgFileNm)"> strg_file_nm = #{strgFileNm },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileNm    )"> file_nm      = #{fileNm     },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileSz    )"> file_sz      = #{fileSz     },</if>
+               MDFCN_YMD = NOW()
+         WHERE sn        = #{sn}
+    </update>
+
+    <!-- 게시판첨부파일 다운로드수 증가 -->
+    <update id="updtBbsFileDownCnt" parameterType="business.adm.file.service.BbsFileVO">
+        UPDATE tb_bbs_file 
+           SET dwnld_cnt = dwnld_cnt + 1
+         WHERE sn        = #{sn}
+    </update>
+
+    <!-- 게시판첨부파일 삭제 -->
+    <delete id="deltBbsFile" parameterType="business.adm.file.service.BbsFileVO">
+        UPDATE tb_bbs_file
+           SET mdfr_no   = #{gsUserNo},
+               del_yn    = 'Y',
+               mdfcn_ymd = NOW()
+         WHERE sn        = #{sn}
+    </delete> 
+
+</mapper>

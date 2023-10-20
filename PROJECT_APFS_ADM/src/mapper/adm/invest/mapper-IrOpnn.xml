@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="IrOpnn">
+
+    <!-- ======================== -->
+    <!--  공통 sql                 -->
+    <!-- ======================== -->
+    <sql id="Sql-Where-IrOpnnInvt">
+        <if test="@common.util.CommUtils@isNotEmpty(evntNo)">
+            AND (A.EVNT_NO = #{evntNo})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(userNo)">
+            AND (A.USER_NO = #{userNo})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(bzentyNo)">
+            AND (A.BZENTY_NO = #{bzentyNo})
+        </if>
+    </sql>
+    <sql id="Sql-Where-IrOpnnEnt">
+        <if test="@common.util.CommUtils@isNotEmpty(evntNo)">
+            AND (A.EVNT_NO = #{evntNo})
+        </if>
+    </sql>
+    <sql id="Sql-Where-IrOpnn">
+        <if test="@common.util.CommUtils@isNotEmpty(evntNo)">
+            AND (A.EVNT_NO = #{evntNo})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(bzentyNo)">
+            AND (A.BZENTY_NO = #{bzentyNo})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(userNo)">
+            AND (A.USER_NO = #{userNo})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(evntPartcptnNo)">
+            AND (A.EVNT_PARTCPTN_NO = #{evntPartcptnNo})
+        </if>
+    </sql>
+    
+    <!-- IR 검토의견서 관리 > 상세조회 > 투자자 목록 -->
+    <sql id="Sql-Column-IrOpnnInvt">
+    	A.EVNT_NO								AS "evntNo",
+    	A.BZENTY_NO								AS "bzentyNo",
+    	FN_GET_ENTNM(A.BZENTY_NO)				AS "invtBzentyNm",
+    	B.USER_NO								AS "userNo",
+    	B.USER_NM								AS "userNm",
+    	B.USER_ID								AS "userId",
+    	B.USER_NM || '(' || B.USER_ID || ')'	AS "userNmNo",
+    	(SELECT EXISTS (SELECT 1
+                         FROM TB_OPINION_IR
+                        WHERE EVNT_NO		= A.EVNT_NO
+                          AND BZENTY_NO 	= A.BZENTY_NO
+                          AND USER_NO		= B.USER_NO
+                          AND PRGRS_STTS_CD = '10'
+                       )
+        )										AS "isRgst"
+    </sql>
+    <!-- IR 검토의견서 관리 > 상세조회 > 경영체 목록 -->
+    <sql id="Sql-Column-IrOpnnEnt">
+    	A.EVNT_PARTCPTN_NO						AS "evntPartcptnNo",
+    	A.EVNT_NO								AS "evntNo",
+    	A.BRNO									AS "brno",
+    	A.BZENTY_NM								AS "bzentyNm",
+    	A.RPRSV_NM								AS "rprsvNm",
+    	A.TELNO									AS "telno",
+    	(SELECT EXISTS ( SELECT 1
+	                       FROM TB_OPINION_IR
+	                      WHERE EVNT_PARTCPTN_NO = A.EVNT_PARTCPTN_NO
+	                        AND EVNT_NO			 = A.EVNT_NO
+	                        AND PRGRS_STTS_CD	 = '10'
+	                   )
+	    )										AS "isRgst"
+    </sql>
+    
+    <sql id="Sql-Column-IrOpnn">
+		A.evnt_no					AS "evntNo",
+		(SELECT evnt_nm
+		   FROM tb_event_mng
+		  WHERE evnt_no = A.evnt_no
+		)							AS "evntNm",
+		A.bzenty_no					AS "bzentyNo",
+		FN_GET_ENTNM(A.bzenty_no)	AS "bzentyInvtNm",	/* 투자자(운용사)명 */
+		A.USER_NO					AS "userNo",
+    	FN_GET_USERNM(A.USER_NO)	AS "userNm",
+    	FN_GET_USERID(A.USER_NO)	AS "userId",
+    	FN_GET_USERNM(A.USER_NO) || '(' || FN_GET_USERiD(A.USER_NO) || ')'	AS "userNmNo",
+		A.evnt_partcptn_no			AS "evntPartcptnNo",
+		(SELECT bzenty_nm
+		   FROM tb_event_ent
+		  WHERE evnt_partcptn_no = A.evnt_partcptn_no
+		)							AS "bzentyNm",		/* 경영체명 */
+		A.biz_cn					AS "bizCn",
+		A.prdct_cn					AS "prdctCn",
+		A.co_cn						AS "coCn",
+		A.gnrlz_opnn				AS "gnrlzOpnn",
+		A.invt_itrst_dgree_cd		AS "invtItrstDgreeCd",
+		A.fllw_mtg_inten_yn			AS "fllwMtgIntenYn",
+		A.rgtr_no														AS "rgtrNo",
+		FN_GET_USERNM(A.rgtr_no)||'('||FN_GET_USERID(A.rgtr_no)||')'	AS "rgtrNmNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')					AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy.mm.dd')								AS "regDate",
+		A.mdfr_no														AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')					AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')								AS "mdfDate",
+		FN_GET_USERNM(A.rgtr_no)           								AS "rgtrNm"
+    </sql>
+    
+    <!-- IR검토의견서관리 > 투자자 목록조회 -->
+    <select id="listIrOpnnInvt" resultType="java.util.HashMap" parameterType="business.adm.invest.service.EventVO">
+        SELECT <include refid="Sql-Column-IrOpnnInvt"/>
+          FROM TB_EVENT_INVT A
+          JOIN TB_USER B
+            ON A.BZENTY_NO = B.BZENTY_NO
+         WHERE 1 = 1
+         	   <include refid="Sql-Where-IrOpnnInvt"/>
+         ORDER BY 
+               A.BZENTY_NO, B.USER_NO
+    </select>
+    <select id="listIrOpnnInvtCount" resultType="int" parameterType="business.adm.invest.service.EventVO">
+        SELECT COUNT(1) 
+          FROM TB_EVENT_INVT A
+          JOIN TB_USER B
+            ON A.BZENTY_NO = B.BZENTY_NO
+         WHERE 1 = 1
+               <include refid="Sql-Where-IrOpnnInvt"/>
+    </select>
+    
+    <!-- IR검토의견서관리 > 경영체 목록조회 -->
+    <select id="listIrOpnnEnt" resultType="java.util.HashMap" parameterType="business.adm.invest.service.EventVO">
+        SELECT <include refid="Sql-Column-IrOpnnEnt"/>
+          FROM TB_EVENT_ENT A
+         WHERE 1 = 1
+         	   <include refid="Sql-Where-IrOpnnEnt"/>
+         ORDER BY 
+               A.EVNT_PARTCPTN_NO DESC
+    </select>
+    <select id="listIrOpnnEntCount" resultType="int" parameterType="business.adm.invest.service.EventVO">
+        SELECT COUNT(1) 
+          FROM TB_EVENT_ENT A
+         WHERE 1 = 1
+               <include refid="Sql-Where-IrOpnnEnt"/>
+    </select>
+    
+    
+
+    <!-- IR검토의견서 목록조회 -->
+    <select id="listIrOpnn" resultType="java.util.HashMap" parameterType="business.adm.invest.service.EventVO">
+        SELECT <include refid="Sql-Column-IrOpnn"/>
+          FROM tb_opinion_ir A
+         WHERE 1 = 1
+         	   <include refid="Sql-Where-IrOpnn"/>
+         ORDER BY 
+               A.evnt_no
+    </select>
+    <select id="listIrOpnnCount" resultType="int" parameterType="business.adm.invest.service.EventVO">
+        SELECT COUNT(1) 
+          FROM tb_opinion_ir A
+         WHERE 1 = 1
+               <include refid="Sql-Where-IrOpnn"/>
+    </select>
+    
+    <!-- IR검토의견서 상세조회 -->
+    <select id="viewIrOpnn" resultType="business.adm.invest.service.EventVO" parameterType="business.adm.invest.service.EventVO">
+        SELECT <include refid="Sql-Column-IrOpnn"/>
+          FROM tb_opinion_ir A
+         WHERE 1 = 1
+         	   <include refid="Sql-Where-IrOpnn"/>
+    </select>
+    
+</mapper>

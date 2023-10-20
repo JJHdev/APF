@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util" 
+       xmlns:jee="http://www.springframework.org/schema/jee"
+        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+                            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+                            http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd
+                            http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-4.0.xsd">
+
+    <!-- ========================= RESOURCE DEFINITIONS ========================= -->
+    <context:property-placeholder location="classpath:/config/globals.properties"/>
+
+    <!-- 운영서버 
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="${Globals.PostgreSQL.Driver}" />
+        <property name="url" value="${Globals.PostgreSQL.Url}" />
+        <property name="username" value="${Globals.PostgreSQL.UserName}" />
+        <property name="password" value="${Globals.PostgreSQL.Password}" />
+        <property name="poolPreparedStatements" value="true"/>
+        <property name="validationQuery" value="select 1" />
+        <property name="testWhileIdle" value="true"/>
+        <property name="timeBetweenEvictionRunsMillis" value="3600000"/>         
+    </bean>
+	--> 
+	
+    <!-- 개발용(PostgreSQL) -->
+    <bean id="dataSourceSpied" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="${Globals.PostgreSQL.Driver}" />
+        <property name="url" value="${Globals.PostgreSQL.Url}" />
+        <property name="username" value="${Globals.PostgreSQL.UserName}" />
+        <property name="password" value="${Globals.PostgreSQL.Password}" />
+        <!-- <property name="password" value="#{egovEnvCryptoService.getPassword()}" /> -->  
+        <property name="poolPreparedStatements" value="true"/>
+        <property name="validationQuery" value="select 1" />
+        <property name="testWhileIdle" value="true"/>
+        <property name="timeBetweenEvictionRunsMillis" value="1800000"/>        
+    </bean>
+
+    <bean id="dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+        <constructor-arg ref="dataSourceSpied" />
+        <property name="logFormatter">
+            <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+                <property name="loggingType" value="MULTI_LINE" />
+                <property name="sqlPrefix" value="SQL : "/>
+            </bean>
+        </property>
+    </bean>
+</beans>

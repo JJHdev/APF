@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="AccessControl">
+
+    <!-- 페이지 접속 로그  -->
+    <insert id="regiAccessLog" parameterType="java.util.Map">
+        INSERT INTO SYS_CNTN_HST (
+              SN
+            , PRGRM_URL
+            , USER_NO
+            , CNTN_SE_CD
+            , CNTN_YR
+            , CNTN_MM
+            , CNTN_DAY
+            , CNTN_DT
+            , IP_ADDR
+            , SRVR_NM
+            , SYS_SE_CD
+        ) VALUES (
+        	  nextval('SEQ_CNTN_HST')
+            , #{progUrl}
+            , #{userNo}
+            , #{cntnSeCd}
+            , to_char(NOW(), 'yyyy')
+            , to_char(NOW(), 'mm')
+            , to_char(NOW(), 'dd')
+            , NOW()
+            , #{ipAddr}
+            , #{srvrNm}
+            , #{sysCd}
+        )
+    </insert>
+
+    <!-- 로그인 로그  -->
+    <insert id="regiLoginLog" parameterType="java.util.Map">
+        INSERT INTO SYS_LGN_HST (
+              SN
+            , USER_NO
+            , LGN_YR
+            , LGN_MM
+            , LGN_DAY
+            , LGN_DT
+            , LGN_STTS_CD
+            , IP_ADDR
+            , SRVR_NM
+            , SYS_SE_CD
+        ) VALUES (
+              nextval('SEQ_LGN_HST')
+            , #{userNo}
+            , to_char(NOW(), 'yyyy')
+            , to_char(NOW(), 'mm')
+            , to_char(NOW(), 'dd')
+            , NOW()
+            , #{lgnStusCd}
+            , #{ipAddr}
+            , #{srvrNm}
+            , #{sysCd}
+        )
+    </insert>
+
+    <!-- 정보조회이력 등록 -->
+    <insert id="regiInfoLog" parameterType="java.util.Map">
+        INSERT 
+          INTO SYS_INFO_HST 
+             ( SN,
+               USER_NO,
+               CNTN_SE_NM,
+               KEY1,
+               KEY2,
+               KEY3,
+               KEY4,
+               CNTN_DT,
+               IP_ADDR,
+               SRVR_NM,
+               SYS_SE_CD  
+             )
+        VALUES
+             ( nextval('SEQ_INFO_HST'),
+               #{userNo},
+               #{cntnSeNm},
+               #{key1},
+               #{key2},
+               #{key3},
+               #{key4},
+               SYSTIMESTAMP,
+               #{ipAddr},
+               #{srvrNm},
+               #{sysCd}  
+             )
+    </insert>
+
+    <!-- 이메일 발송 로그  -->
+    <insert id="regiEmailLog" parameterType="business.com.common.service.EmailVO">
+        INSERT INTO SYS_MAIL_HST (
+              SN
+            , USER_NO
+            , RCPTN_EML_ADDR
+            , RCVR_NM
+            , SNDNG_EML_ADDR
+            , SNDR_NM
+            , EML_TTL
+            , EML_CN
+            , TMPLAT_NM
+            , SNDNG_DT
+            , SNDNG_RSLT_CD
+            , RGTR_NO
+            , REG_YMD
+        ) VALUES (
+        	  nextval('SEQ_MAIL_HST')
+            , #{gsUserNo}
+            , #{toAddress}
+            , #{toName}
+            , #{fromAddress}
+            , #{fromName}
+            , #{subject}
+            , #{content}
+            , #{template}
+            , NOW()
+            , #{sendCd}
+            , #{gsUserNo}
+            , NOW()
+        )
+    </insert>
+</mapper>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+	<settings>
+		<setting name="cacheEnabled" value="true"/>
+		<setting name="lazyLoadingEnabled" value="true"/>
+		<setting name="multipleResultSetsEnabled" value="true"/>		<!-- 한개의 구문에 여러개의 ResultSet 허용여부 -->
+		<setting name="useColumnLabel" value="true"/>					<!-- 컬럼 이름대신 컬럼 라벨을 사용할지 여부 -->
+		<setting name="mapUnderscoreToCamelCase" value="true"/>			<!-- A_COLUMN을 CamelCase형태의 자바 프로퍼티명 형태인 aColumn으로 자동으로 매핑하도록 함 -->
+
+		<!--
+		<setting name="useGeneratedKeys" value="false"/>				생성키 사용여부 오라클은 sequence 생성키로 제공, Default는 false
+		<setting name="defaultExecutorType" value="SIMPLE"/> 			SIMPLE : 기본처리, BATCH : Batch 처리 Default는 SIMPLE
+		<setting name="defaultStatementTimeout" value="25000"/>			JDBC드라이버가 타임아웃을 가지고 있으나 더 짧은 시간을 원할경우 사용.
+		-->
+        <setting name="jdbcTypeForNull" value="NULL" />					<!-- NULL 허용 -->
+	</settings>
+	
+	<!-- 2023.08.04 map,list 사용을 위한 aliases 추가 -->
+	<typeAliases>
+		<typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+		<typeAlias alias="hashMap" type="java.util.HashMap"/>
+		<typeAlias alias="map" type="java.util.Map"/>
+		<typeAlias alias="list" type="java.util.List"/>
+    </typeAliases>
+
+</configuration>

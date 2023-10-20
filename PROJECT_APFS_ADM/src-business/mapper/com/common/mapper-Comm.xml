@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Comm">
+	
+    <sql id="Sql-listUpDcmnt-Where">
+		<choose>
+		    <when test="@common.util.CommUtils@isEqual('NONE',upSrchDcmntCd)">
+		        A.UP_DCMNT_CD = 'NONE'
+		    </when>
+		    <when test="@common.util.CommUtils@isEqual('SELECT',upSrchDcmntCd)">
+		        A.UP_DCMNT_CD = #{upDcmntCd}
+		    </when>
+		    <otherwise>
+		        A.UP_DCMNT_CD != 'NONE'
+		    </otherwise>
+		</choose>
+    </sql>
+    
+    <!-- 코드 리스트 조회 -->
+    <select id="listCode" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        SELECT
+               A.CD_ID              AS "code"
+             , A.CD_NM              AS "text"
+             , A.UP_CD_ID           AS "upCdId"
+             , A.CD_NM              AS "cdNm"
+             , A.CD_CN              AS "cdCn"
+             , A.CD_ORDR            AS "cdOrdr"
+          FROM SYS_CODE A
+         WHERE A.USE_YN = 'Y'
+         <if test="@common.util.CommUtils@isNotEmpty(upCdId)">
+           AND A.UP_CD_ID = #{upCdId}
+         </if>
+         <if test="@common.util.CommUtils@isEmpty(upCdId)">
+	         <if test="arrUpCd != null">
+	           AND A.UP_CD_ID IN
+	           <foreach collection="arrUpCd" item="code" index="index" separator="," open="(" close=")">
+	               #{code}
+	           </foreach>
+	         </if>
+	         <if test="arrUpCd == null">
+		         <if test="codeList == null"><!-- 조건오류에 따른 전체검색 방지 -->
+		           AND 1 = 0
+		         </if>
+		         <if test="codeList != null">
+		           AND A.CD_ID IN
+		           <foreach collection="codeList" item="code" index="index" separator="," open="(" close=")">
+		               #{code}
+		           </foreach>
+		         </if>
+	         </if>
+         </if>
+         <if test="@common.util.CommUtils@isNotEmpty(cdIdStart)">
+           AND A.CD_ID LIKE #{cdIdStart} || '%'
+         </if>
+         ORDER BY
+               A.UP_CD_ID ASC
+             , A.CD_ORDR  ASC
+             , A.CD_ID    ASC
+    </select>
+
+    <!-- 코드상세조회 -->
+    <select id="viewCode" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        SELECT A.CD_ID               					AS "cdId"
+             , A.CD_NM               					AS "cdNm"
+             , A.CD_CN               					AS "cdCn"
+             , A.UP_CD_ID            					AS "upCdId"
+             , FN_GET_CODENM('NONE', A.UP_CD_ID)  		AS "upCdNm"
+		     , A.CD_ORDR             					AS "cdOrdr"
+		     , A.USE_YN              					AS "useYn"
+          FROM SYS_CODE A
+         WHERE A.UP_CD_ID = #{upCdId}
+           AND A.CD_ID    = #{cdId}
+    </select>
+
+    <select id="listUpPape" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+        SELECT PAPE_CD AS "code"
+             , PAPE_NM AS "text"
+          FROM (
+            SELECT LEVEL AS lvl , A.*
+            FROM   TB_PAPE_CODE A
+            CONNECT BY PRIOR PAPE_CD = UP_PAPE_CD
+            <choose>
+                <when test="@common.util.CommUtils@isEqual(dtySeCd,'PP01')"> START  WITH UP_PAPE_CD = 'D00' </when>
+                <when test="@common.util.CommUtils@isEqual(dtySeCd,'PP02')"> START  WITH UP_PAPE_CD = 'D10' </when>
+                <when test="@common.util.CommUtils@isEqual(dtySeCd,'PP03')"> START  WITH UP_PAPE_CD = 'D20' </when>
+                <when test="@common.util.CommUtils@isEqual(dtySeCd,'PP04')"> START  WITH UP_PAPE_CD = 'D30' </when>
+                <otherwise> START  WITH UP_PAPE_CD = 'XXX' </otherwise>
+            </choose>
+            ORDER  SIBLINGS BY PAPE_CD
+        )
+        WHERE LVL = 1
+    </select>
+
+    <!-- UpPape에 속하는 모든 제출서류 코드 목록 조회  -->
+    <select id="listPape" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+        SELECT A.DCMNT_CD AS "code"
+             , A.DCMNT_NM AS "text"
+          FROM TB_PAPE_CODE A
+         WHERE UP_DCMNT_CD = #{upDcmntCd}
+           AND A.USE_YN = 'Y'
+         ORDER BY DCMNT_CD
+    </select> 
+    
+    <!-- 제출서류관리 서류명검색 검색 -->
+    <select id="listUpDcmnt" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+            SELECT A.DCMNT_CD AS "code"
+             	 , A.DCMNT_NM AS "text"
+		 	 	 ,(SELECT dtl_se_cd
+					 FROM tb_pape_mng
+					WHERE dcmnt_task_se_Cd = A.DCMNT_CD
+				 ORDER BY dtl_se_cd  DESC
+					LIMIT 1)   AS "dtlSeCd"
+			 FROM   TB_PAPE_CODE A
+			WHERE  <include refid="Sql-listUpDcmnt-Where"/>
+		 ORDER BY A.DCMNT_CD ASC
+    </select>
+    
+    <!-- 제출서류관리 지원사원명 검색 -->
+    <select id="listUpDcmntTask" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+            SELECT A.DCMNT_CD AS "code"
+             	 , A.DCMNT_NM AS "text"
+		 	 	 ,(CASE WHEN A.DCMNT_CD = 'D00' THEN 'SB'
+				        WHEN A.DCMNT_CD = 'D01' THEN 'SA'
+				        WHEN A.DCMNT_CD = 'D02' THEN 'SC'
+				        ELSE A.DCMNT_CD
+				    END) AS "dtlSeCd"
+			 FROM   TB_PAPE_CODE A
+			WHERE  <include refid="Sql-listUpDcmnt-Where"/>
+			  AND EXISTS (
+		    SELECT 1 
+		    FROM tb_invtsprt_mng B 
+		    WHERE 
+		    (CASE 
+		        WHEN A.DCMNT_CD = 'D00' THEN 'SB'
+		        WHEN A.DCMNT_CD = 'D01' THEN 'SA'
+		        WHEN A.DCMNT_CD = 'D02' THEN 'SC'
+		        ELSE A.DCMNT_CD
+		    END) = B.sprt_aply_se_cd
+		    AND B.sprt_aply_se_cd IN ('SA', 'SB', 'SC')
+			)
+		 ORDER BY A.DCMNT_CD ASC
+    </select>
+    
+    <!-- 제출서류관리 프로그램명 검색-->
+    <select id="listDcmnt" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		SELECT A.prgrm_no AS "code"
+             , A.prgrm_nm AS "text"
+          FROM tb_invtsprt_mng A
+         WHERE A.sprt_aply_se_cd = #{sprtAplySeCd}
+           AND A.del_yn = 'N'
+	  ORDER BY A.sprt_aply_se_cd ASC
+    </select>
+    
+    <!-- 샘플용 KODATA 반환  -->
+    <select id="viewSampleKodata" resultType="java.util.HashMap" parameterType="string">
+        SELECT A.kedcd                    AS "kedcd",
+               A.enp_nm                   AS "enp_nm",
+               A.enp_nm_trd               AS "enp_nm_trd",
+               A.enp_nm_eng               AS "enp_nm_eng",
+               A.enp_typ                  AS "enp_typ",
+               A.enp_sze                  AS "enp_sze",
+               A.grdt_pln_dt              AS "grdt_pln_dt",
+               A.enp_fcd                  AS "enp_fcd",
+               A.estb_fcd                 AS "estb_fcd",
+               A.enp_scd                  AS "enp_scd",
+               A.enp_scd_chg_dt           AS "enp_scd_chg_dt",
+               A.pubi_fcd                 AS "pubi_fcd",
+               A.venp_yn                  AS "venp_yn",
+               A.enp_form_fr              AS "enp_form_fr",
+               A.bzc_cd                   AS "bzc_cd",
+               A.fs_bzc_cd                AS "fs_bzc_cd",
+               A.grp_cd                   AS "grp_cd",
+               A.grp_nm                   AS "grp_nm",
+               A.cono_pid                 AS "cono_pid",
+               A.estb_dt                  AS "estb_dt",
+               A.ipo_cd                   AS "ipo_cd",
+               A.trdbz_rpt_no             AS "trdbz_rpt_no",
+               A.list_dt                  AS "list_dt",
+               A.dlist_dt                 AS "dlist_dt",
+               A.mtx_bnk_cd               AS "mtx_bnk_cd",
+               A.mtx_bnk_nm               AS "mtx_bnk_nm",
+               A.ovd_tx_bnk_cd            AS "ovd_tx_bnk_cd",
+               A.ovd_tx_bnk_nm            AS "ovd_tx_bnk_nm",
+               A.acct_eddt                AS "acct_eddt",
+               A.hpage_url                AS "hpage_url",
+               A.email                    AS "email",
+               A.std_dt                   AS "std_dt",
+               A.bzno                     AS "bzno",
+               A.loc_zip                  AS "loc_zip",
+               A.loc_addra                AS "loc_addra",
+               A.loc_addrb                AS "loc_addrb",
+               A.tel_no                   AS "tel_no",
+               A.fax_no                   AS "fax_no",
+               A.laborer_sum              AS "laborer_sum",
+               A.pd_nm                    AS "pd_nm",
+               A.ksic9_bzc_cd             AS "ksic9_bzc_cd",
+               A.rel_kedcd                AS "rel_kedcd",
+               A.rel_estb_dt              AS "rel_estb_dt",
+               A.loc_rdnm_zip             AS "loc_rdnm_zip",
+               A.loc_rdnm_addra           AS "loc_rdnm_addra",
+               A.loc_rdnm_addrb           AS "loc_rdnm_addrb",
+               A.loc_rdnm_addrb_conf_yn   AS "loc_rdnm_addrb_conf_yn",
+               A.loc_addrb_conf_yn        AS "loc_addrb_conf_yn",
+               A.reper_name               AS "reper_name"
+          FROM tmp_enp A
+         WHERE bzno = #{bzno}
+    </select>
+    
+    <!-- 투자분야 코드 리스트 조회 -->
+    <select id="listInvtRlmCode" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    	SELECT C.*
+    	  FROM (SELECT
+		               A.invt_fld_cd	AS "code"
+		             , A.invt_fld_nm	AS "text"
+		             , A.invt_fld_cn    AS "tooltip"
+		             , A.itm_kwrd       AS "keyword"
+		          FROM tb_invtrlm_code A
+		         WHERE A.invt_fld_cd = #{invtFldCd}
+		         UNION
+		        SELECT
+		               A.invt_fld_cd	AS "code"
+		             , A.invt_fld_nm	AS "text"
+		             , A.invt_fld_cn    AS "tooltip"
+		             , A.itm_kwrd       AS "keyword"
+		          FROM tb_invtrlm_code A
+		         WHERE NOW() BETWEEN TO_DATE(use_bgng_ymd, 'yyyymmdd') AND TO_DATE(COALESCE(use_end_ymd, '99991231'), 'yyyymmdd')
+               ) C
+         <!--  2023.08.17 LSH 사용여부 조건제외 (날짜범위로만 확인함) -->
+         ORDER BY
+               CASE WHEN code = #{invtFldCd} THEN 0 ELSE 1 END,
+               1 DESC
+    </select>
+    
+    <!-- 투자분야 코드 상세조회 -->
+    <select id="viewInvtRlmCode" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        SELECT
+               A.invt_fld_cd	AS "code"
+             , A.invt_fld_nm	AS "text"
+             , A.invt_fld_cn    AS "tooltip"
+             , A.itm_kwrd       AS "keyword"
+          FROM tb_invtrlm_code A
+         WHERE invt_fld_cd = #{invtFldCd}
+         ORDER BY
+               A.cd_ordr     ASC
+              ,A.invt_fld_cd ASC
+    </select>
+    
+    <!-- 유관기관 코드 리스트 조회 -->
+    <select id="listCrdnsEntCode" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        SELECT A.bzenty_no	AS "code",
+               A.bzenty_nm	AS "text",
+               ''			AS "tooltip",
+               ''			AS "keyword"
+          FROM tb_ent A
+         WHERE A.use_stts_cd  = '1'
+           AND A.bzenty_se_cd = '30'
+         ORDER BY
+               A.bzenty_no
+    </select>
+
+    <!-- 트리형태 코드 리스트 조회 -->
+    <select id="listTreeCode" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        SELECT A.CD_ID              AS "code"
+             , A.CD_NM              AS "text"
+             , CASE WHEN LENGTH(A.CD_ID) = 1
+                    THEN 'ROOT'
+                    WHEN LENGTH(A.CD_ID) = 3
+                    THEN SUBSTR(A.CD_ID,1,1)
+                    ELSE SUBSTR(A.CD_ID,1,LENGTH(A.CD_ID)-1)
+               END                  AS "parent"
+             , CASE WHEN LENGTH(A.CD_ID) = 1
+                    THEN 1
+                    ELSE LENGTH(A.CD_ID) - 1
+               END                  AS "level"
+             , CASE WHEN EXISTS (SELECT 1
+                                   FROM SYS_CODE
+                                  WHERE UP_CD_ID = A.UP_CD_ID
+                                    AND USE_YN   = 'Y'
+                                    AND CD_ID LIKE A.CD_ID || '_%')
+                    THEN 'N' 
+                    ELSE 'Y' 
+               END                  AS "leaf"
+             , A.CD_ORDR            AS "ordr"
+          FROM SYS_CODE     A
+         WHERE A.USE_YN   = 'Y'
+           AND A.UP_CD_ID = #{upCdId}
+           AND A.CD_ID   != '000000'
+         <if test="@common.util.CommUtils@isNotEmpty(srchCode)"><!-- 노드선택검색 -->
+           AND A.CD_ID LIKE #{srchCode}||'_'
+         </if>
+         <if test="@common.util.CommUtils@isNotEmpty(srchText)"><!-- 텍스트검색 -->
+           AND EXISTS (
+               SELECT 1
+                 FROM SYS_CODE
+                WHERE UP_CD_ID = A.UP_CD_ID
+                  AND USE_YN   = 'Y'
+                  AND CD_NM LIKE '%' || #{srchText} || '%'
+                  AND CD_ID LIKE A.CD_ID || '%'
+               )
+         </if>
+         ORDER BY
+               A.CD_ID ASC
+    </select>
+
+</mapper>

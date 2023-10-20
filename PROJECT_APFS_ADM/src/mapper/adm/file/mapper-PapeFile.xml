@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="PapeFile">
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+        A.DCMNT_CD                                       AS "dcmntCd",
+        A.UP_DCMNT_CD                                    AS "upDcmntCd",
+        A.DCMNT_NM                                       AS "dcmntNm",
+        A.LMT_CNT                               		 AS "lmtCnt",
+        A.CD_ORDR                               		 AS "cdOrdr",
+        A.FILE_NM                                      	 AS "fileNm",
+        A.FILE_PATH                                      AS "filePath",
+        A.DCMNT_CM_NM                                    AS "dcmntCmNm",
+        A.DCMNT_CN                                 		 AS "dcmntCn",
+        A.DWNLD_CNT                                      AS "dwnldCnt",
+        A.DWNLD_TRGT_YN                                  AS "dwnldTrgtYn",
+        A.USE_YN                                     	 AS "useYn",
+        A.rgtr_no                                      	 AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  	 AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             	 AS "regDate",
+        A.mdfr_no                                      	 AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  	 AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             	 AS "mdfDate",
+	   (SELECT DCMNT_NM
+	      FROM TB_PAPE_CODE 
+	     WHERE DCMNT_CD = A.UP_DCMNT_CD)				 AS "upDcmntNm",
+	   (SELECT user_nm
+	      FROM tb_user
+	     WHERE user_no = A.rgtr_no)                    	 AS "rgtrNm",
+	   (SELECT user_nm
+	      FROM tb_user
+	     WHERE user_no = A.mdfr_no)                    	 AS "mdfrNm",
+        (SELECT CASE WHEN COUNT(*) > 0
+                     THEN 'closed'
+                     ELSE 'open'
+                END
+           FROM TB_PAPE_CODE
+          WHERE UP_DCMNT_CD = A.DCMNT_CD)                AS "state"
+    </sql>
+
+    <!-- 업무첨부파일 목록조회 -->
+    <select id="listPapeFile" resultType="business.adm.file.service.PapeFileVO" parameterType="business.adm.file.service.PapeFileVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM TB_PAPE_CODE A
+         WHERE A.DCMNT_CD     = #{docNo}
+    </select>
+
+    <!-- 업무첨부파일 상세조회 -->
+    <select id="viewPapeFile" resultType="business.adm.file.service.PapeFileVO" parameterType="String">
+        SELECT <include refid="Sql-Column"/>
+          FROM TB_PAPE_CODE A
+         WHERE A.DCMNT_CD     = #{dcmntCd}
+    </select>
+
+</mapper>

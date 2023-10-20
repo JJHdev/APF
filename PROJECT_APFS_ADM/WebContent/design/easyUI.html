@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="Generator" content="EditPlus®">
+	<meta name="Author" content="">
+	<meta name="Keywords" content="">
+	<meta name="Description" content="">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no">
+	<script type="text/javascript" src="../jquery/jquery-3.4.1.js"></script>
+	
+	<!--taglist-->
+	<!-- jquery-ui -->
+	<script type="text/javascript" src="../jquery/jquery-ui.js"></script>
+	<link rel="stylesheet" href="../css/jquery-ui.css">
+
+	<!-- chart -->
+	<!-- bootstrap-4.3.1-dist -->
+	<script type="text/javascript" src="../jquery/bootstrap-5.2.3-dist/js/bootstrap.bundle.js"></script>
+	<link rel="stylesheet" href="../jquery/bootstrap-5.2.3-dist/css/bootstrap.css">
+	<!-- bootstrap-datepicker-1.9.0-dist -->
+	<script type="text/javascript" src="../jquery/bootstrap-datepicker-1.9.0-dist/js/bootstrap-datepicker.js"></script>
+	<link rel="stylesheet" href="../jquery/bootstrap-datepicker-1.9.0-dist/css/bootstrap-datepicker3.css">
+	<script type="text/javascript" src="../jquery/bootstrap-datepicker-1.9.0-dist/locales/bootstrap-datepicker.ko.min.js"></script>
+	<!-- swiper-4.5.0 -->
+	<script type="text/javascript" src="../jquery/swiper-4.5.0/dist/js/swiper.js"></script>
+	<link rel="stylesheet" href="../jquery/swiper-4.5.0/dist/css/swiper.css">
+	<!-- EasyUI 관련 리소스 -->
+	<link rel="stylesheet" type="text/css" href="../plugins/easyui-1.9.15/themes/bootstrap/easyui.css">
+	<link rel="stylesheet" type="text/css" href="../plugins/easyui-1.9.15/themes/icon.css">
+	<link rel="stylesheet" type="text/css" href="../plugins/easyui-1.9.15/themes/color.css">
+	<script type="text/javascript" src="../plugins/easyui-1.9.15/jquery.easyui.min.js"></script>
+	<script type="text/javascript" src="../plugins/easyui-1.9.15/locale/easyui-lang-ko.js"></script>
+
+
+	<!-- core CSS -->
+	<script type="text/javascript" src="../design/js/commons.js"></script>
+	<link rel="stylesheet" href="../css/font.css">
+	<link rel="stylesheet" href="../css/Epic2023-v1.0/style.css">
+
+	<link rel="stylesheet" href="../css/user-define.css">
+	<link rel="stylesheet" href="../css/custom-style.css">
+	<link rel="stylesheet" href="../css/default-element.css">
+	
+	<link rel="stylesheet" href="../css/commons.css">
+	<!-- User Define CSS -->
+	
+
+<!--//-->
+
+
+	<title>main</title>
+	
+	
+</head>
+
+<body>
+	<div class="wrap">
+	
+		<div class="row addmin-page-wrap">
+			<div class="col left">
+				<!--menu-->
+				<div id="menu">
+					<div class="left-menu" data-v-2eb60c26="">
+						<div class="top">
+							<p class="txt1">
+								
+								<img src="../images/logo-W.png"/>
+								<a class="menu-collapse " onclick="menu_collapse();">
+									<i class="icon-menu-duo-square"></i>
+								</a>
+							</p>
+						</div>
+						<div class="lev-menu-box">
+							<ul class="lev1">
+								
+								<li class="">
+									<a href="#" class="HoverIcon active">
+										<i class="icon-grid-web-4 F"></i>
+										<span class="txt">대시보드</span>
+										
+										<span class="bg"></span>
+									</a>
+									
+								</li>
+								<li class="">
+									<a href="#" class="HoverIcon">
+										<i class="icon-user-edit"></i>
+										<span class="txt">회원관리</span>
+										<i class="arrow icon-angle-right"></i>
+										<span class="bg"></span>
+									</a>
+									<ul id="" class="lev2">
+										<li><a href="">사용자관리</a></li>
+										<li><a href="">업체관리</a></li>
+										
+									</ul>
+								</li>
+								<li class="">
+									<a href="#" class="HoverIcon">
+										<i class="icon-presentation-pen"></i>
+										<span class="txt">지원사업관리</span>
+										<i class="arrow icon-angle-right"></i>
+										<span class="bg"></span>
+									</a>
+									<ul id="" class="lev2">
+										<li><a href="">세부지원사업관리</a></li>
+										<li><a href="">신청현황관리</a></li>
+										
+									</ul>
+								</li>
+								<li class="">
+									<a href="#" class="HoverIcon">
+										<i class="icon-credit-card-edit"></i>
+										<span class="txt">투자정보관리</span>
+										<i class="arrow icon-angle-right"></i>
+										<span class="bg"></span>
+									</a>
+									<ul id="" class="lev2">
+										<li><a href="">모태펀드등록</a></li>
+										<li><a href="">투자설명회등록</a></li>
+										<li><a href="">참여기업등록</a></li>
+										<li><a href="">IR검토의견서 관리</a></li>
+									</ul>
+								</li>
+								
+								<li class="">
+									<a href="#" class="HoverIcon">
+										<i class="icon-notebook"></i>
+										<span class="txt">운영관리</span>
+										<i class="arrow icon-angle-right"></i>
+										<span class="bg"></span>
+									</a>
+									<ul id="" class="lev2">
+										<li><a href="">사업공고관리</a></li>
+										<li><a href="">IR지원현황</a></li>
+										<li><a href="">배너관리</a></li>
+										<li><a href="">투자분야관리</a></li>
+										<li><a href="">제출서류관리</a></li>
+										<li><a href="">검색어관리</a></li>
+									</ul>
+								</li>
+								<li class="">
+									<a href="#" class="HoverIcon">
+										<i class="icon-layout-web-12"></i>
+										<span class="txt">게시판관리</span>
+										<i class="arrow icon-angle-right"></i>
+										<span class="bg"></span>
+									</a>
+									<ul id="" class="lev2">
+										<li><a href="">공지사항</a></li>
+										<li><a href="">질의응답</a></li>
+										<li><a href="">자료실</a></li>
+										<li><a href="">우수투자사례</a></li>
+										<li><a href="">홍보영상</a></li>
+									</ul>
+								</li>
+							
+								<li class="">
+									<a href="#" class="HoverIcon">
+										<i class="icon-pen-tool"></i>
+										<span class="txt">설문관리</span>
+										<i class="arrow icon-angle-right"></i>
+										<span class="bg"></span>
+									</a>
+									<ul id="" class="lev2">
+										<li><a href="">설문관리</a></li>
+										<li><a href="">설문결과관리</a></li>
+										
+									</ul>
+								</li>
+								
+								<li class="">
+									<a href="#" class="HoverIcon">
+										<i class="icon-settings"></i>
+										<span class="txt">시스템 관리</span>
+										<i class="arrow icon-angle-right"></i>
+										<span class="bg"></span>
+									</a>
+									<ul id="" class="lev2">
+										<li><a href="">공통코드관리</a></li>
+										<li><a href="">서류코드관리</a></li>
+										<li><a href="">권한관리</a></li>
+										<li><a href="">메뉴관리</a></li>
+										<li><a href="">프로그램관리</a></li>
+										<li><a href="">권한별 메뉴관리</a></li>
+										<li><a href="">권한별 프로그램관리</a></li>
+										<li><a href="">접속이력</a></li>
+									</ul>
+								</li>
+
+								
+								
+							</ul>
+						</div>
+					</div>
+
+				</div>
+				<!--//-->
+				<div class="footer">
+					<div class="userinfo">
+						<p class="txt1">홍길동님
+							<span class="txt2">2023. 04. 21일에 로그인</span>
+						</p>
+						<button class="btn-dagray"><i class="icon-log-out"></i>로그아웃</button>
+					</div>
+					<div class="copyright">
+						Copyright©2023주택도시보증공사.<br/>모든 권리 보유.
+					</div>
+				</div>
+			</div> 
+			<div class="col right">
+				<div class="headadmin1" data-v-2eb60c26="">
+					<div class="row">
+						<div class="col page-title">
+							<p class="txt1"><i class="icon-notebook"></i> 페이지 이름</p>
+							<button class="btn btnFc-1">
+								<i class="icon-search-minus mr-3px"></i>검색조건 닫기
+							</button>
+							<script>
+								 $('.btnFc-1').click(function(){
+									$(this).toggleClass('active');
+									if($(this).hasClass('active')){
+										$(this).html('<i class="icon-search mr-3px"></i>검색조건 열기');
+									}else{
+										$(this).html('<i class="icon-search-minus mr-3px"></i>검색조건 닫기');
+									}
+									var	left_search_area = $('.content-wrap>div.left-search');
+	 								left_search_area.toggleClass('trans');
+								});
+							</script>
+						</div>
+						<div class="col justify-content-end">
+							<ul class="sitemap2 justify-content-end">
+							
+								
+								<li class="icon"><i class="icon-home F"></i>HOME</li>
+								<li class="arrow"><i class="icon-angle-right"></i></li>
+								<li>menu1</li>
+								<li class="arrow"><i class="icon-angle-right"></i></li>
+								<li class="now">Now</li>
+							</ul>
+						</div>
+						
+						
+					</div>
+				</div>
+				<div class="row content-wrap">
+					<div class="left-search" data-v-2eb60c26="">					
+						<div class="top">
+							<p class="txt1"><i class="icon-search-text"></i>검색조건<a href="#" onclick="close_btn(this);" class="close-btn"><i class="icon-times"></i></a>
+							</p>
+						</div>
+						<div class="searchlist">
+							<div class="form-label-box">
+								<div class="box">
+									<div class="area select">
+										<label class="txt1">구분</label>
+										<div class="input-element icons-ver">
+											<select name="" id="">
+												<option value="">선택하세요</option>
+												<option value=""></option>
+												<option value=""></option>
+											</select>
+											<i class="icon-angle-down right"></i>
+										</div>
+									</div>
+								</div>
+								<div class="box">
+									<div class="area select ">
+										<label class="txt1">검색어입력</label>					
+										<div class="input-element icons-ver">
+											<input type="text" name="" id="">
+											
+										</div>
+									</div>
+								</div>
+								
+								
+								
+							
+							</div>
+							<div class="seach-btn">
+								<a href="#" class="btn-primary"><i class="icon-Search"></i> 조회</a>
+							</div>
+							<div class="seach-btn">
+								<a href="#" class="btn-primary" onclick="detail_pop();"><i class="icon-A-Right"></i> 상세2 버튼</a>
+							</div>
+							<div class="seach-btn">
+								<a href="#" class="btn-primary " data-toggle="modal" data-target="#myModal1"><i class="icon-A-Right"></i> 모달2 버튼</a>
+							</div>	
+						</div>
+						
+						
+						
+					</div>
+					<div class="content">
+						
+						<div class="eletabletop1" data-v-2eb60c26="">
+							<div class="row">
+								<div class="col">
+									<p class="txt1">
+										<i class="icon-document"></i><em>72</em>개의 사용자 목록이 있습니다
+									</p>
+								</div>
+								
+															
+							</div>
+						</div>
+						<div class="custom-ext-box pb-24px pt-0 px-16px tbox-prent">
+							<div class="table-box-1 overtable">
+								<div style="width:100%;height:500px;">
+									<table id="grid" 
+										class="easyui-treegrid" 
+										data-options="fit:true,
+										border:false,
+										singleSelect: true,
+										idField: 'menuId',
+										treeField: 'menuNm',
+										columns: [[
+											{field:'menuNm'       ,width:250,halign:'center',align:  'left',title:'메뉴명'},
+											{field:'menuId'       ,width:150,halign:'center',align:  'left',title:'메뉴ID'},
+											{field:'upperMenuId'  ,width:150,halign:'center',align:  'left',title:'상위메뉴ID'},
+											{field:'trgtUrl'      ,width:250,halign:'center',align:  'left',title:'타겟URL'},
+											{field:'sysSe'        ,width:100,halign:'center',align:'center',title:'시스템'},
+											{field:'useYn'        ,width: 60,halign:'center',align:'center',title:'사용여부'},
+											{field:'popupYn'      ,width: 60,halign:'center',align:'center',title:'팝업여부'},
+											{field:'menuLvl'      ,width: 60,halign:'center',align: 'right',title:'메뉴레벨'},
+											{field:'menuOrdr'     ,width: 60,halign:'center',align: 'right',title:'메뉴순서'},
+											{field:'regstrNo'     ,width:100,halign:'center',align:'center',title:'등록자번호'},
+											{field:'regYmd'       ,width:125,halign:'center',align:'center',title:'등록일자'},
+											{field:'upusrNo'      ,width:100,halign:'center',align:'center',title:'수정자번호'},
+											{field:'mdfcnYmd'     ,width:125,halign:'center',align:'center',title:'수정일자'}
+										]],
+										data: [
+											{'upperMenuId':'NONE','code':'MU_ADM_RLF','popupYn':'N','level':0,'menuLvl':1,'regDate':'2021-08-26','menuOrdr':1,'sysSe':'ADM','children':[{'upperMenuId':'MU_ADM_RLF','code':'MU_ADM_RLF0100','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':0,'sysSe':'ADM','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/adm/relief/openRequest.do','menuId':'MU_ADM_RLF0100','useYn':'Y','text':'신청','id':'MU_ADM_RLF0100','menuNm':'신청'},{'upperMenuId':'MU_ADM_RLF','code':'MU_ADM_RLF0200','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':1,'sysSe':'ADM','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/adm/relief/openReceipt.do','menuId':'MU_ADM_RLF0200','useYn':'Y','text':'접수','id':'MU_ADM_RLF0200','menuNm':'접수'},{'upperMenuId':'MU_ADM_RLF','code':'MU_ADM_RLF0300','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':2,'sysSe':'ADM','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/adm/relief/openPayment.do','menuId':'MU_ADM_RLF0300','useYn':'Y','text':'지급','id':'MU_ADM_RLF0300','menuNm':'지급'},{'upperMenuId':'MU_ADM_RLF','code':'MU_ADM_RLF0400','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':3,'sysSe':'ADM','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/adm/relief/openPayback.do','menuId':'MU_ADM_RLF0400','useYn':'Y','text':'환수','id':'MU_ADM_RLF0400','menuNm':'환수'}],'regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/adm/relief/openRequest.do','menuId':'MU_ADM_RLF','useYn':'Y','text':'구제급여','id':'MU_ADM_RLF','menuNm':'구제급여'},
+											{'upperMenuId':'NONE','code':'MU_ADM_EXM','popupYn':'N','level':0,'menuLvl':1,'regDate':'2021-08-26','menuOrdr':2,'sysSe':'ADM','children':[{'upperMenuId':'MU_ADM_EXM','code':'MU_ADM_EXM0100','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':0,'sysSe':'ADM','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/adm/exmn/openPrptExmn.do','menuId':'MU_ADM_EXM0100','useYn':'Y','text':'예비조사','id':'MU_ADM_EXM0100','menuNm':'예비조사'},{'upperMenuId':'MU_ADM_EXM','code':'MU_ADM_EXM0200','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':1,'sysSe':'ADM','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/adm/exmn/openMainExmn.do','menuId':'MU_ADM_EXM0200','useYn':'Y','text':'본조사','id':'MU_ADM_EXM0200','menuNm':'본조사'},{'upperMenuId':'MU_ADM_EXM','code':'MU_ADM_EXM0300','popupYn':'N','upusrNo':'100002','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':2,'mdfDttm':'2021-09-10 14:11:39','sysSe':'ADM','mdfDate':'2021-09-10','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/adm/exmn/openCommit.do','menuId':'MU_ADM_EXM0300','useYn':'Y','text':'위원회','id':'MU_ADM_EXM0300','menuNm':'위원회'}],'regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/adm/exmn/openPrptExmn.do','menuId':'MU_ADM_EXM','useYn':'Y','text':'환경오염 피해조사','id':'MU_ADM_EXM','menuNm':'환경오염 피해조사'},
+											{'upperMenuId':'NONE','code':'MU_ADM_SPT','popupYn':'N','level':0,'menuLvl':1,'regDate':'2021-08-26','menuOrdr':3,'sysSe':'ADM','children':[{'upperMenuId':'MU_ADM_SPT','code':'MU_ADM_SPT0100','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':0,'sysSe':'ADM','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/adm/support/openLawsuit.do','menuId':'MU_ADM_SPT0100','useYn':'Y','text':'취약계층소송지원','id':'MU_ADM_SPT0100','menuNm':'취약계층소송지원'},{'upperMenuId':'MU_ADM_SPT','code':'MU_ADM_SPT0200','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':1,'sysSe':'ADM','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/adm/support/openClaim.do','menuId':'MU_ADM_SPT0200','useYn':'Y','text':'구상권','id':'MU_ADM_SPT0200','menuNm':'구상권'}],'regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/adm/support/openLawsuit.do','menuId':'MU_ADM_SPT','useYn':'Y','text':'소송지원','id':'MU_ADM_SPT','menuNm':'소송지원'},
+											{'upperMenuId':'NONE','code':'MU_ADM_SYS','popupYn':'N','level':0,'menuLvl':1,'regDate':'2021-08-26','menuOrdr':7,'sysSe':'ADM','children':[{'upperMenuId':'MU_ADM_SYS','code':'MU_ADM_SYS0100','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':0,'sysSe':'ADM','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/sys/code/listCode.do','menuId':'MU_ADM_SYS0100','useYn':'Y','text':'공통코드관리','id':'MU_ADM_SYS0100','menuNm':'공통코드관리'},{'upperMenuId':'MU_ADM_SYS','code':'MU_ADM_SYS0200','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':1,'sysSe':'ADM','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/sys/sckwnd/listCode.do','menuId':'MU_ADM_SYS0200','useYn':'Y','text':'질병코드관리','id':'MU_ADM_SYS0200','menuNm':'질병코드관리'},{'upperMenuId':'MU_ADM_SYS','code':'MU_ADM_SYS0300','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':2,'sysSe':'ADM','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/sys/sms/listSms.do','menuId':'MU_ADM_SYS0300','useYn':'Y','text':'SMS관리','id':'MU_ADM_SYS0300','menuNm':'SMS관리'},{'upperMenuId':'MU_ADM_SYS','code':'MU_ADM_SYS0600','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':3,'sysSe':'ADM','regDttm':'2021-08-26 00:00:00','regstrNo':'system','trgtUrl':'/sys/role/listRole.do','menuId':'MU_ADM_SYS0600','useYn':'Y','text':'역할관리','id':'MU_ADM_SYS0600','menuNm':'역할관리'},{'upperMenuId':'MU_ADM_SYS','code':'MU_ADM_SYS0400','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':4,'sysSe':'ADM','regDttm':'2021-08-26 00:00:00','regstrNo':'system','trgtUrl':'/sys/menu/listMenu.do','menuId':'MU_ADM_SYS0400','useYn':'Y','text':'메뉴관리','id':'MU_ADM_SYS0400','menuNm':'메뉴관리'},{'upperMenuId':'MU_ADM_SYS','code':'TEST001','popupYn':'Y','upusrNo':'100002','level':1,'menuLvl':2,'regDate':'2021-09-08','menuOrdr':5,'mdfDttm':'2021-09-10 14:11:52','sysSe':'ADM','mdfDate':'2021-09-10','regDttm':'2021-09-08 17:59:36','regstrNo':'100002','trgtUrl':'asdasd','menuId':'TEST001','useYn':'Y','text':'테스트메뉴111','id':'TEST001','menuNm':'테스트메뉴111'},{'upperMenuId':'MU_ADM_SYS','code':'MU_ADM_SYS0500','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':5,'sysSe':'ADM','regDttm':'2021-08-26 00:00:00','regstrNo':'system','trgtUrl':'/sys/prog/listProg.do','menuId':'MU_ADM_SYS0500','useYn':'Y','text':'프로그램관리','id':'MU_ADM_SYS0500','menuNm':'프로그램관리'},{'upperMenuId':'MU_ADM_SYS','code':'MU_ADM_SYS0700','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':6,'sysSe':'ADM','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/sys/role/listRoleMenu.do','menuId':'MU_ADM_SYS0700','useYn':'Y','text':'역할별 메뉴관리','id':'MU_ADM_SYS0700','menuNm':'역할별 메뉴관리'},{'upperMenuId':'MU_ADM_SYS','code':'MU_ADM_SYS0800','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':7,'sysSe':'ADM','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/sys/role/listRoleProg.do','menuId':'MU_ADM_SYS0800','useYn':'Y','text':'역할별 프로그램관리','id':'MU_ADM_SYS0800','menuNm':'역할별 프로그램관리'},{'upperMenuId':'MU_ADM_SYS','code':'MU_ADM_SYS0810','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-09-10','menuOrdr':7,'sysSe':'ADM','regDttm':'2021-09-10 18:12:09','regstrNo':'system','trgtUrl':'/sys/role/listRoleUser.do','menuId':'MU_ADM_SYS0810','useYn':'Y','text':'역할별 사용자관리','id':'MU_ADM_SYS0810','menuNm':'역할별 사용자관리'},{'upperMenuId':'MU_ADM_SYS','code':'MU_ADM_SYS0900','popupYn':'N','upusrNo':'100002','level':1,'menuLvl':2,'regDate':'2021-08-26','menuOrdr':8,'mdfDttm':'2021-09-10 17:58:25','sysSe':'ADM','mdfDate':'2021-09-10','regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/sys/log/listAccessLog.do','menuId':'MU_ADM_SYS0900','useYn':'Y','text':'접속이력','id':'MU_ADM_SYS0900','menuNm':'접속이력'},{'upperMenuId':'MU_ADM_SYS','code':'MU_ADM_SYS0910','popupYn':'N','level':1,'menuLvl':2,'regDate':'2021-09-08','menuOrdr':9,'sysSe':'ADM','regDttm':'2021-09-08 17:41:56','regstrNo':'100002','trgtUrl':'/sys/log/listLoginLog.do','menuId':'MU_ADM_SYS0910','useYn':'Y','text':'로그인이력','id':'MU_ADM_SYS0910','menuNm':'로그인이력'}],'regDttm':'2021-08-26 12:22:53','regstrNo':'system','trgtUrl':'/sys/code/listCode.do','menuId':'MU_ADM_SYS','useYn':'Y','text':'시스템관리','id':'MU_ADM_SYS','menuNm':'시스템관리'}
+										]
+										"></table>
+								</div>
+							</div>
+							<div class="paging-box mt-8px p-0 mb-0">
+								<ul class="d-inline-block">
+									<li>
+										<a href="#none" title="처음" class="first">
+											<i class="icon-angle-first "></i>
+										</a>
+										<a href="#none" title="이전" class="prev">
+											<i class="icon-angle-left "></i>
+										</a>
+									</li>
+									<li>
+										<a href="#none"><span>1</span></a>
+										<a href="#none"><span>2</span></a>
+										<a href="#none"><span class="">3</span></a>
+										<a href="#none"><span>4</span></a>
+										<a href="#none"><span class="active">5</span></a>
+										<a href="#none"><span>6</span></a>
+										<a href="#none"><span>7</span></a>
+										<a href="#none"><span>8</span></a>
+										<a href="#none"><span>9</span></a>
+										<a href="#none"><span>10</span></a>
+									</li>
+									<li>
+										<a href="" title="다음" class="next">
+											<i class="icon-angle-right "></i>
+					
+										</a>
+										<a href="" title="마지막" class="last">
+					
+											<i class="icon-angle-last "></i>
+										</a>
+									</li>
+								</ul>
+								
+					
+							</div>
+						</div>
+						
+						
+				
+					</div>
+					<!--detail-box-->
+					<div class="detail-pop">
+							
+						<div class="eletabletop1" data-v-2eb60c26="">
+							<div class="row">
+								<div class="col">
+									<p class="txt1">
+										<i class="icon-pen-line"></i>사용자 등록
+									</p>
+								</div>
+								
+								<div class="col element">
+									<a href="#" class="btn-deep-green bs-s" onclick="detail_pop();"><i class="icon-times"></i> 창닫기</a>
+								</div>
+							</div>
+						</div>
+						<div class="detail-input-box">
+							<div class="input-grid-1">
+								<div class="row">
+									<div class="col-12">
+										<div class="form-area-box1">
+											<label>사용자 ID<em>*</em></label>
+											<div class="input-btn">
+												<div class="row">
+													<div class="col">
+														<div class="ele-icon-box">
+															<i class="icon-edit"></i>
+															<input type="text" name="" id="" placeholder="내용입력">
+														</div>
+													</div>
+													<div class="col box-btn">
+														<button class="bs-m btn-combi-2 w-100">															
+															중복확인															
+														</button>
+													</div>
+												</div>
+											</div>
+											
+											
+										</div>
+									</div>
+									<div class="col-12">
+										<div class="form-area-box1">
+											<label>성명<em>*</em></label>
+											<div class="ele-icon-box">
+												<input type="text" name="" id="">
+											</div>
+											
+										</div>
+									</div>
+									<div class="col-12">
+										<div class="form-area-box1">
+											<label>비밀번호<em>*</em></label>
+											<div class="ele-icon-box">
+												<input type="text" name="" id="">
+											</div>
+											<div class="bottom-lable">
+												<div class="row">
+													<div class="col">
+														<p class="fs-10px text-red"><i class="icon-exclamation-circle"></i>8자 이상 영대소문자+숫자+특수문자 조합</p>
+													</div>
+													
+													
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="col-12">
+										<div class="form-area-box1">
+											<label>비밀번호확인<em>*</em></label>
+											<div class="ele-icon-box">
+												<input type="text" name="" id="">
+											</div>
+											
+										</div>
+									</div>
+									<div class="col-12">
+										<div class="form-area-box1">
+											<label>휴대전화<em>*</em></label>
+											<div class="day">
+												<div class="row">
+													<div class="col">
+														<div class="ele-icon-box">
+														
+															<div class="dropdown">
+																<button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+																	02
+																</button>
+																<ul class="dropdown-menu w-100">
+																	<li><a class="dropdown-item" href="javascript:void(0)">Action</a></li>
+																	<li><a class="dropdown-item" href="javascript:void(0)">Another action</a></li>
+																	<li><a class="dropdown-item" href="javascript:void(0)">Something else here</a></li>
+																</ul>
+															</div>
+														
+														</div>
+													</div>
+													<div class="col wave">
+														<span>-</span>
+													</div>
+													<div class="col">
+														<div class="ele-icon-box">
+															
+															<input type="text" name="" id="" placeholder="" class="">
+															
+														</div>
+													</div>
+													<div class="col wave">
+														<span>-</span>
+													</div>
+													<div class="col">
+														<div class="ele-icon-box">
+															
+															<input type="text" name="" id="" placeholder="" class="">
+															
+														</div>
+													</div>
+												</div>
+											</div>
+											
+										</div>
+									</div>
+									<div class="col-12">
+										<div class="form-area-box1-input2 ">
+											<label>회원유형<em>*</em></label>
+											<div class="ele-icon-box">
+												<div class="check-radio-box">
+													<input type="radio" id="a1" name="aa" checked="">
+													<label for="a1">개인회원</label>
+												</div>
+												<div class="check-radio-box">
+													<input type="radio" id="a2" name="aa">
+													<label for="a2">기업회원</label>
+												</div>
+																							
+											</div>
+											
+										</div>
+									</div>
+									<div class="col-12">
+									
+										<div class="form-area-box1">
+											<label>기업유형<em>*</em></label>
+											<div class="ele-icon-box">
+												<i class="icon-edit"></i>
+												<div class="dropdown">
+													<button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+														농림수산식품경영체
+													</button>
+													<ul class="dropdown-menu w-100">
+														<li><a class="dropdown-item" href="javascript:void(0)">Action</a></li>
+														<li><a class="dropdown-item" href="javascript:void(0)">Another action</a></li>
+														<li><a class="dropdown-item" href="javascript:void(0)">Something else here</a></li>
+													</ul>
+												</div>
+											</div>
+											
+										</div>
+									</div>
+									<div class="col-12">
+										<div class="form-area-box1">
+											<label>사업자등록번호<em>*</em></label>
+											<div class="day">
+												<div class="row">
+													<div class="col">
+														<div class="ele-icon-box">
+														
+															<input type="text" name="" id="" placeholder="">
+														
+														</div>
+													</div>
+													<div class="col wave">
+														<span>-</span>
+													</div>
+													<div class="col flex-b34px">
+														<div class="ele-icon-box">
+															
+															<input type="text" name="" id="" placeholder="" class="">
+															
+														</div>
+													</div>
+													<div class="col wave">
+														<span>-</span>
+													</div>
+													<div class="col flex-b62px">
+														<div class="ele-icon-box">
+															
+															<input type="text" name="" id="" placeholder="" class="">
+															
+														</div>
+													</div>
+													<div class="col flex-b60px">
+														<button class="bs-m btn-combi-2 px-0 w-100">조회</button>
+													</div>
+												</div>
+											</div>
+											
+										</div>
+									</div>
+									<div class="col-12">
+										<div class="form-area-box1">
+											<label>소속<em>*</em></label>
+											<div class="ele-icon-box">
+												<input type="text" name="" id="" placeholder="소속을 입력하세요">
+											</div>
+											
+										</div>
+									</div>
+									<div class="col-12">
+										<div class="form-area-box1">
+											<label>대표자<em>*</em></label>
+											<div class="ele-icon-box">
+												<input type="text" name="" id="" placeholder="대표자 성명을 입력하세요">
+											</div>
+											
+										</div>
+									</div>
+									<div class="col-12">
+										<div class="form-area-box1">
+											<label>설립일<em>*</em></label>
+											<div class="ele-icon-box">
+												
+												<input type="text" name="" id="" placeholder="설립일을 선택하세요" class="datepicker-input">
+												<a href="#" class="icon-calendar"></a>
+											</div>
+											
+										</div>
+									</div>
+									<div class="col-12">
+										<div class="form-area-box1">
+											<label>대표번호<em>*</em></label>
+											<div class="day">
+												<div class="row">
+													<div class="col">
+														<div class="ele-icon-box">
+														
+															<div class="dropdown">
+																<button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+																	02
+																</button>
+																<ul class="dropdown-menu w-100">
+																	<li><a class="dropdown-item" href="javascript:void(0)">Action</a></li>
+																	<li><a class="dropdown-item" href="javascript:void(0)">Another action</a></li>
+																	<li><a class="dropdown-item" href="javascript:void(0)">Something else here</a></li>
+																</ul>
+															</div>
+														
+														</div>
+													</div>
+													<div class="col wave">
+														<span>-</span>
+													</div>
+													<div class="col">
+														<div class="ele-icon-box">
+															
+															<input type="text" name="" id="" placeholder="" class="">
+															
+														</div>
+													</div>
+													<div class="col wave">
+														<span>-</span>
+													</div>
+													<div class="col">
+														<div class="ele-icon-box">
+															
+															<input type="text" name="" id="" placeholder="" class="">
+															
+														</div>
+													</div>
+												</div>
+											</div>
+											
+										</div>
+									</div>
+									<div class="col-12">
+										<div class="form-area-box1-input2 ">
+											<label>사용상태<em>*</em></label>
+											<div class="ele-icon-box">
+												<div class="check-radio-box">
+													<input type="radio" id="a11" name="aa" checked="">
+													<label for="a11">사용</label>
+												</div>
+												<div class="check-radio-box">
+													<input type="radio" id="a12" name="aa">
+													<label for="a12">중지</label>
+												</div>
+																							
+											</div>
+											
+										</div>
+									</div>
+									<div class="col-12">
+									
+										<div class="form-area-box1">
+											<label>기업유형<em>*</em></label>
+											<div class="ele-icon-box">
+												
+												<div class="dropdown">
+													<button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+														농림수산식품경영체
+													</button>
+													<ul class="dropdown-menu w-100">
+														<li><a class="dropdown-item" href="javascript:void(0)">Action</a></li>
+														<li><a class="dropdown-item" href="javascript:void(0)">Another action</a></li>
+														<li><a class="dropdown-item" href="javascript:void(0)">Something else here</a></li>
+													</ul>
+												</div>
+											</div>
+											
+										</div>
+									</div>
+								</div>
+							</div>
+							
+							<div class="bottom-btn-box">
+								<div class="row">
+									<div class="col-6">
+										<a href="" class="bs-l btn-combi-3 w-100"><i class="icon-times"></i>취소</a>
+									</div>
+									<div class="col-6">
+										<a href="" class="bs-l btn-combi-2 w-100"><i class="icon-floppy-disk"></i>저장</a>
+									</div>
+								</div>
+							</div>
+						</div>
+						
+					</div>
+					<!--//detail-box-->
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+</body>
+
+</html>

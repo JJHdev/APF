@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SprtBiz">
+
+    <!-- ======================== -->
+    <!--  공통 sql                 -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+    	<if test="@common.util.CommUtils@isNotEmpty(srchBgngYmd)">
+            AND (A.reg_ymd >= TO_DATE(#{srchBgngYmd}, 'YYYYMMDD'))
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchEndYmd)">
+            AND (A.reg_ymd <![CDATA[<=]]> TO_DATE(#{srchEndYmd}, 'YYYYMMDD'))
+        </if>
+    </sql>
+    
+    <sql id="Sql-Column">
+		A.uld_no										AS "uldNo",
+		A.file_nm										AS "fileNm",
+		A.file_path										AS "filePath",
+		A.strg_file_nm									AS "strgFileNm",
+		A.rmrk1											AS "rmrk1",
+		A.rmrk2											AS "rmrk2",
+		A.rmrk3											AS "rmrk3",
+		A.rmrk4											AS "rmrk4",
+		A.rmrk5											AS "rmrk5",
+		(SELECT crdns_bzenty_nm
+		   FROM tb_sprt_biz
+		  WHERE uld_no = A.uld_no
+		  LIMIT 1 )														AS "crdnsBzentyNm",
+		A.rgtr_no														AS "rgtrNo",
+		FN_GET_USERNM(A.rgtr_no)										AS "rgtrNm",
+		FN_GET_USERNM(A.rgtr_no)||'('||FN_GET_USERID(A.rgtr_no)||')'	AS "rgtrNmNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')					AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')								AS "regDate",
+		FN_GET_ENTNM((SELECT bzenty_no
+		                FROM tb_user
+		               WHERE user_no = A.rgtr_no))						AS "bzentyNm"
+    </sql>
+    <sql id="Sql-Column-Biz">
+		A.SN				AS "sn",
+        A.uld_no			AS "uldNo",
+        FN_FMT_DATA('RNO', ( SELECT brno
+                               FROM tb_ent
+                              WHERE bzenty_no = A.bzenty_no )
+                   )		AS "brno",
+		A.bzenty_nm			AS "bzentyNm",
+		A.biz_nm			AS "bizNm",
+		A.biz_yr			AS "bizYr",
+		A.ARTCL_NM1			AS "artclNm1",
+		A.ARTCL_CN1			AS "artclCn1",
+		A.ARTCL_NM2			AS "artclNm2",
+		A.ARTCL_CN2			AS "artclCn2",
+		A.ARTCL_NM3			AS "artclNm3",
+		A.ARTCL_CN3			AS "artclCn3",
+		A.ARTCL_NM4			AS "artclNm4",
+		A.ARTCL_CN4			AS "artclCn4",
+		A.artcl_nm5      	AS "artclNm5",
+		A.artcl_cn5			AS "artclCn5",
+		A.rls_yn			AS "rlsYn",
+		A.del_yn			AS "delYn",
+		A.rgtr_no			AS "rgtrNo",
+		FN_GET_USERNM(A.rgtr_no)											AS "rgtrNm",
+		FN_GET_USERNM(A.rgtr_no) || ' (' || FN_GET_USERID(A.rgtr_no) || ')'	AS "rgtrNoNm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')						AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')           						AS "regDate",
+		A.mdfr_no                                    						AS "mdfrNo",
+		FN_GET_USERNM(A.mdfr_no)	      			 							AS "mdfrNm",
+		FN_GET_USERNM(A.mdfr_no) || ' (' || FN_GET_USERID(A.mdfr_no) || ')'	AS "mdfrNoNm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')						AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')									AS "mdfDate",
+		COALESCE((SELECT B.DIRECT_INPT_YN
+				    FROM tb_ent B
+				   WHERE bzenty_no = A.bzenty_no), 'Y')						AS "directInptYn"
+    </sql>
+
+    <!-- 경영체 데이터 업로드 목록조회 -->
+    <select id="listSprtUld" resultType="java.util.HashMap" parameterType="business.adm.support.service.SprtBizVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_sprt_uld A
+         WHERE 1 = 1
+               <if test="@common.util.CommUtils@isNotEmpty(crdnsBzentyNo)">
+                   AND (A.uld_no IN ( SELECT uld_no
+                                        FROM tb_sprt_biz
+                                       WHERE crdns_bzenty_no = #{crdnsBzentyNo} )
+                       )
+               </if>
+               <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+                   AND (A.uld_no IN ( SELECT uld_no
+                                        FROM tb_sprt_biz
+                                       WHERE bzenty_nm LIKE '%' || #{srchText} || '%'
+                                          OR bzenty_no IN ( SELECT bzenty_no
+                                                              FROM tb_ent
+                                                             WHERE brno LIKE '%' || #{srchText} || '%'
+                                                          ))
+                       )
+               </if>
+               <include refid="Sql-Where"/>
+         ORDER BY 
+               A.uld_no DESC
+    </select>
+    <select id="listSprtUldCount" resultType="int" parameterType="business.adm.support.service.SprtBizVO">
+        SELECT COUNT(1) 
+          FROM tb_sprt_uld A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 경영체 데이터 업로드 상세조회 -->
+    <select id="viewSprtUld" resultType="business.adm.support.service.SprtBizVO" parameterType="business.adm.support.service.SprtBizVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_sprt_uld A
+         WHERE A.uld_no = #{uldNo}
+    </select>
+
+    <!-- 경영체 데이터 업로드 등록 -->
+    <insert id="regiSprtUld" parameterType="business.adm.support.service.SprtBizVO">
+    	<selectKey keyProperty="uldNo" resultType="long" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_SPRT_ULD')
+    	</selectKey>
+        INSERT 
+          INTO tb_sprt_uld
+             ( uld_no,
+               file_nm,
+               file_path,
+               strg_file_nm,
+               rmrk1,
+               rmrk2,
+               rmrk3,
+               rmrk4,
+               rmrk5,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( #{uldNo},
+               #{fileNm},
+               #{filePath},
+               #{strgFileNm},
+               #{rmrk1},
+               #{rmrk2},
+               #{rmrk3},
+               #{rmrk4},
+               #{rmrk5},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+    
+    <!-- 경영체 데이터 업로드 첨부파일 경로 수정 -->
+    <update id="updtSprtUld" parameterType="business.adm.support.service.SprtBizVO">
+        UPDATE tb_sprt_uld 
+           SET <if test="@common.util.CommUtils@isNotEmpty(filePath)">file_path = #{filePath},</if>
+               rmrk5   = #{gsUserNo}
+         WHERE uld_no = #{uldNo}
+    </update>
+    
+    
+    <!-- 지원사업이력 등록 -->
+    <insert id="regiSprtBiz" parameterType="business.adm.support.service.SprtBizVO">
+        INSERT 
+          INTO tb_sprt_biz
+             ( sn,
+               crdns_bzenty_no,
+               crdns_bzenty_nm,
+               bzenty_no,
+               bzenty_nm,
+               biz_yr,
+               biz_nm,
+               artcl_nm1,
+               artcl_cn1,
+               artcl_nm2,
+               artcl_cn2,
+               artcl_nm3,
+               artcl_cn3,
+               artcl_nm4,
+               artcl_cn4,
+               artcl_nm5,
+               artcl_cn5,
+               rls_yn,
+               del_yn,
+               uld_no,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( NEXTVAL('SEQ_SPRT_BIZ'),
+               #{crdnsBzentyNo},
+               #{crdnsBzentyNm},
+               #{bzentyNo},
+               #{bzentyNm},
+               #{bizYr},
+               #{bizNm},
+               #{artclNm1},
+               #{artclCn1},
+               #{artclNm2},
+               #{artclCn2},
+               #{artclNm3},
+               #{artclCn3},
+               #{artclNm4},
+               #{artclCn4},
+               #{artclNm5},
+               #{artclCn5},
+               'Y',
+               'N',
+               #{uldNo},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+    
+    <!-- 지원사업이력 수정 -->
+    <update id="updtSprtBiz" parameterType="business.adm.support.service.SprtBizVO">
+        UPDATE tb_sprt_biz 
+           SET mdfr_no   = #{gsUserNo},
+			   <if test="@common.util.CommUtils@isNotEmpty(delYn               )"> del_yn               = #{delYn               },</if>  
+               mdfcn_ymd = NOW()
+         WHERE sn = #{sn}
+    </update>
+    
+    <!-- 경영체 데이터 업로드 이력 상세조회 -->
+    <select id="viewSprtBiz" resultType="business.adm.support.service.SprtBizVO" parameterType="business.adm.support.service.SprtBizVO">
+        SELECT <include refid="Sql-Column-Biz"/>
+          FROM tb_sprt_biz A
+         WHERE A.SN = #{sn}
+         ORDER BY 
+               A.uld_no DESC
+    </select>
+    
+    <!-- 경영체 데이터 업로드 목록조회 -->
+    <select id="listSprtBiz" resultType="java.util.HashMap" parameterType="business.adm.support.service.SprtBizVO">
+        SELECT <include refid="Sql-Column-Biz"/>
+          FROM TB_SPRT_BIZ A
+         WHERE A.ULD_NO = #{uldNo}
+         ORDER BY 
+               A.DEL_YN ASC,
+               SN DESC
+    </select>
+    <select id="listSprtBizCount" resultType="int" parameterType="business.adm.support.service.SprtBizVO">
+        SELECT COUNT(1) 
+          FROM tb_sprt_biz A
+         WHERE uld_no = #{uldNo}
+    </select>
+    
+    
+    
+    <!-- 특정 업체번호의 IR 번호 셀렉트 -->
+    <select id="viewIrNo" resultType="String" parameterType="business.adm.support.service.SprtBizVO">
+        SELECT IR_NO
+          FROM TB_ENT_IR A
+         WHERE A.BZENTY_NO = #{bzentyNo}
+         LIMIT 1
+    </select>
+   
+    <!-- IR 등록 -->
+    <insert id="regiEntIr" parameterType="business.adm.support.service.SprtBizVO">
+    	<selectKey keyProperty="irNo" resultType="String" order="BEFORE">
+    		SELECT 'I'||TO_CHAR(NOW(), 'YY')||LPAD(NEXTVAL('SEQ_ENT_IR')::text, 7, '0')
+    	</selectKey>
+        INSERT
+    	  INTO TB_ENT_IR
+    	     ( IR_NO,
+    	       BZENTY_NO,
+    	       RLS_YN,
+    	       PRGRS_STTS_CD,
+    	       RGTR_NO,
+    	       REG_YMD
+    	     )
+    	VALUES
+    	     ( #{irNo},
+    	       #{bzentyNo},
+    	       'Y',
+    	       '10',
+    	       #{gsUserNo},
+    	       NOW()
+    	     )
+    </insert>
+    
+    <!-- IR 투자금액 등록 -->
+    <insert id="regiEntInvtAmt" parameterType="business.adm.support.service.SprtBizVO">
+        INSERT
+    	  INTO TB_ENT_INVT_AMT
+    	     ( IR_NO,
+    	       SN,
+    	       INVT_SE_CD,
+    	       INVT_YR,
+    	       INVT_AMT,
+    	       RGTR_NO,
+    	       REG_YMD
+    	     )
+    	VALUES
+    	     ( #{irNo},
+    	       NEXTVAL('SEQ_ENT_INVT_AMT'),
+    	       #{invtSeCd},
+    	       #{invtYr},
+    	       TRUNC(FN_FMT_DATA('NUM2', #{invtAmt})::NUMERIC*100000000),
+    	       #{gsUserNo},
+    	       NOW()
+    	     )
+    </insert>
+
+</mapper>

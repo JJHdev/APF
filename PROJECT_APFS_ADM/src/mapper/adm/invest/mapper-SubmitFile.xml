@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SubmitFile">
+
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(dcmntTaskSeCd)">
+            AND (A.dcmnt_task_se_cd = #{dcmntTaskSeCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(aplySeCd)">
+            AND (A.aply_se_cd = #{aplySeCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(dtlSeCd)">
+            AND (A.dtl_se_cd = #{dtlSeCd})
+        </if>
+        <if test="@common.util.CommUtils@isEmpty(dtlSeCd)">
+           	AND A.dtl_se_cd != ''
+        </if>
+    </sql>
+	
+    <!-- ======================== -->
+    <!--  공통 sql                 -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+	    A.dcmnt_task_se_cd              				 AS "dcmntTaskSeCd",
+    	( SELECT dcmnt_nm
+			FROM tb_pape_code 
+   		   WHERE dcmnt_cd = A.dcmnt_task_se_cd )         AS "dcmntTaskSeNm",
+	    A.dtl_se_cd       	 			 				 AS "dtlSeCd",
+	    ( SELECT prgrm_nm
+			FROM tb_invtsprt_mng 
+		   WHERE prgrm_no = A.dtl_se_cd)	 			 AS "dtlSeNm",
+	    A.aply_se_cd           	 						 AS "aplySeCd",
+	    FN_GET_CODENM('CT.APLY_SE', A.aply_se_cd)		 AS "aplySeNm",
+ 		A.dcmnt_cd         		 		 				 AS "dcmntCd",
+    	( SELECT dcmnt_nm
+			FROM tb_pape_code 
+		   WHERE dcmnt_cd = A.dcmnt_cd )        		 AS "dcmntNm",
+	    A.esntl_yn           	 		 				 AS "esntlYn",
+	    A.use_yn         	 			 				 AS "useYn",
+	    A.rgtr_no            	 		 				 AS "rgtrNo",
+	    A.mdfr_no            			 				 AS "mdfrNo",
+	    A.mdfcn_ymd              		 				 AS "mdfcnYmd",
+	    ( SELECT user_nm
+	        FROM tb_user
+	       WHERE user_no = A.rgtr_no )    				 AS "rgtrNm",
+	    
+	    TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')    			 AS "regYmd",
+	    TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')    AS "regDttm",
+	    TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')   			 AS "regDate",
+	    A.mdfr_no             AS "mdfrNo",
+	    ( SELECT user_nm
+	        FROM tb_user
+	       WHERE user_no = A.mdfr_no )    				 AS "mdfrNm",
+	    TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')    AS "mdfDttm",
+	    TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')   			 AS "mdfDate"
+	</sql>
+
+
+    <!-- 제출서류 관리 목록조회 -->
+	<select id="listSubmitFile" resultType="java.util.HashMap" parameterType="business.adm.invest.service.SubmitFileVO">
+	    SELECT <include refid="Sql-Column"/>
+	      FROM tb_pape_mng A
+	     WHERE 1 = 1
+	          <include refid="Sql-Where"/>
+	  ORDER BY A.REG_YMD DESC, A.dcmnt_cd ASC
+	</select>
+    
+    <select id="listSubmitFileCount" resultType="int" parameterType="business.adm.invest.service.SubmitFileVO">
+        SELECT COUNT(1) 
+          FROM tb_pape_mng A
+         WHERE 1 = 1
+         	   <include refid="Sql-Where"/>
+    </select>
+    
+    <!-- 제출서류 관리 상세조회 -->
+    <select id="viewSubmitFile" resultType="business.adm.invest.service.SubmitFileVO" parameterType="business.adm.invest.service.SubmitFileVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_pape_mng A
+         WHERE A.dcmnt_cd = #{dcmntCd}
+           AND A.aply_se_cd = #{aplySeCd}
+           AND A.dtl_se_cd = #{dtlSeCd}
+           AND A.dcmnt_task_se_cd = #{dcmntTaskSeCd}
+    </select>
+    
+    <!-- 제출서류 관리 등록 -->
+    <insert id="regiSubmitFile" parameterType="business.adm.invest.service.SubmitFileVO">
+        INSERT
+          INTO tb_pape_mng 
+               (dcmnt_task_se_cd,
+		        dtl_se_cd,
+		        aply_se_cd,
+		        dcmnt_cd,
+		        esntl_yn,
+		        use_yn,
+		        rgtr_no,
+		        reg_ymd
+		    	)
+        VALUES
+             	(#{dcmntTaskSeCd},
+		        #{dtlSeCd},
+		        #{aplySeCd},
+		        #{dcmntCd},
+		        #{esntlYn},
+		        #{useYn},
+		        #{gsUserNo},
+		        NOW()
+             )
+    </insert>
+
+    <update id="updtSubmitFile" parameterType="business.adm.invest.service.SubmitFileVO">
+    UPDATE tb_pape_mng 
+    SET 
+        mdfr_no = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(dcmntTaskSeCd       )"> dcmnt_task_se_cd 	= #{dcmntTaskSeCd},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(dtlSeCd            	)"> dtl_se_cd 			= #{dtlSeCd},</if>
+      	<if test="@common.util.CommUtils@isNotEmpty(aplySeCd            )"> aply_se_cd 			= #{aplySeCd},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(dcmntCd             )"> dcmnt_cd 			= #{dcmntCd},</if>
+      	<if test="@common.util.CommUtils@isNotEmpty(esntlYn             )"> esntl_yn 			= #{esntlYn},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(useYn               )"> use_yn 				= #{useYn},</if>
+        	mdfcn_ymd = NOW()
+	WHERE dcmnt_cd 				= #{dcmntCd}
+	      AND dtl_se_cd 		= #{dtlSeCd}
+	      AND dcmnt_task_se_cd  = #{dcmntTaskSeCd}
+	      AND aply_se_cd 		= #{aplySeCd}
+	</update>
+    
+	<!-- 제출서류 관리 삭제 -->
+	<delete id="deltSubmitFile" parameterType="business.adm.invest.service.SubmitFileVO">
+	    DELETE 
+	    FROM tb_pape_mng
+	    WHERE dcmnt_cd 			= #{dcmntCd}
+	      AND dtl_se_cd 		= #{dtlSeCd}
+	      AND dcmnt_task_se_cd  = #{dcmntTaskSeCd}
+	      AND aply_se_cd 		= #{aplySeCd}
+	</delete> 
+    
+</mapper>

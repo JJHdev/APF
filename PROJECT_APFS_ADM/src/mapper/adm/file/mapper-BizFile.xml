@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BizFile">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+        A.sn                                           AS "sn",
+        A.task_se_cd                                   AS "taskSeCd",
+        A.dcmnt_cd                                     AS "dcmntCd",
+		B.dcmnt_nm                                     AS "dcmntNm",
+		B.up_dcmnt_cd                                  AS "upDcmntCd",
+		(SELECT dcmnt_nm 
+		   FROM tb_pape_code 
+		  WHERE dcmnt_cd = B.up_dcmnt_cd)              AS "upDcmntNm",
+        A.doc_no                                       AS "docNo",
+        A.dtl_doc_no                                   AS "dtlDocNo",
+        A.file_se_cd                                   AS "fileSeCd",
+        A.file_path                                    AS "filePath",
+        A.strg_file_nm                                 AS "strgFileNm",
+        A.file_nm                                      AS "fileNm",
+        A.file_sz                                      AS "fileSz",
+        A.prcs_stts_cd                                 AS "prcsSttsCd",
+        A.prcs_cn                                      AS "prcsCn",
+        A.del_yn                                       AS "delYn",
+        CASE WHEN A.del_yn = 'Y' AND A.file_path IS NULL 
+             THEN 'Y' 
+             ELSE 'N' 
+        END                                            AS "tempYn",
+        A.rgtr_no                                      AS "rgtrNo",
+        TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')             AS "regDate",
+        A.mdfr_no                                      AS "mdfrNo",
+        TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')             AS "mdfDate"
+    </sql>
+
+    <!-- 업무첨부파일 목록조회 -->
+    <select id="listBizFile" resultType="business.adm.file.service.BizFileVO" parameterType="business.adm.file.service.BizFileVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_biz_file    A
+          LEFT OUTER JOIN
+               tb_pape_code   B
+            ON A.dcmnt_cd   = B.dcmnt_cd
+         WHERE A.del_yn     = 'N'
+           AND A.doc_no     = #{docNo}
+        <if test="@common.util.CommUtils@isNotEmpty(taskSeCd )"> AND A.task_se_cd  = #{taskSeCd } </if>
+        <if test="@common.util.CommUtils@isNotEmpty(dtlDocNo )"> AND A.dtl_doc_no  = #{dtlDocNo } </if>
+        <if test="@common.util.CommUtils@isNotEmpty(dcmntCd  )"> AND A.dcmnt_cd    = #{dcmntCd  } </if>
+        <if test="@common.util.CommUtils@isNotEmpty(upDcmntCd)"> AND B.up_dcmnt_cd = #{upDcmntCd} </if>
+         ORDER BY 
+               A.sn
+    </select>
+
+    <!-- 업무첨부파일 상세조회 -->
+    <select id="viewBizFile" resultType="business.adm.file.service.BizFileVO" parameterType="business.adm.file.service.BizFileVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_biz_file    A
+          LEFT OUTER JOIN
+               tb_pape_code   B
+            ON A.dcmnt_cd   = B.dcmnt_cd
+         WHERE A.sn         = #{sn}
+    </select>
+
+    <!-- 업무첨부파일 등록 -->
+    <insert id="regiBizFile" parameterType="business.adm.file.service.BizFileVO">
+    	<selectKey keyProperty="sn" resultType="long" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_BIZ_FILE')
+    	</selectKey>
+        INSERT 
+          INTO tb_biz_file 
+             ( sn,
+		<if test="@common.util.CommUtils@isNotEmpty(fileSeCd  )"> file_se_cd   ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(taskSeCd  )"> task_se_cd   ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(docNo     )"> doc_no       ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(dtlDocNo  )"> dtl_doc_no   ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(dcmntCd   )"> dcmnt_cd     ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(prcsSttsCd)"> prcs_stts_cd ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(prcsCn    )"> prcs_cn      ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(filePath  )"> file_path    ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(strgFileNm)"> strg_file_nm ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileNm    )"> file_nm      ,</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileSz    )"> file_sz      ,</if>
+               del_yn,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{sn},
+		<if test="@common.util.CommUtils@isNotEmpty(fileSeCd  )"> #{fileSeCd   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(taskSeCd  )"> #{taskSeCd   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(docNo     )"> #{docNo      },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(dtlDocNo  )"> #{dtlDocNo   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(dcmntCd   )"> #{dcmntCd    },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(prcsSttsCd)"> #{prcsSttsCd },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(prcsCn    )"> #{prcsCn     },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(filePath  )"> #{filePath   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(strgFileNm)"> #{strgFileNm },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileNm    )"> #{fileNm     },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fileSz    )"> #{fileSz     },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(delYn     )"> #{delYn      },</if>
+		<if test="@common.util.CommUtils@isEmpty(delYn        )">            'N',</if>
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 업무첨부파일 수정 -->
+    <update id="updtBizFile" parameterType="business.adm.file.service.BizFileVO">
+        UPDATE tb_biz_file
+           SET mdfr_no   = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(fileSeCd  )"> file_se_cd   = #{fileSeCd   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(taskSeCd  )"> task_se_cd   = #{taskSeCd   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(docNo     )"> doc_no       = #{docNo      },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(dtlDocNo  )"> dtl_doc_no   = #{dtlDocNo   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(dcmntCd   )"> dcmnt_cd     = #{dcmntCd    },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(prcsSttsCd)"> prcs_stts_cd = #{prcsSttsCd },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(prcsCn    )"> prcs_cn      = #{prcsCn     },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(filePath  )"> file_path    = #{filePath   },</if>
+		<if test="@common.util.CommUtils@isNotEmpty(delYn     )"> del_yn       = #{delYn      },</if>
+               mdfcn_ymd = NOW()
+         WHERE sn        = #{sn}
+    </update>
+
+    <!-- 업무첨부파일 삭제 -->
+    <delete id="deltBizFile" parameterType="business.adm.file.service.BizFileVO">
+        UPDATE tb_biz_file
+           SET mdfr_no   = #{gsUserNo},
+               del_yn    = 'Y',
+               mdfcn_ymd = NOW()
+         WHERE sn        = #{sn}
+    </delete> 
+
+    <!-- 업무첨부파일 실제삭제 -->
+    <delete id="deltBizFileActually" parameterType="long">
+        DELETE
+          FROM tb_biz_file
+         WHERE sn = #{sn}
+    </delete> 
+
+    <!-- 서류양식 목록조회 -->
+    <select id="listPape" resultType="business.adm.file.service.BizFileVO" parameterType="business.adm.file.service.BizFileVO">
+        SELECT A.dcmnt_task_se_cd                             AS "taskSeCd",
+               A.dtl_se_cd                                    AS "dtlSeCd",
+               A.aply_se_cd                                   AS "aplySeCd",
+               B.dcmnt_cd                                     AS "dcmntCd",
+               B.dcmnt_nm                                     AS "dcmntNm",
+               B.up_dcmnt_cd                                  AS "upDcmntCd",
+		       (SELECT dcmnt_nm 
+		          FROM tb_pape_code 
+		         WHERE dcmnt_cd = B.up_dcmnt_cd)              AS "upDcmntNm",
+               A.esntl_yn                                     AS "esntlYn",
+               B.lmt_cnt                                      AS "lmtCnt",
+               B.file_nm                                      AS "fileNm",
+               B.file_path                                    AS "filePath",
+               B.dwnld_cnt                                    AS "dwnldCnt",
+               B.dwnld_trgt_yn                                AS "dwnldTrgtYn",
+               B.dcmnt_cm_nm                                  AS "dcmntCmNm",
+               B.dcmnt_cn                                     AS "dcmntCn",
+		       CASE WHEN B.file_nm IS NULL OR B.file_nm = ''
+		            THEN 'N'
+		            ELSE 'Y'
+		       END                                            AS "formYn",
+               A.rgtr_no                                      AS "rgtrNo",
+               TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		       TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+               A.mdfr_no                                      AS "mdfrNo",
+               TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		       TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+          FROM tb_pape_mng           A
+             , tb_pape_code          B
+         WHERE A.dcmnt_cd          = B.dcmnt_cd
+           AND A.dcmnt_task_se_cd  = #{upDcmntCd}
+           AND A.dtl_se_cd         = #{dtlSeCd  }
+           AND A.aply_se_cd        = #{aplySeCd }
+        <if test="@common.util.CommUtils@isNotEmpty(dcmntCd)">
+           AND A.dcmnt_cd          = #{dcmntCd}
+        </if>
+           AND (   (A.use_yn = 'Y' AND B.use_yn = 'Y')
+		    <!-- 문서번호가 입력된 경우 사용여부에 상관없이 양식파일정보 조회 -->
+	        <if test="@common.util.CommUtils@isNotEmpty(docNo)">
+	            OR EXISTS (
+	               SELECT 1
+	                 FROM tb_biz_file
+	                WHERE dcmnt_cd   = A.dcmnt_cd
+	                  AND doc_no     = #{docNo}
+	               )
+	        </if>
+           )
+         ORDER BY 
+               A.dcmnt_task_se_cd
+             , A.dtl_se_cd
+             , B.up_dcmnt_cd
+             , A.dcmnt_cd
+    </select>
+
+    <!-- 서류양식 상세조회 -->
+    <select id="viewPape" resultType="business.adm.file.service.BizFileVO" parameterType="string">
+        SELECT B.dcmnt_cd                                     AS "dcmntCd",
+               B.dcmnt_nm                                     AS "dcmntNm",
+               B.up_dcmnt_cd                                  AS "upDcmntCd",
+		       (SELECT dcmnt_nm 
+		          FROM tb_pape_code 
+		         WHERE dcmnt_cd = B.up_dcmnt_cd)              AS "upDcmntNm",
+               B.lmt_cnt                                      AS "lmtCnt",
+               B.file_nm                                      AS "fileNm",
+               B.file_path                                    AS "filePath",
+               B.dwnld_cnt                                    AS "dwnldCnt",
+               B.dwnld_trgt_yn                                AS "dwnldTrgtYn",
+               B.dcmnt_cm_nm                                  AS "dcmntCmNm",
+               B.dcmnt_cn                                     AS "dcmntCn",
+		       CASE WHEN B.file_nm IS NULL OR B.file_nm = ''
+		            THEN 'N'
+		            ELSE 'Y'
+		       END                                            AS "formYn",
+               B.rgtr_no                                      AS "rgtrNo",
+               TO_CHAR(B.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  AS "regDttm",
+		       TO_CHAR(B.reg_ymd,   'yyyy-mm-dd')             AS "regDate",
+               B.mdfr_no                                      AS "mdfrNo",
+               TO_CHAR(B.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  AS "mdfDttm",
+		       TO_CHAR(B.mdfcn_ymd, 'yyyy-mm-dd')             AS "mdfDate"
+          FROM tb_pape_code   B
+         WHERE B.use_yn     = 'Y'
+           AND B.dcmnt_cd   = #{dcmntCd}
+    </select>
+
+    <!-- 서류양식그룹 목록조회 -->
+    <select id="listPapeGroup" resultType="business.adm.file.service.BizFileVO" parameterType="business.adm.file.service.BizFileVO">
+        SELECT B.up_dcmnt_cd                     AS "dcmntCd",
+		       (SELECT dcmnt_nm 
+		          FROM tb_pape_code 
+		         WHERE dcmnt_cd = B.up_dcmnt_cd) AS "dcmntNm"
+          FROM tb_pape_mng          A
+             , tb_pape_code         B
+         WHERE A.dcmnt_cd         = B.dcmnt_cd
+           AND A.dcmnt_task_se_cd  = #{upDcmntCd}
+           AND A.dtl_se_cd         = #{dtlSeCd  }
+           AND A.aply_se_cd        = #{aplySeCd }
+           AND A.use_yn            = 'Y' 
+           AND B.use_yn            = 'Y'
+         GROUP BY 
+               B.up_dcmnt_cd
+         ORDER BY 
+               B.up_dcmnt_cd
+    </select>
+
+</mapper>

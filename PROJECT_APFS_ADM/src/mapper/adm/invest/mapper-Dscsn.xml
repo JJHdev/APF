@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Dscsn">
+
+    <!-- ======================== -->
+    <!--  공통 sql                 -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(dscsnCntrCd)">
+            AND (A.dscsn_cntr_cd = #{dscsnCntrCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(dscsnMthdCd)">
+        	AND (A.dscsn_mthd_cd = #{dscsnMthdCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+			AND  A.bzenty_nm LIKE '%'|| #{srchText} || '%'
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchBgngYmd)">
+            AND (TO_DATE(A.dscsn_ymd, 'YYYYMMDD') >= TO_DATE(#{srchBgngYmd}, 'YYYY-MM-DD')) 
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchEndYmd)">
+        	AND (TO_DATE(A.dscsn_ymd, 'YYYYMMDD') <![CDATA[<=]]> TO_DATE(#{srchEndYmd}, 'YYYY-MM-DD'))
+        </if>
+    </sql>
+    
+	<sql id="Sql-Column">
+	    A.sn                                              		AS "sn",
+	    A.dscsn_cntr_cd                                   		AS "dscsnCntrCd",
+	    FN_GET_CODENM('CT.DSCSN_CNTR', A.dscsn_cntr_cd)   		AS "dscsnCntrNm",
+	    FN_FMT_STRTODATE(A.dscsn_ymd,'-')                       AS "dscsnYmd",
+	    TO_CHAR(TO_DATE(A.dscsn_ymd, 'YYYYMMDD'), 'yyyy-mm-dd') AS "dscsnDate",
+	    A.dscsn_mthd_cd                                   		AS "dscsnMthdCd",
+	    FN_GET_CODENM('CT.DSCSN_MTHD', A.dscsn_mthd_cd)   		AS "dscsnMthdNm",
+	    A.cnslr_nm                                        		AS "cnslrNm",
+	    A.bzenty_nm                                       		AS "bzentyNm",
+	    FN_FMT_DATA('RNO', A.brno)                        		AS "brno",
+	    A.rprsv_nm                                        		AS "rprsvNm",
+	    FN_FMT_STRTODATE(A.brdt,'-')          					AS "brdt",
+	    A.sexdstn                                         		AS "sexdstn",
+	    A.pic_nm                                          		AS "picNm",
+	    A.pic_dept_nm                                     		AS "picDeptNm",
+	    A.pic_telno                                       		AS "picTelno",
+	    A.pic_eml_addr                                    		AS "picEmlAddr",
+	    A.fndn_ymd                                        		AS "fndnYmd",
+	    A.emp_cnt                                         		AS "empCnt",
+	    A.bzenty_type_cd                                  		AS "bzentyTypeCd",
+	    FN_GET_CODENM('CT.BZENTY_TYPE', A.bzenty_type_cd)  		AS "bzentyTypeCdNm",
+	    A.biz_fld                                         		AS "bizFld",
+	    FN_GET_CODENMLIST('CT.BIZ_RLM', A.biz_fld, ',', ', ')	AS "bizFldNm",
+	    A.invt_fld_nm                                     		AS "invtFldNm",
+	    A.tpbiz_se_nm                                     		AS "tpbizSeNm",
+	    A.indust_se_nm                                    		AS "industSeNm",
+	    A.sls_amt                                         		AS "slsAmt",
+	    A.hmpg_addr                                       		AS "hmpgAddr",
+	    A.lctn_addr1                                      		AS "lctnAddr1",
+	    A.lctn_addr2                                      		AS "lctnAddr2",
+	    A.biz_cn                                          		AS "bizCn",
+	    A.dscsn_cn                                        		AS "dscsnCn",
+	    A.prgrs_stts_cd                                   		AS "prgrsSttsCd",
+	    A.rgtr_no                                         		AS "rgtrNo",
+	    A.mdfr_no             							  		AS "mdfrNo",
+	    ( SELECT user_nm
+	        FROM tb_user
+	       WHERE user_no = A.rgtr_no )    				  		AS "rgtrNm",
+	    TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')    			  		AS "regYmd",
+	    TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')     		AS "regDttm",
+	    TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')   			  		AS "regDate",
+	    ( SELECT user_nm
+	        FROM tb_user
+	       WHERE user_no = A.mdfr_no )    				  		AS "mdfrNm",
+	    TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')     		AS "mdfDttm",
+	    TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')   			  		AS "mdfDate"
+	</sql>
+
+    <!-- 상담일지 관리 목록조회 -->
+    <select id="listDscsn" resultType="java.util.HashMap" parameterType="business.adm.invest.service.DscsnVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_dscsn_diary A
+         WHERE 1 = 1
+         	   <include refid="Sql-Where"/>
+         ORDER BY A.sn DESC
+    </select>
+    
+    <select id="listDscsnCount" resultType="int" parameterType="business.adm.invest.service.DscsnVO">
+        SELECT COUNT(1) 
+          FROM tb_dscsn_diary A
+         WHERE 1 = 1
+         		<include refid="Sql-Where"/>
+    </select>
+    
+        <!-- 게시판 상세조회 -->
+    <select id="viewDscsn" resultType="business.adm.invest.service.DscsnVO" parameterType="business.adm.invest.service.DscsnVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_dscsn_diary A
+         WHERE A.sn = #{sn}
+    </select>
+    
+    <!-- 게시판 등록 -->
+    <insert id="regiDscsn" parameterType="business.adm.invest.service.DscsnVO">
+    	<selectKey keyProperty="sn" resultType="long" order="BEFORE">
+    		SELECT NEXTVAL('SEQ_DSCSN_APLY')
+    	</selectKey>
+        INSERT
+          INTO tb_dscsn_diary 
+               ( sn,
+		        dscsn_cntr_cd,
+		        dscsn_ymd,
+		        dscsn_mthd_cd,
+		        cnslr_nm,
+		        bzenty_nm,
+		        brno,
+		        rprsv_nm,
+		        brdt,
+		        sexdstn,
+		        pic_nm,
+		        pic_dept_nm,
+		        pic_telno,
+		        pic_eml_addr,
+		        fndn_ymd,
+		        emp_cnt,
+		        bzenty_type_cd,
+		        biz_fld,
+		        invt_fld_nm,
+		        tpbiz_se_nm,
+		        indust_se_nm,
+		        sls_amt,
+		        hmpg_addr,
+		        lctn_addr1,
+		        lctn_addr2,
+		        biz_cn,
+		        dscsn_cn,
+		        prgrs_stts_cd,
+		        rgtr_no,
+		        reg_ymd
+		    )
+        VALUES
+             (  #{sn},
+		        #{dscsnCntrCd},
+		        FN_FMT_STRTODATE(#{dscsnYmd},''),
+		        #{dscsnMthdCd},
+		        #{cnslrNm},
+		        #{bzentyNm},
+		        FN_FMT_STRTODATE(#{brno},''),
+		        #{rprsvNm},
+		        FN_FMT_STRTODATE(#{brdt},''),
+		        #{sexdstn},
+		        #{picNm},
+		        #{picDeptNm},
+		        FN_FMT_STRTODATE(#{picTelno},''),
+		        #{picEmlAddr},
+		        FN_FMT_STRTODATE(#{fndnYmd}, '-'),
+		        #{empCnt},
+		        #{bzentyTypeCd},
+		        #{bizFld},
+		        #{invtFldNm},
+		        #{tpbizSeNm},
+		        #{industSeNm},
+		        #{slsAmt},
+		        #{hmpgAddr},
+		        #{lctnAddr1},
+		        #{lctnAddr2},
+		        #{bizCn},
+		        #{dscsnCn},
+		        'D20',
+		        #{gsUserNo},
+		        NOW()
+             )
+    </insert>
+
+    <update id="updtDscsn" parameterType="business.adm.invest.service.DscsnVO">
+    UPDATE tb_dscsn_diary 
+    SET 
+        mdfr_no = #{gsUserNo},
+       	<if test="@common.util.CommUtils@isNotEmpty(dscsnCntrCd            	)"> dscsn_cntr_cd 		= #{dscsnCntrCd},</if>
+       	<if test="@common.util.CommUtils@isEmpty(dscsnCntrCd            	)"> dscsn_cntr_cd 		= #{dscsnCntrCd},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(dscsnYmd               	)"> dscsn_ymd 			= FN_FMT_STRTODATE(#{dscsnYmd},''),</if>
+        <if test="@common.util.CommUtils@isEmpty(dscsnYmd               	)"> dscsn_ymd 			= FN_FMT_STRTODATE(#{dscsnYmd},''),</if>
+        <if test="@common.util.CommUtils@isNotEmpty(dscsnMthdCd            	)"> dscsn_mthd_cd 		= #{dscsnMthdCd},</if>
+        <if test="@common.util.CommUtils@isEmpty(dscsnMthdCd            	)"> dscsn_mthd_cd 		= #{dscsnMthdCd},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(cnslrNm                	)"> cnslr_nm 			= #{cnslrNm},</if>
+        <if test="@common.util.CommUtils@isEmpty(cnslrNm                	)"> cnslr_nm 			= #{cnslrNm},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(bzentyNm               	)"> bzenty_nm 			= #{bzentyNm},</if>
+        <if test="@common.util.CommUtils@isEmpty(bzentyNm               	)"> bzenty_nm 			= #{bzentyNm},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(brno                  	)"> brno 				= FN_FMT_STRTODATE(#{brno},''),</if>
+        <if test="@common.util.CommUtils@isEmpty(brno                  		)"> brno 				= FN_FMT_STRTODATE(#{brno},''),</if>
+        <if test="@common.util.CommUtils@isNotEmpty(rprsvNm                	)"> rprsv_nm 			= #{rprsvNm},</if>
+        <if test="@common.util.CommUtils@isEmpty(rprsvNm                	)"> rprsv_nm 			= #{rprsvNm},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(brdt           		   	)"> brdt 				= FN_FMT_STRTODATE(#{brdt},''),</if>
+        <if test="@common.util.CommUtils@isEmpty(brdt           		   	)"> brdt 				= FN_FMT_STRTODATE(#{brdt},''),</if>
+        <if test="@common.util.CommUtils@isNotEmpty(sexdstn            	   	)"> sexdstn 			= #{sexdstn},</if>
+        <if test="@common.util.CommUtils@isEmpty(sexdstn            	   	)"> sexdstn 			= #{sexdstn},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(picNm            	   	)"> pic_nm 				= #{picNm},</if>
+        <if test="@common.util.CommUtils@isEmpty(picNm            	   		)"> pic_nm 				= #{picNm},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(picDeptNm              	)"> pic_dept_nm 		= #{picDeptNm},</if>
+        <if test="@common.util.CommUtils@isEmpty(picDeptNm              	)"> pic_dept_nm 		= #{picDeptNm},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(picTelno               	)"> pic_telno 			= FN_FMT_STRTODATE(#{picTelno},''),</if>
+        <if test="@common.util.CommUtils@isEmpty(picTelno               	)"> pic_telno 			= FN_FMT_STRTODATE(#{picTelno},''),</if>
+        <if test="@common.util.CommUtils@isNotEmpty(picEmlAddr             	)"> pic_eml_addr 		= #{picEmlAddr},</if>
+        <if test="@common.util.CommUtils@isEmpty(picEmlAddr             	)"> pic_eml_addr 		= #{picEmlAddr},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(fndnYmd            	   	)"> fndn_ymd 			= FN_FMT_STRTODATE(#{fndnYmd},''),</if>
+        <if test="@common.util.CommUtils@isEmpty(fndnYmd            	   	)"> fndn_ymd 			= FN_FMT_STRTODATE(#{fndnYmd},''),</if>
+        <if test="@common.util.CommUtils@isNotEmpty(empCnt            		)"> emp_cnt 			= #{empCnt},</if>
+        <if test="@common.util.CommUtils@isEmpty(empCnt            			)"> emp_cnt 			= #{empCnt},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(bzentyTypeCd            )"> bzenty_type_cd 		= #{bzentyTypeCd},</if>
+        <if test="@common.util.CommUtils@isEmpty(bzentyTypeCd            	)"> bzenty_type_cd 		= #{bzentyTypeCd},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(bizFld            		)"> biz_fld 			= #{bizFld},</if>
+        <if test="@common.util.CommUtils@isEmpty(bizFld            			)"> biz_fld 			= #{bizFld},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(invtFldNm           	)"> invt_fld_nm 		= #{invtFldNm},</if>
+        <if test="@common.util.CommUtils@isEmpty(invtFldNm           		)"> invt_fld_nm 		= #{invtFldNm},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(tpbizSeNm            	)"> tpbiz_se_nm 		= #{tpbizSeNm},</if>
+        <if test="@common.util.CommUtils@isEmpty(tpbizSeNm            		)"> tpbiz_se_nm 		= #{tpbizSeNm},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(industSeNm            	)"> indust_se_nm 		= #{industSeNm},</if>
+        <if test="@common.util.CommUtils@isEmpty(industSeNm            		)"> indust_se_nm 		= #{industSeNm},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(slsAmt            		)"> sls_amt 			= #{slsAmt},</if>
+        <if test="@common.util.CommUtils@isEmpty(slsAmt            			)"> sls_amt 			= #{slsAmt},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(hmpgAddr            	)"> hmpg_addr 			= #{hmpgAddr},</if>
+        <if test="@common.util.CommUtils@isEmpty(hmpgAddr            		)"> hmpg_addr 			= #{hmpgAddr},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(lctnAddr1            	)"> lctn_addr1 			= #{lctnAddr1},</if>
+        <if test="@common.util.CommUtils@isEmpty(lctnAddr1            		)"> lctn_addr1 			= #{lctnAddr1},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(lctnAddr2            	)"> lctn_addr2 			= #{lctnAddr2},</if>
+        <if test="@common.util.CommUtils@isEmpty(lctnAddr2            		)"> lctn_addr2 			= #{lctnAddr2},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(bizCn            		)"> biz_cn 				= #{bizCn},</if>
+        <if test="@common.util.CommUtils@isEmpty(bizCn            			)"> biz_cn 				= #{bizCn},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(dscsnCn            		)"> dscsn_cn 			= #{dscsnCn},</if>
+        <if test="@common.util.CommUtils@isEmpty(dscsnCn            		)"> dscsn_cn 			= #{dscsnCn},</if>
+        <if test="@common.util.CommUtils@isNotEmpty(prgrsSttsCd            	)"> prgrs_stts_cd 		= #{prgrsSttsCd},</if>
+        <if test="@common.util.CommUtils@isEmpty(prgrsSttsCd            	)"> prgrs_stts_cd 		= #{prgrsSttsCd},</if>
+        	mdfcn_ymd = NOW()
+    	WHERE sn = #{sn}
+	</update>
+    
+	<!-- 게시판 삭제 -->
+	<delete id="deltDscsn" parameterType="business.adm.invest.service.DscsnVO">
+	    DELETE 
+	    FROM tb_dscsn_diary
+	    WHERE sn =#{sn}
+	</delete> 
+    
+    
+</mapper>

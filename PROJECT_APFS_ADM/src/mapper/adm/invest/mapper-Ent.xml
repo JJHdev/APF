@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Ent">
+
+    <!-- ======================== -->
+    <!--  공통 sql                 -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+            AND (A.bzenty_nm LIKE '%' || #{srchText} || '%')
+        </if>
+		<if test="@common.util.CommUtils@isNotEmpty(srchBzentySeCd)">
+        	AND (A.bzenty_se_cd = #{srchBzentySeCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchAprvSttsCd)">
+        	AND (A.use_stts_cd = #{srchAprvSttsCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(brno)">
+        	AND (A.brno = #{brno})
+        </if>
+    </sql>
+    
+    <sql id="Sql-Column">
+		A.bzenty_no											AS "bzentyNo",
+		A.up_bzenty_no										AS "upBzentyNo",
+		A.bzenty_se_cd										AS "bzentySeCd",
+		FN_GET_CODENM('CT.BZENTY_SE', A.bzenty_se_cd)		AS "bzentySeNm",
+		A.brno												AS "brno",
+		FN_FMT_DATA('RNO', A.brno)							AS "brnoForm",
+		A.crno												AS "crno",
+		A.bzenty_nm											AS "bzentyNm",
+		A.rprsv_nm											AS "rprsvNm",
+        A.rmrk4                                             AS "rmrk4", <!-- KODATA에서 입력된 대표자명 2023.09.06 추가 -->
+		FN_FMT_STRTODATE(A.rprsv_brdt, '-')					AS "rprsvBrdt",
+		A.rprsv_sexdstn										AS "rprsvSexdstn",
+		FN_GET_CODENM('CT.SXDST_SE', A.rprsv_sexdstn)		AS "rprsvSexdstnNm",
+		FN_FMT_STRTODATE(A.fndn_ymd, '-')					AS "fndnYmd",
+		A.rprs_telno										AS "rprsTelno",
+		A.fxno												AS "fxno",
+		A.tpbiz_cd											AS "tpbizCd",
+		FN_GET_CODENM('CT.INDUTY_SE', A.tpbiz_cd)			AS "tpbizNm",
+		A.bzenty_type_cd									AS "bzentyTypeCd",
+		FN_GET_CODENM('CT.BZENTY_TYPE', A.bzenty_type_cd)	AS "bzentyTypeNm",
+		A.bzenty_stle_cd									AS "bzentyStleCd",
+		FN_GET_CODENM('CT.BZENTY_STLE', A.bzenty_stle_cd)	AS "bzentyStleNm",
+		A.bzenty_scale_cd									AS "bzentyScaleCd",
+		FN_GET_CODENM('CT.BZENTY_SCALE', A.bzenty_scale_cd)	AS "bzentyScaleNm",
+		A.invt_hope_amt										AS "invtHopeAmt",
+		A.eml_addr											AS "emlAddr",
+		A.hmpg_addr											AS "hmpgAddr",
+		A.zip												AS "zip",
+		A.lctn_addr											AS "lctnAddr",
+		A.lctn_daddr										AS "lctnDaddr",
+		A.emp_cnt											AS "empCnt",
+		A.group_cd											AS "groupCd",
+		A.kd_cd												AS "kdCd",
+		A.direct_inpt_yn                                    AS "directInptYn",
+		A.mngr_memo											AS "mngrMemo",
+		TO_CHAR(A.aprv_ymd, 'yyyy-mm-dd')					AS "aprvYmd",
+		TO_CHAR(A.rjct_ymd, 'yyyy-mm-dd')					AS "rjctYmd",
+		A.use_stts_cd										AS "useSttsCd",
+		FN_GET_CODENM('CT.APRV_STTS', A.use_stts_cd)		AS "useSttsCdNm",
+		A.rgtr_no											AS "rgtrNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')		AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')					AS "regDate",
+		A.mdfr_no											AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')		AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')					AS "mdfDate",
+		FN_GET_USERNM(A.rgtr_no)							AS "rgtrNm",
+		(SELECT 
+			STRING_AGG( FN_GET_CODENM('CT.BIZ_RLM', R1.fld_cd), ',')
+	   	FROM tb_ent_rlm R1
+	  	WHERE bzenty_no = A.bzenty_no
+	    	AND fld_se_cd = 'B')                       		AS "bizFldText", <!-- 사업분야 -->
+		(SELECT 
+			STRING_AGG( (SELECT invt_fld_nm FROM tb_invtrlm_code WHERE invt_fld_cd = R2.fld_cd),',')
+		 FROM tb_ent_rlm R2
+		 WHERE bzenty_no = A.bzenty_no
+		    AND fld_se_cd = 'I')                       		AS "invtFldNm"	 <!-- 투자분야 -->
+    </sql>
+
+    <!-- 회원관리-업체관리 목록조회 -->
+    <select id="listEnt" resultType="java.util.HashMap" parameterType="business.adm.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY 
+               A.bzenty_no DESC
+    </select>
+    <select id="listEntCount" resultType="int" parameterType="business.adm.invest.service.EntVO">
+        SELECT COUNT(1) 
+          FROM tb_ent A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 회원관리-업체관리 상세조회 -->
+    <select id="viewEnt" resultType="business.adm.invest.service.EntVO" parameterType="business.adm.invest.service.EntVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_ent A
+         WHERE 1 = 1
+         	   <if test="@common.util.CommUtils@isNotEmpty(bzentyNo)">AND A.bzenty_no	= #{bzentyNo}</if>
+               <if test="@common.util.CommUtils@isNotEmpty(brno    )">AND A.brno		= #{brno    }</if>
+    </select>
+
+    <!-- 회원관리-업체관리 등록 -->
+    <insert id="regiEnt" parameterType="business.adm.invest.service.EntVO">
+        INSERT 
+          INTO tb_ent 
+             ( bzenty_no,
+               bzenty_se_cd,
+               brno,
+               bzenty_nm,
+               use_stts_cd,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( NEXTVAL('SEQ_ENT'),
+               #{bzentySeCd}, <!-- 경영체 -->
+               #{brno},
+               #{bzentyNm},
+               #{useSttsCd},
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 회원관리-업체관리 수정 -->
+    <update id="updtEnt" parameterType="business.adm.invest.service.EntVO">
+		UPDATE tb_ent 
+           SET MDFR_NO = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(useSttsCd)">use_stts_cd		= #{useSttsCd},</if>
+		<!-- 2023.09.04 LSH 반려시엔 반려일자 / 승인시엔 승인일자 맵핑 -->
+		<if test="@common.util.CommUtils@isEqual(useSttsCd, 1)">
+			aprv_ymd		= NOW(),
+			rjct_ymd		= NULL,
+		</if>
+		<if test="@common.util.CommUtils@isEqual(useSttsCd, 9)">
+			aprv_ymd		= NULL,
+			rjct_ymd		= NOW(),
+		</if>
+		<if test="@common.util.CommUtils@isNotEmpty(mngrMemo )">mngr_memo		= #{mngrMemo },</if>
+               MDFCN_YMD = NOW()
+         WHERE bzenty_no = #{bzentyNo}
+    </update>
+
+    <!-- 회원관리-업체관리 삭제 -->
+    <update id="deltEnt" parameterType="business.adm.invest.service.EntVO">
+        DELETE 
+          FROM tb_ent
+         WHERE bzenty_no = #{bzentyNo}
+    </update>
+
+</mapper>

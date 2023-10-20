@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Fund">
+
+    <!-- ======================== -->
+    <!--  공통 sql                 -->
+    <!-- ======================== -->
+    <sql id="Sql-Where-Fund">
+        <if test="@common.util.CommUtils@isNotEmpty(srchFundNm)">
+            AND (A.fund_nm LIKE '%' || #{srchFundNm} || '%')
+        </if>
+		<if test="@common.util.CommUtils@isNotEmpty(srchInvtFldCd)">
+        	AND (A.invt_fld_cd = #{srchInvtFldCd})
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchMakeYr)">
+        	AND (A.make_yr = #{srchMakeYr})
+        </if>
+    </sql>
+    <sql id="Sql-Where-Invt">
+    	AND A.bzenty_no IN ( SELECT DISTINCT BZENTY_NO
+    						   FROM TB_USER )
+    	AND (A.BZENTY_SE_CD = '10')
+    	AND (A.USE_STTS_CD  = '1' )
+        <if test="@common.util.CommUtils@isNotEmpty(srchTextInvt)">
+            AND (A.bzenty_nm LIKE '%' || #{srchTextInvt} || '%')
+        </if>
+    </sql>
+    
+    <sql id="Sql-Column-Fund">
+		A.fund_no								AS "fundNo",
+		A.fund_nm								AS "fundNm",
+		A.fund_cn								AS "fundCn",
+		A.invt_fld_cd							AS "invtFldCd",
+		FN_GET_INVTFLDNM(A.invt_fld_cd)			AS "invtFldCdNm",
+		A.fund_oper_scale						AS "fundOperScale",
+		A.make_yr								AS "makeYr",
+		FN_FMT_STRTODATE(A.orgz_ymd, '-')		AS "orgzYmd",
+		FN_FMT_STRTODATE(A.invt_bgng_ymd, '-')	AS "invtBgngYmd",
+		FN_FMT_STRTODATE(A.invt_end_ymd, '-')	AS "invtEndYmd",
+		A.mxtr_stts_cd							AS "mxtrSttsCd",
+		A.rprs_telno							AS "rprsTelno",
+		FN_FMT_DATA('TEL', A.rprs_telno)		AS "rprsTelnoForm",
+		A.rprs_hmpg_addr						AS "rprsHmpgAddr",
+		A.use_yn								AS "useYn",
+		A.del_yn								AS "delYn",
+		A.rgtr_no										AS "rgtrNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')	AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')				AS "regDate",
+		A.mdfr_no										AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')	AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')				AS "mdfDate",
+		( SELECT user_nm
+		    FROM tb_user
+	       WHERE user_no = A.rgtr_no)					AS "rgtrNm"
+    </sql>
+    <sql id="Sql-Column-Invt">
+		A.bzenty_no							AS "bzentyNo",
+		FN_FMT_DATA('RNO', A.brno) 			AS "brno",
+		A.bzenty_nm							AS "bzentyNm",
+		A.rprsv_nm							AS "rprsvNm",
+		FN_FMT_STRTODATE(A.fndn_ymd, '-')	AS "fndnYmd",
+		A.use_stts_cd						AS "useSttsCd",
+		A.rgtr_no										AS "rgtrNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')	AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')				AS "regDate",
+		A.mdfr_no										AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')	AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')				AS "mdfDate",
+		( SELECT user_nm
+		    FROM tb_user
+	       WHERE user_no = A.rgtr_no)           		AS "rgtrNm"
+    </sql>
+
+    <!-- 모태펀드 목록조회 -->
+    <select id="listFund" resultType="java.util.HashMap" parameterType="business.adm.invest.service.FundVO">
+        SELECT <include refid="Sql-Column-Fund"/>
+          FROM tb_fund_info A
+         WHERE 1 = 1
+           AND del_yn = 'N'
+               <include refid="Sql-Where-Fund"/>
+         ORDER BY 
+               A.fund_no DESC
+    </select>
+    <select id="listFundCount" resultType="int" parameterType="business.adm.invest.service.FundVO">
+        SELECT COUNT(1) 
+          FROM tb_fund_info A
+         WHERE 1 = 1
+           AND del_yn = 'N'
+               <include refid="Sql-Where-Fund"/>
+    </select>
+
+    <!-- 모태펀드 상세조회 -->
+    <select id="viewFund" resultType="business.adm.invest.service.FundVO" parameterType="business.adm.invest.service.FundVO">
+        SELECT <include refid="Sql-Column-Fund"/>
+          FROM tb_fund_info A
+         WHERE fund_no = #{fundNo}
+    </select>
+
+    <!-- 모태펀드 등록 -->
+    <insert id="regiFund" parameterType="business.adm.invest.service.FundVO">
+    	<selectKey keyProperty="fundNo" resultType="string" order="BEFORE">
+    		SELECT 'F'||TO_CHAR(NOW(), 'YY')||LPAD(NEXTVAL('SEQ_FUND_INFO')::text, 7, '0')
+    	</selectKey>
+        INSERT 
+          INTO tb_fund_info 
+             ( fund_no,
+               fund_nm,
+               fund_cn,
+               invt_fld_cd,
+               fund_oper_scale,
+               make_yr,
+               orgz_ymd,
+               invt_bgng_ymd,
+               invt_end_ymd,
+               mxtr_stts_cd,
+               rprs_telno,
+               rprs_hmpg_addr,
+               use_yn,
+               del_yn,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{fundNo},
+               #{fundNm},
+               #{fundCn},
+               #{invtFldCd},
+               #{fundOperScale},
+               SUBSTRING(#{orgzYmd}, 1, 4),
+               FN_FMT_STRTODATE(#{orgzYmd}, ''),
+               FN_FMT_STRTODATE(#{invtBgngYmd}, ''),
+               FN_FMT_STRTODATE(#{invtEndYmd}, ''),
+               #{mxtrSttsCd},
+               FN_FMT_DATA('NUM', #{rprsTelno}),
+               #{rprsHmpgAddr},
+               <if test="@common.util.CommUtils@isNotEmpty(useYn)">#{useYn}</if><if test="@common.util.CommUtils@isEmpty(useYn)">'N'</if>,
+               'N',
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 모태펀드 수정 -->
+    <update id="updtFund" parameterType="business.adm.invest.service.FundVO">
+		UPDATE tb_fund_info 
+           SET MDFR_NO = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(fundNm       )"> fund_nm		 = #{fundNm},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fundCn       )"> fund_cn		 = #{fundCn},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(invtFldCd    )"> invt_fld_cd	 = #{invtFldCd},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(fundOperScale)"> fund_oper_scale = #{fundOperScale},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(makeYr       )"> make_yr		 = SUBSTRING(#{orgzYmd}, 1, 4),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(orgzYmd      )"> orgz_ymd		 = FN_FMT_STRTODATE(#{orgzYmd}, ''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(invtBgngYmd  )"> invt_bgng_ymd	 = FN_FMT_STRTODATE(#{invtBgngYmd}, ''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(invtEndYmd   )"> invt_end_ymd	 = FN_FMT_STRTODATE(#{invtEndYmd}, ''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(mxtrSttsCd   )"> mxtr_stts_cd    = #{mxtrSttsCd},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rprsTelno    )"> rprs_telno		 = FN_FMT_DATA('NUM', #{rprsTelno}),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(rprsHmpgAddr )"> rprs_hmpg_addr	 = #{rprsHmpgAddr},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(useYn        )"> use_yn			 = #{useYn},</if>
+		<if test="@common.util.CommUtils@isEmpty(useYn           )"> use_yn			 = 'N',</if>
+               MDFCN_YMD = NOW()
+         WHERE fund_no = #{fundNo}
+    </update>
+
+    <!-- 모태펀드 삭제 -->
+    <update id="deltFund" parameterType="business.adm.invest.service.FundVO">
+        UPDATE tb_fund_info
+           SET del_yn = 'Y'
+         WHERE fund_no = #{fundNo}
+    </update>
+    
+    
+    
+    <!-- 전체 조합원 목록조회 -->
+    <select id="listInvt" resultType="java.util.HashMap" parameterType="business.adm.invest.service.EntVO">
+        SELECT <include refid="Sql-Column-Invt"/>
+          FROM tb_ent A
+         WHERE 1 = 1
+         	   <include refid="Sql-Where-Invt"/>
+         	OR BZENTY_NO = '200001'
+         ORDER BY 
+               A.bzenty_no DESC
+    </select>
+    <select id="listInvtCount" resultType="int" parameterType="business.adm.invest.service.EntVO">
+        SELECT COUNT(1) 
+          FROM tb_ent A
+         WHERE 1 = 1
+               <include refid="Sql-Where-Invt"/>
+            OR BZENTY_NO = '200001'
+    </select>
+    
+    
+    
+    <!-- 특정 펀드 조합원 목록조회 -->
+    <select id="listFundInvstr" resultType="java.util.HashMap" parameterType="business.adm.invest.service.FundVO">
+        SELECT A.sn									AS "sn",
+               A.fund_no							AS "fundNo",
+        	   A.bzenty_no							AS "bzentyNo",
+        	   A.invt_bzenty_nm						AS "invtBzentyNm",
+        	   FN_FMT_DATA('RNO', A.brno)			AS "brno",
+        	   COALESCE( (SELECT rprsv_nm
+        	                FROM tb_ent
+        	               WHERE bzenty_no = A.bzenty_no)
+        	           , '-')						AS "rprsvNm",
+        	   COALESCE( (SELECT FN_FMT_STRTODATE(fndn_ymd, '-')
+        	                FROM tb_ent
+        	               WHERE bzenty_no = A.bzenty_no)
+        	           , '-')						AS "fndnYmd"
+          FROM tb_fund_invstr A
+         WHERE 1 = 1
+           AND A.fund_no = #{fundNo}
+         ORDER BY 
+               A.sn DESC
+    </select>
+    <select id="listFundInvstrCount" resultType="int" parameterType="business.adm.invest.service.FundVO">
+        SELECT COUNT(1)
+          FROM tb_fund_invstr A
+         WHERE 1 = 1
+           AND A.fund_no = #{fundNo}
+    </select>
+    
+    <!-- 조합원 등록 -->
+    <insert id="regiFundInvstr" parameterType="business.adm.invest.service.FundVO">
+    	<selectKey keyProperty="sn" resultType="long" order="BEFORE">
+    		SELECT NEXTVAL('seq_fund_invstr')
+    	</selectKey>
+        INSERT 
+          INTO tb_fund_invstr
+             ( sn,
+               fund_no,
+               bzenty_no,
+               invt_bzenty_nm,
+               brno,
+               rgtr_no,
+               reg_ymd  
+             )
+        VALUES
+             ( #{sn},
+               #{fundNo},
+               #{bzentyNo},
+               <if test="@common.util.CommUtils@isNotEmpty(bzentyNo)">( SELECT bzenty_nm FROM tb_ent WHERE bzenty_no = #{bzentyNo} ),</if>
+			   <if test="@common.util.CommUtils@isEmpty(bzentyNo   )">#{invtBzentyNm},</if>
+			   <if test="@common.util.CommUtils@isNotEmpty(bzentyNo)">( SELECT brno FROM tb_ent WHERE bzenty_no = #{bzentyNo} ),</if>
+			   <if test="@common.util.CommUtils@isEmpty(bzentyNo   )">#{brno},</if>
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+    
+    <!-- 조합원 조회 -->
+    <select id="viewFundInvstr" resultType="int" parameterType="business.adm.invest.service.FundVO">
+        SELECT COUNT(1)
+          FROM tb_fund_invstr A
+         WHERE 1 = 1
+           AND A.fund_no   = #{fundNo}
+           AND A.bzenty_no = #{bzentyNo}
+    </select>
+    
+    <!-- 조합원 삭제 -->
+    <update id="deltFundInvstr" parameterType="business.adm.invest.service.FundVO">
+        DELETE 
+          FROM tb_fund_invstr A
+         WHERE 1 = 1
+           AND A.sn = #{sn}
+    </update>
+    
+    <!-- 조합원 전체 삭제 -->
+    <update id="deltFundInvstrAll" parameterType="business.adm.invest.service.FundVO">
+        DELETE 
+          FROM tb_fund_invstr A
+         WHERE 1 = 1
+           AND A.fund_no = #{fundNo}
+    </update>
+    
+</mapper>

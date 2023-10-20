@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="LoginLog">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+        AND A.USER_NO = B.USER_NO(+)    
+        <if test="@common.util.CommUtils@isNotEmpty(srchStDt)">
+            AND A.LGN_DT <![CDATA[ >= ]]> TO_TIMESTAMP(#{srchStDt}||'00:00:00', 'YYYY-MM-DD HH24:MI:SS')
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchEnDt)">
+            AND A.LGN_DT <![CDATA[ <= ]]> TO_TIMESTAMP(#{srchEnDt}||'23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+            AND (A.USER_NO   LIKE '%'||#{srchText}||'%'
+              OR B.USER_NM   LIKE '%'||#{srchText}||'%'
+              OR A.IP_ADDR   LIKE '%'||#{srchText}||'%'
+              OR A.SRVR_NM   LIKE '%'||#{srchText}||'%')
+        </if>
+    </sql>
+
+    <!-- 로그인이력 목록조회 -->
+    <select id="listLoginLog" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+        SELECT A.SN                   AS "sn"
+             , A.USER_NO              AS "userNo"
+             , B.USER_NM              AS "userNm"
+             , TO_CHAR(A.LGN_DT,'YYYY-MM-DD HH24:MI:SS') AS "lgnDt"
+             , A.LGN_YR               AS "lgnYr"
+             , A.LGN_MM               AS "lgnMm"
+             , A.LGN_DD               AS "lgnDd"
+             , A.LGN_STUS_CD          AS "lgnStusCd"
+             , A.IP_ADDR              AS "ipAddr"
+             , A.SRVR_NM              AS "srvrNm"
+          FROM SYS_LGN_HST A
+             , TMP_USER B 
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY A.SN DESC
+    </select>
+    <select id="listLoginLogCount" resultType="int" parameterType="java.util.HashMap">
+        SELECT COUNT(1) 
+          FROM SYS_LGN_HST A
+             , TMP_USER B
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 로그인이력 삭제 -->
+    <delete id="deltLoginLog" parameterType="java.util.HashMap">
+        DELETE 
+          FROM SYS_LGN_HST 
+         WHERE SN = #{sn}
+    </delete> 
+
+</mapper>

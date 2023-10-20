@@ -1,0 +1,113 @@
+package business.sys.role.web;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import business.sys.role.service.RoleProgService;
+import business.sys.role.service.RoleVO;
+import common.base.BaseController;
+import egovframework.com.utl.sim.service.EgovFileScrty;
+
+/**
+ * [컨트롤러클래스] - 역할별프로그램관리 관리 Controller
+ * 
+ * @class   : RoleProgController
+ * @author  : LSH
+ * @since   : 2021.09.06
+ * @version : 1.0
+ *
+ *   수정일     수정자             수정내용
+ *  --------   --------    ---------------------------
+ *
+ */
+@Controller
+@SuppressWarnings({"all"})
+@RequestMapping("/adm")
+public class RoleProgController extends BaseController {
+
+    @Resource(name="RoleProgService")
+    protected RoleProgService roleProgService;
+    
+    /**
+     * 역할별프로그램관리 관리 화면
+     */
+    @RequestMapping("/sys/role/listRoleProg.do")
+    public String listRoleProg(HttpServletRequest request
+	        , ModelMap model
+            , @ModelAttribute RoleVO roleVO) throws Exception {
+				
+        setGlobalSession(request, roleVO);
+        // -------------------- Default Setting End -----------------------//
+        model.addAttribute("model", roleVO);
+    	
+        return "adm/sys/role/listRoleProg";
+    }
+
+    /**
+     * 역할별프로그램관리 목록JSON 반환 (EasyUI GRID)
+     */
+    @RequestMapping("/sys/role/getListRoleProg.do")
+    @ResponseBody
+    public Map getListRoleProg(HttpServletRequest request, @RequestParam Map<String,String> reqMap
+            , @ModelAttribute RoleVO roleVO, ModelMap model) throws Exception {
+
+        setGlobalSession(request, roleVO);
+        // -------------------- Default Setting End -----------------------//
+
+        List list = roleProgService.listRoleProg(roleVO);
+        // Easy UI GRID용 결과값 반환
+        return getPaginatedResult(list);
+    }
+    
+    /**
+     * 역할별프로그램관리 목록JSON 반환 (EasyUI GRID)
+     */
+    @RequestMapping("/sys/role/getListNotRoleProg.do")
+    @ResponseBody
+    public Map getListNotRoleProg(HttpServletRequest request, @RequestParam Map<String,String> reqMap
+            , @ModelAttribute RoleVO roleVO, ModelMap model) throws Exception {
+
+        setGlobalSession(request, roleVO);
+        // -------------------- Default Setting End -----------------------//
+
+        List list = roleProgService.listNotRoleProg(roleVO);
+        // Easy UI GRID용 결과값 반환
+        return getPaginatedResult(list);
+    }
+
+    /**
+     * 역할별프로그램관리 저장처리 (등록,수정,삭제)
+     * mode 값에 따라 분기
+     * Object와 Array 복합된 JSON 데이터 받기
+     * (@RequestBody를 Model 객체에 사용하며, 
+     *  Model 객체에 List를 Property로 가지고 있는다.)
+     */
+    @RequestMapping("/sys/role/saveRoleProg.do")
+    @ResponseBody
+    public Map saveRoleProg(
+    		HttpServletRequest request, 
+    		@RequestBody RoleVO roleVO
+    	) throws Exception {
+    	
+        setGlobalSession(request, roleVO);
+        
+        if (roleVO.getUserInfo(request) != null)
+        	roleVO.setUserNo(roleVO.getUserInfo(request).getUserNo());
+        // 역할별프로그램관리를 저장한다.
+    	String result = roleProgService.saveRoleProg(roleVO);
+    	// 성공결과 반환
+        return getSuccess("Message", result);
+    }
+
+}

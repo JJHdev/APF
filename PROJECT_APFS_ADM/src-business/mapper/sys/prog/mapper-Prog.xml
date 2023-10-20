@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Prog">
+
+    <sql id="Sql-Column">
+        A.PRGRM_ID                                      AS "prgrmId",
+        A.PRGRM_NM                                      AS "prgrmNm",
+        A.PRGRM_URL                                     AS "prgrmUrl",
+        A.PRGRM_TYPE                                    AS "prgrmType",
+        A.MENU_ID                                       AS "menuId",
+        B.MENU_NM                                       AS "menuNm",
+        A.PRGRM_ORDR                                    AS "prgrmOrdr",
+        A.USE_YN                                        AS "useYn",
+        A.SYS_SE_CD                                   	AS "sysCd",
+        A.RGTR_NO                                       AS "rgtrNo",
+        TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')   AS "regDttm",
+        TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')              AS "regDate",
+        A.MDFR_NO                                       AS "mdfrNo",
+        TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')   AS "mdfDttm",
+        TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')              AS "mdfDate"
+    </sql>
+    <sql id="Sql-Where">
+        <if test=" !@common.util.CommUtils@isEmpty(srchSysCd) ">
+           AND A.SYS_SE_CD = #{srchSysCd}
+        </if>
+        <if test=" !@common.util.CommUtils@isEmpty(srchMenuId) ">
+           AND A.MENU_ID LIKE '%'||#{srchMenuId}||'%' 
+        </if>
+        <if test=" !@common.util.CommUtils@isEmpty(srchText) ">
+           AND(A.PRGRM_NM    LIKE '%'||#{srchText}||'%' 
+            OR A.PRGRM_ID    LIKE '%'||#{srchText}||'%'
+            OR A.PRGRM_URL   LIKE '%'||#{srchText}||'%')
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchRoleId)">
+            AND NOT EXISTS (
+                SELECT 1
+                  FROM SYS_ROLE_PROG
+                 WHERE PRGRM_ID = A.PRGRM_ID
+                   AND ROLE_ID = #{srchRoleId}
+                )
+        </if>
+    </sql>
+    
+    <!-- 프로그램관리] 프로그램 리스트 -->
+    <select id="listProg" parameterType="business.sys.prog.service.ProgVO" resultType="java.util.HashMap">
+        SELECT <include refid="Sql-Column"/>
+          FROM SYS_PROG A
+          LEFT OUTER JOIN
+               SYS_MENU B
+            ON A.MENU_ID = B.MENU_ID
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY A.PRGRM_ID ASC
+    </select>
+    <select id="listProgCount" resultType="int" parameterType="business.sys.prog.service.ProgVO">
+        SELECT COUNT(1) 
+          FROM SYS_PROG A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 프로그램관리 상세조회 -->
+    <select id="viewProg" resultType="business.sys.prog.service.ProgVO" parameterType="business.sys.prog.service.ProgVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM SYS_PROG A
+          LEFT OUTER JOIN
+               SYS_MENU B
+            ON A.MENU_ID = B.MENU_ID
+         WHERE A.PRGRM_ID = #{prgrmId}
+    </select>
+    
+    <!-- 프로그램관리] 프로그램 등록 -->
+    <insert id="regiProg" parameterType="business.sys.prog.service.ProgVO">
+        INSERT 
+          INTO SYS_PROG 
+             ( PRGRM_ID,
+               PRGRM_NM,
+               PRGRM_URL,
+               PRGRM_TYPE,
+               MENU_ID,
+               PRGRM_ORDR,
+               SYS_SE_CD,
+               USE_YN,
+               RGTR_NO,
+               REG_YMD
+             )
+        VALUES
+             ( UPPER(#{prgrmId}),
+               #{prgrmNm},
+               #{prgrmUrl},
+               'url',
+               #{menuId},
+               COALESCE(#{prgrmOrdr}, (
+                  SELECT COALESCE(MAX(B.PRGRM_ORDR), 0) + 1
+                    FROM SYS_PROG B
+                   WHERE MENU_ID = UPPER(COALESCE(#{menuId}, 'NONE'))
+               )),
+               #{sysCd},
+               #{useYn},
+               #{gsUserNo},
+               NOW()
+             )
+    </insert>
+
+    <!-- 프로그램관리] 프로그램 수정 -->
+    <update id="updtProg" parameterType="business.sys.prog.service.ProgVO">
+         UPDATE SYS_PROG 
+           SET  PRGRM_NM               = #{prgrmNm}
+               ,PRGRM_URL             = #{prgrmUrl}
+               ,PRGRM_TYPE            = 'url'
+               ,MENU_ID               = #{menuId}
+               ,PRGRM_ORDR            = COALESCE(#{prgrmOrdr}, (
+						                  SELECT COALESCE(MAX(B.PRGRM_ORDR), 0) + 1
+						                    FROM SYS_PROG B
+						                   WHERE MENU_ID = UPPER(COALESCE(#{menuId}, 'NONE'))
+						               ))
+               ,SYS_SE_CD           	 = #{sysCd}
+               ,USE_YN                = #{useYn}
+               ,MDFR_NO               = #{gsUserNo}
+               ,MDFCN_YMD             = NOW()  
+         WHERE PRGRM_ID              = #{prgrmId}
+    </update>
+
+    <!-- 프로그램관리] 프로그램 삭제 -->
+    <delete id="deltProg" parameterType="business.sys.prog.service.ProgVO">
+        DELETE 
+          FROM SYS_PROG 
+         WHERE PRGRM_ID = #{prgrmId}
+    </delete>
+
+</mapper>

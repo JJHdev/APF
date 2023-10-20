@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="InfoLog">
+
+    <!-- ======================== -->
+    <!--  공통 sql                -->
+    <!-- ======================== -->
+    <sql id="Sql-Column">
+           A.SN				                                AS "sn"
+         , B.USER_ID                                        AS "userId"
+         , B.USER_NM		                                AS "userNm"
+         , D.SUFRER_NM||'('||C.APLCNT_NM||')'	            AS "tartNm"
+         , CASE WHEN INSTR(A.CNTN_SE_NM, '/get') <![CDATA[ >= ]]> 0  
+         			 OR INSTR(A.CNTN_SE_NM, '/list') <![CDATA[ >= ]]> 0 
+         			 OR INSTR(A.CNTN_SE_NM, '/view') <![CDATA[ >= ]]> 0
+         		THEN '조회'
+    			WHEN INSTR(A.CNTN_SE_NM, '/save') <![CDATA[ >= ]]> 0
+    			THEN '저장'  
+    			WHEN INSTR(A.CNTN_SE_NM, '/regi') <![CDATA[ >= ]]> 0
+    			THEN '등록'  
+    			WHEN INSTR(A.CNTN_SE_NM, '/updt') <![CDATA[ >= ]]> 0
+    			THEN '수정'  
+    			WHEN INSTR(A.CNTN_SE_NM, '/delt') <![CDATA[ >= ]]> 0
+    			THEN '삭제'  
+    	   ELSE ''
+    	   END				                               AS "procStat"
+    	 , (SELECT PROG_NM
+    	      FROM SYS_PROG
+    	     WHERE PROG_URL = A.CNTN_SE_NM
+    	       AND ROWNUM = 1)                             AS "accProg"
+    	 , A.IP_ADDR                                       AS "ipAddr"
+         , TO_CHAR(A.CNTN_DT,'YYYY-MM-DD HH24:MI:SS')      AS "cntnDt"
+    </sql>
+    
+    <sql id="Sql-Where">
+        AND A.USER_NO    = B.USER_NO(+)
+        AND A.KEY1       = C.APLY_NO(+)
+        AND C.SUFRER_NO  = D.SUFRER_NO    
+        <if test="@common.util.CommUtils@isNotEmpty(srchStDt)">
+            AND A.CNTN_DT <![CDATA[ >= ]]> TO_TIMESTAMP(#{srchStDt}||'00:00:00', 'YYYY-MM-DD HH24:MI:SS')
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchEnDt)">
+            AND A.CNTN_DT <![CDATA[ <= ]]> TO_TIMESTAMP(#{srchEnDt}||'23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+            AND(B.USER_NO   LIKE '%'||#{srchText}||'%'
+             OR B.USER_NM   LIKE '%'||#{srchText}||'%'
+             OR C.APLCNT_NM LIKE '%'||#{srchText}||'%'
+             OR D.SUFRER_NM LIKE '%'||#{srchText}||'%'
+             OR A.IP_ADDR   LIKE '%'||#{srchText}||'%')
+        </if>
+    </sql>
+
+    <!-- 정보조회이력 목록조회 -->
+    <select id="listInfoLog" resultType="java.util.HashMap" parameterType="business.sys.log.service.LogVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM SYS_INFO_HST A
+             , TB_USER B
+             , TB_RELIEF C
+             , TB_IDNTFC D
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY 
+               A.SN DESC
+    </select>
+    <select id="listInfoLogCount" resultType="int" parameterType="business.sys.log.service.LogVO">
+        SELECT COUNT(1) 
+          FROM SYS_INFO_HST A
+             , TB_USER B
+             , TB_RELIEF C
+             , TB_IDNTFC D
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 정보조회이력 삭제 -->
+    <delete id="deltInfoLog" parameterType="business.sys.log.service.LogVO">
+        DELETE 
+          FROM SYS_INFO_HST 
+         WHERE SN = #{sn}
+    </delete> 
+</mapper>

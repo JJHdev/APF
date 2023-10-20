@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="InvestField">
+
+    <!-- ======================== -->
+    <!--  공통 sql                 -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(invtFldNm)">
+            AND (A.invt_fld_nm LIKE '%'||#{invtFldNm}||'%')
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchBgngYmd)">
+            AND (A.use_bgng_ymd = FN_FMT_STRTODATE(#{srchBgngYmd}, ''))
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchUseYn)">
+        	<if test="!@common.util.CommUtils@isEqual(srchUseYn, 'all')">
+        		AND (A.use_yn = #{srchUseYn})
+        	</if>
+        </if>
+    </sql>
+    
+    <sql id="Sql-Column">
+		A.invt_fld_cd									AS "invtFldCd",
+		A.invt_fld_nm									AS "invtFldNm",
+		A.invt_fld_cn									AS "invtFldCn",
+		A.itm_kwrd										AS "itmKwrd",
+		FN_FMT_STRTODATE(A.use_bgng_ymd, '-')			AS "useBgngYmd",
+		FN_FMT_STRTODATE(A.use_end_ymd,  '-')			AS "useEndYmd",
+		A.cd_ordr										AS "cdOrdr",
+		A.use_yn										AS "useYn",
+		A.rgtr_no										AS "rgtrNo",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')	AS "regDttm",
+		TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')				AS "regDate",
+		A.mdfr_no										AS "mdfrNo",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')	AS "mdfDttm",
+		TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')				AS "mdfDate",
+		FN_GET_USERNM(A.rgtr_no)						AS "rgtrNm",
+		FN_GET_USERID(A.rgtr_no)						AS "rgtrId"
+    </sql>
+
+    <!-- 세부지원사업관리 목록조회 -->
+    <select id="listInvestField" resultType="java.util.HashMap" parameterType="business.adm.invest.service.InvestFieldVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_invtrlm_code A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+         ORDER BY 
+               A.invt_fld_cd DESC
+    </select>
+    <select id="listInvestFieldCount" resultType="int" parameterType="business.adm.invest.service.InvestFieldVO">
+        SELECT COUNT(1) 
+          FROM tb_invtrlm_code A
+         WHERE 1 = 1
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 세부지원사업관리 상세조회 -->
+    <select id="viewInvestField" resultType="business.adm.invest.service.InvestFieldVO" parameterType="business.adm.invest.service.InvestFieldVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM tb_invtrlm_code A
+         WHERE 1 = 1
+           AND A.invt_fld_cd = #{invtFldCd}
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 세부지원사업관리 등록 -->
+    <insert id="regiInvestField" parameterType="business.adm.invest.service.InvestFieldVO">
+    	<selectKey keyProperty="invtFldCd,cdOrdr" resultType="java.util.HashMap" order="BEFORE">
+    		SELECT 'IRC'||TO_CHAR(NOW(), 'YY')||(SUBSTRING(MAX(INVT_FLD_CD), 6)::numeric+1) AS "invtFldCd",
+    		       (MAX(cd_ordr)+1)::text													AS "cdOrdr"
+    		  FROM tb_invtrlm_code
+    	</selectKey>
+        INSERT 
+          INTO tb_invtrlm_code
+             ( invt_fld_cd,
+               invt_fld_nm,
+               invt_fld_cn,
+               itm_kwrd,
+               use_bgng_ymd,
+               use_end_ymd,
+               cd_ordr,
+               use_yn,
+               rgtr_no,
+               reg_ymd
+             )
+        VALUES
+             ( #{invtFldCd},
+               #{invtFldNm},
+               #{invtFldCn},
+               #{itmKwrd},
+               FN_FMT_STRTODATE(#{useBgngYmd}, ''),
+               <if test="@common.util.CommUtils@isNotEmpty(useEndYmd)">FN_FMT_STRTODATE(#{useEndYmd}, ''),</if><if test="@common.util.CommUtils@isEmpty(useEndYmd)">NULL,</if>
+               #{cdOrdr}::numeric,
+               'Y',
+          <!-- <if test="@common.util.CommUtils@isNotEmpty(useYn)">#{useYn}</if><if test="@common.util.CommUtils@isEmpty(useYn)">'N'</if>,-->
+               #{gsUserNo},
+               NOW()  
+             )
+    </insert>
+
+    <!-- 세부지원사업관리 수정 -->
+    <update id="updtInvestField" parameterType="business.adm.invest.service.InvestFieldVO">
+		UPDATE tb_invtrlm_code 
+           SET MDFR_NO = #{gsUserNo},
+		<if test="@common.util.CommUtils@isNotEmpty(invtFldNm )">invt_fld_nm	= #{invtFldNm},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(invtFldCn )">invt_fld_cn	= #{invtFldCn},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(itmKwrd   )">itm_kwrd		= #{itmKwrd},</if>
+		<if test="@common.util.CommUtils@isNotEmpty(useBgngYmd)">use_bgng_ymd	= FN_FMT_STRTODATE(#{useBgngYmd}, ''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(useEndYmd )">use_end_ymd	= FN_FMT_STRTODATE(#{useEndYmd }, ''),</if>
+		<if test="@common.util.CommUtils@isNotEmpty(cdOrdr    )">cd_ordr		= #{cdOrdr},</if>
+   <!-- <if test="@common.util.CommUtils@isNotEmpty(useYn     )">use_yn			= #{useYn},</if>
+		<if test="@common.util.CommUtils@isEmpty(useYn        )">use_yn			= 'N',</if> -->
+               MDFCN_YMD = NOW()
+         WHERE invt_fld_cd = #{invtFldCd}
+    </update>
+
+    <!-- 세부지원사업관리 삭제 -->
+    <update id="deltInvestField" parameterType="business.adm.invest.service.InvestFieldVO">
+        DELETE 
+          FROM tb_invtrlm_code
+         WHERE invt_fld_cd = #{invtFldCd}
+    </update>
+    
+</mapper>

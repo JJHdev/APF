@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="RoleProg">
+
+    <!-- 롤프로그램관리] 권한 미적용 프로그램리스트 -->
+    <select id="listNotRoleProg" parameterType="business.sys.role.service.RoleVO" resultType="java.util.HashMap">
+        SELECT A.PRGRM_ID									 AS "prgrmId"
+             , A.PRGRM_NM                                    AS "prgrmNm"
+             , (SELECT 
+		               CASE WHEN SIGN(count(*)) = 0
+		                    THEN 'N'
+		                    ELSE 'Y'
+		               END              
+                  FROM SYS_ROLE_PROG
+                 WHERE PRGRM_ID = A.PRGRM_ID)                 AS "isAdded"
+          FROM SYS_PROG A
+         WHERE 0 = 0
+           AND A.USE_YN = 'Y'
+        <if test=" !@common.util.CommUtils@isEmpty(srchSysCd) ">
+           AND A.SYS_SE_CD = #{srchSysCd}
+        </if>
+           AND A.PRGRM_ID NOT IN (SELECT DISTINCT PRGRM_ID
+                                   FROM SYS_ROLE_PROG
+                                  WHERE ROLE_ID = #{srchRoleId})
+         ORDER BY A.PRGRM_ID
+    </select>
+
+    <!-- 롤프로그램관리] 권한 적용 프로그램리스트 -->
+    <select id="listRoleProg" parameterType="business.sys.role.service.RoleVO" resultType="java.util.HashMap">
+        SELECT B.ROLE_ID                                        AS "roleId"
+             , B.ROLE_NM                                        AS "roleNm"
+             , A.PRGRM_ID                                       AS "prgrmId"
+             , A.PRGRM_NM                                       AS "prgrmNm"
+          FROM SYS_PROG A
+             , (SELECT DISTINCT RP.PRGRM_ID
+                     , RP.ROLE_ID
+                     , R.ROLE_NM
+                  FROM SYS_ROLE_PROG RP, SYS_ROLE R
+                 WHERE RP.ROLE_ID = R.ROLE_ID
+                   AND RP.ROLE_ID = #{srchRoleId}) B
+         WHERE A.USE_YN = 'Y'
+           AND A.PRGRM_ID = B.PRGRM_ID
+        <if test=" !@common.util.CommUtils@isEmpty(srchSysCd) ">
+           AND A.SYS_SE_CD = #{srchSysCd}
+        </if>
+         ORDER BY A.PRGRM_ID
+    </select>
+
+    <!-- 롤프로그램관리] 권한별 프로그램 등록 -->
+    <insert id="regiRoleProg" parameterType="business.sys.role.service.RoleVO">
+        INSERT INTO SYS_ROLE_PROG (
+               ROLE_ID
+             , PRGRM_ID
+             , RGTR_NO
+             , REG_YMD
+        )
+        VALUES 
+        	(
+               #{roleId}
+             , #{prgrmId}
+             , #{gsUserNo}
+             , NOW()
+            )             
+    </insert>
+
+    <!-- 롤프로그램관리] 권한별 프로그램 삭제 -->
+    <delete id="deltRoleProg" parameterType="business.sys.role.service.RoleVO">
+        DELETE FROM SYS_ROLE_PROG
+         WHERE 0 = 0
+           AND ROLE_ID = #{roleId}
+           AND PRGRM_ID = #{prgrmId}
+    </delete>
+
+</mapper>

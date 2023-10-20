@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="RoleMenu">
+
+    <sql id="Sql-MenuTable">
+		WITH RECURSIVE T_MENU AS (
+			SELECT A.*
+			     , 0 as LEVEL
+			  FROM SYS_MENU A		
+			 WHERE UP_MENU_ID = 'NONE'
+			
+			UNION ALL
+			
+			SELECT B.*
+			     , level + 1
+			  FROM SYS_MENU B		
+			  JOIN T_MENU   T ON T.MENU_ID = B.UP_MENU_ID   
+			   AND B.UP_MENU_ID <![CDATA[<>]]> 'NONE'
+		)
+    </sql> 
+    
+    <!-- 롤메뉴관리] 권한 미적용 메뉴리스트 -->
+    <select id="listNotRoleMenu" parameterType="business.sys.role.service.RoleVO" resultType="java.util.HashMap">
+    	<include refid="Sql-MenuTable"/>
+        SELECT A.MENU_ID                              AS "menuId"
+             , A.MENU_NM                              AS "menuNm"
+             --, SUBSTR(SYS_CONNECT_BY_PATH(TRIM(A.MENU_NM), ' > '), 4)  AS "arrNotMenuPath"
+             , A.LEVEL                                AS "Level"
+          FROM T_MENU A
+         WHERE 0 = 0
+           AND A.USE_YN = 'Y'
+           AND A.LEVEL <![CDATA[<]]> 3
+        <if test=" !@common.util.CommUtils@isEmpty(srchSysCd) ">
+           AND A.SYS_SE_CD = #{srchSysCd}
+        </if>
+           AND A.MENU_ID NOT IN (SELECT DISTINCT MENU_ID
+                                   FROM SYS_ROLE_MENU
+                                  WHERE ROLE_ID = #{srchRoleId})
+         ORDER BY A.MENU_LEVEL, A.MENU_ORDR
+    </select>
+    <select id="listNotRoleMenuCount" resultType="int" parameterType="business.sys.role.service.RoleVO">
+    	<include refid="Sql-MenuTable"/>
+        SELECT COUNT(1) 
+         FROM T_MENU A
+         WHERE 0 = 0
+           AND A.USE_YN = 'Y'
+           AND A.LEVEL <![CDATA[<]]> 3
+        <if test=" !@common.util.CommUtils@isEmpty(srchSysCd) ">
+           AND A.SYS_SE_CD = #{srchSysCd}
+        </if>
+           AND A.MENU_ID NOT IN (SELECT DISTINCT MENU_ID
+                                   FROM SYS_ROLE_MENU
+                                  WHERE ROLE_ID = #{srchRoleId})
+    </select>    
+    
+    <!-- 롤메뉴관리] 권한 적용 메뉴리스트 -->
+    <select id="listRoleMenu"  parameterType="business.sys.role.service.RoleVO" resultType="java.util.HashMap">
+    	<include refid="Sql-MenuTable"/>
+        SELECT A.MENU_ID                            AS "menuId"
+             , A.MENU_NM                            AS "menuNm"
+             --, SUBSTR(SYS_CONNECT_BY_PATH(TRIM(A.MENU_NM), ' > '), 4)  AS "arrMenuPath"
+             , B.ROLE_ID                            AS "roleId"
+             , B.ROLE_NM                            AS "roleNm"
+             , LEVEL                                AS "Level"
+          FROM T_MENU A, (SELECT DISTINCT RM.MENU_ID
+                               , RM.ROLE_ID
+                               , R.ROLE_NM
+                            FROM SYS_ROLE_MENU RM, SYS_ROLE R
+                           WHERE RM.ROLE_ID = R.ROLE_ID
+                             AND RM.ROLE_ID = #{srchRoleId}) B
+         WHERE 0 = 0
+        <if test=" !@common.util.CommUtils@isEmpty(srchSysCd) ">
+           AND A.SYS_SE_CD = #{srchSysCd}
+        </if>
+           AND A.MENU_ID = B.MENU_ID
+         ORDER BY A.MENU_LEVEL, A.MENU_ORDR
+    </select>
+    
+    <select id="listRoleMenuCount" resultType="int" parameterType="business.sys.role.service.RoleVO">
+    	<include refid="Sql-MenuTable"/>
+        SELECT COUNT(1) 
+          FROM T_MENU A, (SELECT DISTINCT RM.MENU_ID
+                               , RM.ROLE_ID
+                               , R.ROLE_NM
+                            FROM SYS_ROLE_MENU RM, SYS_ROLE R
+                           WHERE RM.ROLE_ID = R.ROLE_ID
+                             AND RM.ROLE_ID = #{srchRoleId}) B
+         WHERE 0 = 0
+        <if test=" !@common.util.CommUtils@isEmpty(srchSysCd) ">
+           AND A.SYS_SE_CD = #{srchSysCd}
+        </if>
+           AND A.MENU_ID = B.MENU_ID
+    </select>    
+
+    <!-- 역할별메뉴관리 등록 -->
+    <insert id="regiRoleMenu" parameterType="business.sys.role.service.RoleVO">
+        INSERT 
+          INTO SYS_ROLE_MENU 
+             ( ROLE_ID,
+               MENU_ID,
+               RGTR_NO,
+               REG_YMD  
+             )
+        VALUES
+             ( #{roleId},
+               #{menuId},
+               #{gsUserNo},
+               now()
+             )
+    </insert>
+    
+    <!-- 역할별메뉴관리 삭제 -->
+    <delete id="deltRoleMenu" parameterType="business.sys.role.service.RoleVO">
+        DELETE FROM SYS_ROLE_MENU
+         WHERE ROLE_ID = #{roleId}
+           AND MENU_ID = #{menuId}
+    </delete> 
+</mapper>

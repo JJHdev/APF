@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="PapeCode">
+
+    <sql id="Sql-PapeCodeTable">
+		WITH RECURSIVE T_PAPE_CODE AS (
+			SELECT C.*
+			     , 1 AS LEVEL
+	             , CASE WHEN UP_DCMNT_CD = 'NONE' THEN DCMNT_CD 
+	               ELSE UP_DCMNT_CD 
+	               END AS ORDR_GRP_ID			     
+			  FROM TB_PAPE_CODE C		
+			 WHERE UP_DCMNT_CD = 'NONE'
+			
+			UNION ALL
+			
+			SELECT R.*
+			     , LEVEL + 1
+	             , CASE WHEN R.UP_DCMNT_CD = 'NONE' THEN R.DCMNT_CD 
+	               ELSE R.UP_DCMNT_CD 
+	               END AS ORDR_GRP_ID				     
+			  FROM TB_PAPE_CODE R		
+			  JOIN T_PAPE_CODE T ON T.DCMNT_CD = R.UP_DCMNT_CD   
+			   AND R.UP_DCMNT_CD <![CDATA[<>]]> 'NONE'
+		) 
+	</sql>
+    
+    <sql id="Sql-Column">
+        A.DCMNT_CD                                       AS "dcmntCd",
+        A.UP_DCMNT_CD                                    AS "upDcmntCd",
+        A.DCMNT_NM                                       AS "dcmntNm",
+        A.LMT_CNT                               		 AS "lmtCnt",
+        A.CD_ORDR                               		 AS "cdOrdr",
+        A.FILE_NM                                      	 AS "fileNm",
+        A.FILE_PATH                                      AS "filePath",
+        A.DCMNT_CM_NM                                    AS "dcmntCmNm",
+        A.DCMNT_CN                                 		 AS "dcmntCn",
+        A.DWNLD_CNT                                      AS "dwnldCnt",
+        A.DWNLD_TRGT_YN                                  AS "dwnldTrgtYn",
+        A.USE_YN                                     	 AS "useYn",
+        A.rgtr_no                                      	 AS "rgtrNo",
+        TO_CHAR(A.reg_ymd,   'yyyy-mm-dd hh24:mi:ss')  	 AS "regDttm",
+		TO_CHAR(A.reg_ymd,   'yyyy-mm-dd')             	 AS "regDate",
+        A.mdfr_no                                      	 AS "mdfrNo",
+        TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd hh24:mi:ss')  	 AS "mdfDttm",
+		TO_CHAR(A.mdfcn_ymd, 'yyyy-mm-dd')             	 AS "mdfDate",
+	   (SELECT DCMNT_NM
+	      FROM TB_PAPE_CODE 
+	     WHERE DCMNT_CD = A.UP_DCMNT_CD)				 AS "upDcmntNm",
+	   (SELECT user_nm
+	      FROM tb_user
+	     WHERE user_no = A.rgtr_no)                    	 AS "rgtrNm",
+	   (SELECT user_nm
+	      FROM tb_user
+	     WHERE user_no = A.mdfr_no)                    	 AS "mdfrNm",
+        (SELECT CASE WHEN COUNT(*) > 0
+                     THEN 'closed'
+                     ELSE 'open'
+                END
+           FROM TB_PAPE_CODE
+          WHERE UP_DCMNT_CD = A.DCMNT_CD)                AS "state"
+    </sql>
+    
+    <sql id="Sql-Where">
+        <if test="@common.util.CommUtils@isNotEmpty(upDcmntCd)">
+           AND A.UP_DCMNT_CD = #{upDcmntCd}
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchType)">
+          AND A.UP_DCMNT_CD = #{srchType}
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchUseYn)">
+          AND A.USE_YN = #{srchUseYn}
+        </if>
+        <if test="@common.util.CommUtils@isNotEmpty(srchText)">
+          AND(A.DCMNT_CD   LIKE '%' || #{srchText} || '%'
+           OR A.DCMNT_NM   LIKE '%' || #{srchText} || '%'
+           OR A.FILE_NM    LIKE '%' || #{srchText} || '%'
+           OR A.FILE_PATH  LIKE '%' || #{srchText} || '%'
+             )
+        </if>
+    </sql>
+
+    <!-- 서류코드관리 목록조회 -->
+    <select id="listPapeCode" resultType="java.util.HashMap" parameterType="business.sys.file.service.PapeCodeVO">
+       <include refid="Sql-PapeCodeTable"/>
+       SELECT LEVEL  	AS "level",
+		       <include refid="Sql-Column"/>
+          FROM T_PAPE_CODE A
+         WHERE 0 = 0
+               <include refid="Sql-Where"/>
+		 ORDER BY A.ORDR_GRP_ID, A.LEVEL, A.CD_ORDR          
+    </select>
+    
+    <!-- 서류코드관리 목록조회 -->
+    <select id="listPapeCodeFile" resultType="business.sys.file.service.PapeCodeVO" parameterType="business.sys.file.service.PapeCodeVO">
+       SELECT <include refid="Sql-Column"/>
+          FROM TB_PAPE_CODE A
+         WHERE 0 = 0
+           AND A.DCMNT_CD = #{dcmntCd}
+           AND A.UP_DCMNT_CD = #{upDcmntCd}
+    </select>
+    
+    <!-- 서류코드관리 목록조회 -->
+    <select id="listUnderPapeCode" resultType="java.util.HashMap" parameterType="business.sys.file.service.PapeCodeVO">
+       SELECT  <include refid="Sql-Column"/>
+          FROM TB_PAPE_CODE A
+         WHERE 0 = 0
+               <include refid="Sql-Where"/>
+    </select>
+    
+    <!-- 코드리스트 카운트-->
+    <select id="listPapeCodeCount" parameterType="business.sys.file.service.PapeCodeVO" resultType="java.lang.Integer">
+    	<include refid="Sql-PapeCodeTable"/>
+    	SELECT COUNT(*)
+    	  FROM T_PAPE_CODE A
+         WHERE 0 = 0
+               <include refid="Sql-Where"/>
+    </select>
+
+    <!-- 서류코드관리 상세조회 -->
+    <select id="viewPapeCode" resultType="business.sys.file.service.PapeCodeVO" parameterType="business.sys.file.service.PapeCodeVO">
+        SELECT <include refid="Sql-Column"/>
+          FROM TB_PAPE_CODE A
+         WHERE DCMNT_CD      = #{dcmntCd}
+           AND UP_DCMNT_CD   = #{upDcmntCd}
+    </select>
+
+    <!-- 서류코드 중복확인(코드) -->
+    <select id="confPapeCode" parameterType="business.sys.file.service.PapeCodeVO" resultType="int">
+        SELECT COUNT(*)
+          FROM TB_PAPE_CODE
+         WHERE DCMNT_CD     = #{dcmntCd}
+        <if test="@common.util.CommUtils@isNotEmpty(upDcmntCd) ">
+           AND UP_DCMNT_CD  = #{upDcmntCd}
+        </if>
+    </select>
+
+    <!-- 서류코드 중복확인(상위코드) -->
+    <select id="confUpperPapeCode" parameterType="string" resultType="int">
+        SELECT COUNT(*)
+          FROM TB_PAPE_CODE
+         WHERE UP_DCMNT_CD = #{dcmntCd}
+    </select>
+
+    <!-- 서류코드 중복확인(하위코드) -->
+    <select id="confLowerPapeCode" parameterType="string" resultType="int">
+        SELECT COUNT(*)
+          FROM TB_PAPE_CODE
+         WHERE UP_DCMNT_CD = #{dcmntCd}
+    </select>
+
+    <!-- 서류코드관리 등록 -->
+    <insert id="regiPapeCode" parameterType="business.sys.file.service.PapeCodeVO">
+        INSERT
+          INTO TB_PAPE_CODE
+             ( DCMNT_CD,
+               UP_DCMNT_CD,
+               DCMNT_NM,
+               LMT_CNT,
+               <if test="@common.util.CommUtils@isNotEmpty(fileNm)">
+               FILE_NM,
+               FILE_PATH,
+               </if>
+               DCMNT_CM_NM,
+               DCMNT_CN,
+               DWNLD_CNT,
+               DWNLD_TRGT_YN,
+               USE_YN,
+               RGTR_NO,
+               REG_YMD,
+               CD_ORDR
+             )
+        VALUES
+             ( #{dcmntCd},
+               #{upDcmntCd},
+               #{dcmntNm},
+				<choose>
+				  <when test="@common.util.CommUtils@isEqual(upDcmntCd,'NONE')">
+				    '0',
+				  </when>
+				  <otherwise>
+				    '1',
+				  </otherwise>
+				</choose>
+               <if test="@common.util.CommUtils@isNotEmpty(fileNm)">
+               #{fileNm},
+               #{filePath},
+               </if>
+               #{dcmntCmNm},
+               #{dcmntCn},
+               #{dwnldCnt},
+               COALESCE(#{dwnldTrgtYn}, 'Y'),
+               COALESCE(#{useYn},      'Y'),
+               #{gsUserNo},
+			   NOW(),
+              COALESCE(#{cdOrdr}, (
+                   SELECT COALESCE(MAX(CD_ORDR), 0) + 1
+                     FROM TB_PAPE_CODE
+                    WHERE UP_DCMNT_CD = COALESCE(#{upDcmntCd}, 'NONE')
+               ))
+             )
+    </insert>
+    
+    <!-- 코드수정 -->
+    <update id="updtPapeCode" parameterType="business.sys.file.service.PapeCodeVO">
+        UPDATE TB_PAPE_CODE A
+           SET 
+               DCMNT_NM      	= #{dcmntNm}
+             , CD_ORDR      	= #{cdOrdr}
+             , USE_YN      		= COALESCE(#{useYn}, 'Y')
+             , DWNLD_TRGT_YN  	= COALESCE(#{dwnldTrgtYn}, 'Y')
+             , MDFR_NO   		= #{gsUserNo}
+             , MDFCN_YMD 		= NOW()
+             <if test="@common.util.CommUtils@isNotEmpty(fileNm)">
+               ,FILE_NM 		= #{fileNm}
+               ,FILE_PATH 		= #{filePath}
+             </if>
+         WHERE UP_DCMNT_CD  	= #{upDcmntCd}
+           AND DCMNT_CD     	= #{dcmntCd}
+    </update>
+
+    <!-- 코드삭제 -->
+    <delete id="deltPapeCode" parameterType="business.sys.file.service.PapeCodeVO">
+        DELETE FROM TB_PAPE_CODE A
+         WHERE A.UP_DCMNT_CD = COALESCE(#{upDcmntCd}, 'NONE')
+           AND A.DCMNT_CD    = #{dcmntCd}
+    </delete>    
+    
+</mapper>

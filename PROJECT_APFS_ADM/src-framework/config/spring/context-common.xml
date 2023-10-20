@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:aop="http://www.springframework.org/schema/aop"
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xmlns:p="http://www.springframework.org/schema/p"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+	   					   http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+	   					   http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd">
+
+	<context:component-scan base-package="business">
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Service"/>
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Repository"/>
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+	</context:component-scan>
+
+    <context:annotation-config/>
+
+	<context:property-placeholder location="classpath:/config/globals.properties"/>
+
+	<!-- 국제화 Message 설정 -->
+	<bean id="messageSource" class="egovframework.com.cmm.util.EgovWildcardReloadableResourceBundleMessageSource">
+		<property name="egovBasenames">
+			<list>
+				<value>classpath*:config/messages/*</value> <!-- 전자정부 설정방식   classpath*: -->
+				<value>classpath:/egovframework/rte/fdl/idgnr/messages/idgnr</value>
+				<value>classpath:/egovframework/rte/fdl/property/messages/properties</value>
+			</list>
+		</property>
+		<property name="cacheSeconds" value="60" />
+		<property name="useCodeAsDefaultMessage" value="true" />
+	</bean>
+
+    <bean id="message" class="egovframework.com.cmm.EgovMessageSource">
+        <property name="reloadableResourceBundleMessageSource">
+            <ref bean="messageSource" />
+        </property>
+    </bean>
+
+    <bean id="leaveaTrace" class="egovframework.rte.fdl.cmmn.trace.LeaveaTrace">
+        <property name="traceHandlerServices">
+            <list>
+                <ref bean="traceHandlerService" />
+            </list>
+        </property>
+    </bean>
+
+    <bean id="traceHandlerService" class="egovframework.rte.fdl.cmmn.trace.manager.DefaultTraceHandleManager">
+        <property name="reqExpMatcher">
+            <ref bean="antPathMater" />
+        </property>
+        <property name="patterns">
+            <list><value>*</value></list>
+        </property>
+        <property name="handlers">
+            <list><ref bean="defaultTraceHandler" /></list>
+        </property>
+    </bean>
+
+    <bean id="antPathMater" class="org.springframework.util.AntPathMatcher" />
+
+    <bean id="defaultTraceHandler" class="egovframework.rte.fdl.cmmn.trace.handler.DefaultTraceHandler" />
+
+
+    <!-- MyBatis Common DAO : 공통 DAO 사용시 -->
+    <bean autowire-candidate="true" id="commonMapper" class="commf.dao.CommonMapperImpl"/>
+
+	<!-- UserInfo Session
+		 2023.08.30 LSH 사용안함으로 변경처리
+	<bean autowire-candidate="true" id="userInfo" class="common.user.UserInfo" scope="session">
+		<aop:scoped-proxy proxy-target-class="true" />
+	</bean>
+	 -->
+
+	<!-- File Manager -->
+	<bean id="fileManager" class="common.file.FileManager" />
+
+	<!-- Velocity Support --> 
+	<bean id="velocityEngine" class="org.springframework.ui.velocity.VelocityEngineFactoryBean">
+		<property name="velocityProperties">
+			<props>
+				<prop key="resource.loader">class</prop>
+				<prop key="class.resource.loader.class">
+					org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader
+				</prop>
+				<prop key="input.encoding">UTF-8</prop>
+				<prop key="output.encoding">UTF-8</prop>
+				<prop key="parser.pool.size">100</prop>
+			</props>
+		</property>
+	</bean>
+	
+
+	<!-- 2023.03.23 메일발송 템플릿 Thymeleaf 사용 -->
+	<bean id="emailThymeleafTemplateResolver" class="org.thymeleaf.spring4.templateresolver.SpringResourceTemplateResolver">
+   	<!-- ClassLoaderTemplateResolver의 기본 경로는 소스 경로 즉 /WEB-INF/classes 부터 시작이다. -->
+   		<property name="prefix" value="/WEB-INF/thymeleaf/" />
+   		<property name="suffix" value=".html" />
+   		<property name="templateMode" value="HTML" />
+   		<property name="characterEncoding" value="UTF-8" />
+   		<!-- <property name="cacheable" value="false" /> -->
+   		<property name="order" value="2" />
+  	</bean>
+	<bean id="templateEngine" class="org.thymeleaf.spring4.SpringTemplateEngine">
+    	<property name="templateResolver" ref="emailThymeleafTemplateResolver" />
+  	</bean>
+    
+	<!-- 2023.03.23 Spring Mail Sender 사용 -->
+	<bean id="emailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+		<property name="host" value="${spring.mail.host}"></property>
+		<property name="port" value="${spring.mail.port}"></property>
+		<!--
+		<property name="username" value="${spring.mail.username}"></property>
+		<property name="password" value="${spring.mail.password}"></property>
+		<property name="defaultEncoding" value="${spring.mail.default-encoding}"></property>
+		<property name="javaMailProperties">
+			<props>
+				<prop key="mail.debug">${spring.mail.properties.mail.debug}</prop>
+				<prop key="mail.smtp.auth">${spring.mail.properties.mail.smtp.auth}</prop>
+				<prop key="mail.smtp.starttls.enable">${spring.mail.properties.mail.smtp.starttls.enable}</prop>
+				
+				GMAIL SMTP 사용시 필수항목
+				<prop key="mail.mime.charset">${spring.mail.properties.mail.mime.charset}</prop>
+				<prop key="mail.transport.protocol">${spring.mail.properties.mail.transport.protocol}</prop>
+
+				NAVER/KAKAO SMTP 사용시 필수항목
+				<prop key="mail.smtps.ssl.checkserveridentity">${spring.mail.properties.mail.smtps.ssl.checkserveridentity}</prop>
+				<prop key="mail.smtps.ssl.trust">${spring.mail.properties.mail.smtps.ssl.trust}</prop>
+				<prop key="mail.smtp.socketFactory.class">${spring.mail.properties.mail.smtp.socketFactory.class}</prop>
+			</props>
+		</property>
+		-->
+	</bean>
+
+</beans>

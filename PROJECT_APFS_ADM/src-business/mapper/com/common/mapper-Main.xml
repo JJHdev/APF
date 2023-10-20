@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Main">
+	<!-- 처리할 일 -->
+	<select id="listToDoCount" resultType="business.com.common.service.MainVO">
+		SELECT 
+			(SELECT COUNT(1) FROM tb_ent A WHERE A.use_stts_cd = '0') AS "bzentyCnt",
+			COUNT(CASE WHEN A.del_yn = 'N' AND (A.sprt_aply_se_cd = 'SB') AND (A.prgrs_stts_cd = 'B10') THEN 1 END) AS "SBCnt",
+			COUNT(CASE WHEN A.del_yn = 'N' AND (A.sprt_aply_se_cd = 'SA') AND (A.prgrs_stts_cd = 'A10') THEN 1 END) AS "SACnt",
+			COUNT(CASE WHEN A.del_yn = 'N' AND (A.sprt_aply_se_cd = 'SC') AND (A.prgrs_stts_cd = 'C10') THEN 1 END) AS "SCCnt",
+			(SELECT
+				SUM(CASE WHEN EXISTS (
+					SELECT 1 FROM tb_bbs B WHERE B.up_pst_no = A.pst_no AND del_yn = 'N') THEN 0 ELSE 1 END)
+			FROM
+				tb_bbs A
+			WHERE
+				A.bbs_se_cd = 'B20'
+				AND A.up_pst_no is null
+				AND del_yn = 'N') 																					AS "bbsCnt"
+		FROM tb_invtsprt_aply A LEFT OUTER JOIN tb_invtsprt_mng B 
+			ON A.prgrm_no = B.prgrm_no 
+	</select>
+	
+	<!-- 주요통계 -->
+	<select id="listNumCount" resultType="business.com.common.service.MainVO">
+		SELECT 
+			COUNT(CASE WHEN bzenty_no isnull THEN 1 END) 											AS "userCnt",
+			COUNT(CASE WHEN bzenty_no notnull THEN 1 END) 											AS "compCnt",
+			<![CDATA[
+				(SELECT 
+					COUNT(1) 
+				FROM tb_fund_info 
+				WHERE TO_DATE(FN_GET_FORMDATE(invt_bgng_ymd, 'S'), 'YYYYMMDD') <= current_date 
+					AND  to_date(FN_GET_FORMDATE(invt_end_ymd, 'E'), 'YYYYMMDD') >=current_date) 	AS "fundCnt", 
+			]]>
+			(SELECT COUNT(1) FROM tb_fund_sprt A INNER JOIN tb_fund_info B ON A.fund_no = B.fund_no) AS "irCnt" 
+		FROM tb_user 
+	</select>
+	
+	<!-- 사용자 유형별 접속 통계 -->
+	<select id="listAcs" resultType="java.util.HashMap" parameterType="business.com.common.service.MainVO">
+		SELECT
+			TO_CHAR(D.date, 'fmDD')														AS "day",
+			COALESCE(COUNT(
+				CASE 
+				WHEN role_id IN ('ROLE_USR_USR', 'ROLE_USR_EIV', 'ROLE_USR_EBZ') 
+				THEN 1 END), 0) 														AS "total",
+			COALESCE(COUNT(
+				CASE 
+				WHEN role_id = #{roleId} 
+				THEN 1 END), 0) 														AS "dataRole"
+		FROM 
+			generate_series(
+		        date_trunc('month', to_date(#{srchAcsYm}, 'YYYY-MM-DD'))::date,
+		        date_trunc('month', to_date(#{srchAcsYm}, 'YYYY-MM-DD'))::date + INTERVAL '1 month - 1 day',
+		        INTERVAL '1 day'
+		    ) AS D(date)
+		LEFT JOIN
+			(SYS_LGN_HST A JOIN SYS_ROLE_USER B USING (user_no) ) T ON TO_CHAR(T.lgn_dt, 'YYYYMMDD') = TO_CHAR(D.date, 'YYYYMMDD')
+		GROUP BY
+			D.date
+		ORDER BY
+			D.date
+	</select>
+</mapper>

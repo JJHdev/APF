@@ -1,0 +1,657 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Kodata">
+
+    <!-- ======================== -->
+    <!--          공통 sql         -->
+    <!-- ======================== -->
+    <sql id="Sql-Where">
+    </sql>
+    
+    <sql id="Sql-Column">
+    </sql>
+    
+    <!-- 코드상세조회 -->
+    <select id="viewCode" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        SELECT A.CD_ID											AS "cdId",
+		       A.CD_NM											AS "cdNm",
+		       A.CD_CN											AS "cdCn",
+		       A.UP_CD_ID										AS "upCdId",
+		       A.CD_ORDR										AS "cdOrdr",
+		       A.USE_YN											AS "useYn",
+		       A.RGTR_NO										AS "rgtrNo",
+		       A.MDFR_NO										AS "mdfrNo",
+		       TO_CHAR(A.REG_YMD,   'yyyy-mm-dd hh24:mi:ss')	AS "regDttm",
+		       TO_CHAR(A.REG_YMD,   'yyyy-mm-dd')				AS "regDate",
+		       TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd hh24:mi:ss')	AS "mdfDttm",
+		       TO_CHAR(A.MDFCN_YMD, 'yyyy-mm-dd')				AS "mdfDate",
+		       ( SELECT CD_NM
+		           FROM SYS_CODE
+		          WHERE UP_CD_ID = 'NONE'
+		            AND CD_ID    = A.UP_CD_ID
+		       )												AS "upCdNm"
+          FROM SYS_CODE A
+         WHERE A.UP_CD_ID = #{upCdId}
+           AND A.CD_ID    = #{cdId}
+    </select>
+    
+    <!-- 연계그룹번호 발급 -->
+    <select id="viewLinkGrpNo" resultType="long">
+    	SELECT NEXTVAL('SEQ_LINK_GRP_NO')
+    </select>
+    
+    
+
+	<!-- 50D1 -->
+    <!-- 등록 -->
+    <insert id="regi50D1" parameterType="java.util.HashMap">
+        INSERT INTO if_50D1
+        VALUES ( 
+        		 NEXTVAL('SEQ_IF_50D1'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt50D1" parameterType="java.util.HashMap">
+		DELETE 
+		  FROM if_50D1 T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY KEDCD ORDER BY SN DESC) as IDX
+		                 FROM if_50D1
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 50D2 -->
+    <!-- 등록 -->
+    <insert id="regi50D2" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_50d2
+        VALUES
+             ( NEXTVAL('SEQ_IF_50D2'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt50D2" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_50D2 T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY KEDCD, PCD ORDER BY SN DESC) as IDX
+		                 FROM IF_50D2
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 5038 -->
+    <!-- 등록 -->
+    <insert id="regi5038" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_5038
+        VALUES
+             ( NEXTVAL('SEQ_IF_5038'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt5038" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_5038 T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY ACC_CD_FULL ORDER BY SN DESC) as IDX
+		                 FROM IF_5038
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 5039 -->
+    <!-- 등록 -->
+    <insert id="regi5039" parameterType="java.util.HashMap">
+	    INSERT 
+	      INTO if_5039
+	    VALUES
+	         ( NEXTVAL('SEQ_IF_5039'),
+	           <foreach collection="data" item="item" separator=", ">
+			       #{item}
+	           </foreach>
+	           , NOW()
+	           , #{linkStus}
+	           , #{linkGrpNo}
+	         )
+	</insert>
+	<!-- 삭제 --> 
+	<delete id="delt5039" parameterType="java.util.HashMap">
+		DELETE 
+		  FROM IF_5039 T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY KEDCD, STTL_BASE_YM_DD, FS_INFO_CD, ACCT_CCD, ACC_CD_FULL ORDER BY SN DESC) as IDX
+		                 FROM IF_5039
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+	</delete>
+    
+    <!-- 5041 -->
+    <!-- 등록 -->
+    <insert id="regi5041" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_5041
+        VALUES
+             ( NEXTVAL('SEQ_IF_5041'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt5041" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_5041 T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY KEDCD, REG_DT ORDER BY SN DESC) as IDX
+		                 FROM IF_5041
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 5056 -->
+    <!-- 등록 -->
+    <insert id="regi5056" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_5056
+        VALUES
+             ( NEXTVAL('SEQ_IF_5056'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt5056" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_5056 T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY ACC_CD_FULL ORDER BY SN DESC) as IDX
+		                 FROM IF_5056
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 5057 -->
+    <!-- 등록 -->
+    <insert id="regi5057" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_5057
+        VALUES
+             ( NEXTVAL('SEQ_IF_5057'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt5057" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_5057 T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY KEDCD, ACCT_DT, FS_CCD, ACCT_CCD ORDER BY SN DESC) as IDX
+		                 FROM IF_5057
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 5058 -->
+    <!-- 등록 -->
+    <insert id="regi5058" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_5058
+        VALUES
+             ( NEXTVAL('SEQ_IF_5058'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt5058" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_5058 T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY KEDCD, ACCT_DT, FS_CCD, ACCT_CCD, ACC_CD_FULL ORDER BY SN DESC) as IDX
+		                 FROM IF_5058
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 5062 -->
+    <!-- 등록 -->
+    <insert id="regi5062" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_5062
+        VALUES
+             ( NEXTVAL('SEQ_IF_5062'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt5062" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_5062 T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY ACC_CD_FULL ORDER BY SN DESC) as IDX
+		                 FROM IF_5062
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 5063 -->
+    <!-- 등록 -->
+    <insert id="regi5063" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_5063
+        VALUES
+             (  NEXTVAL('SEQ_IF_5063'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt5063" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_5063 T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY KEDCD, ACCT_DT, ACCT_CCD, ACC_CD_FULL ORDER BY SN DESC) as IDX
+		                 FROM IF_5063
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 50TA -->
+    <!-- 등록 -->
+    <insert id="regi50TA" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_50ta
+        VALUES
+             ( NEXTVAL('SEQ_IF_50TA'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt50TA" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_50TA T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY BASE_DT, BZNO ORDER BY SN DESC) as IDX
+		                 FROM IF_50TA
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 50TB -->
+    <!-- 등록 -->
+    <insert id="regi50TB" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_50tb
+        VALUES
+             ( NEXTVAL('SEQ_IF_50TB'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt50TB" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_50TB T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY BASE_DT, BZNO, CONO ORDER BY SN DESC) as IDX
+		                 FROM IF_50TB
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 50TF -->
+    <!-- 등록 -->
+    <insert id="regi50TF" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_50tf
+        VALUES
+             ( NEXTVAL('SEQ_IF_50TF'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt50TF" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_50TF T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY BASE_DT, BZNO, CONO, SEQ ORDER BY SN DESC) as IDX
+		                 FROM IF_50TF
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 50TG-->
+    <!-- 등록 -->
+    <insert id="regi50TG" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_50tg
+        VALUES
+             ( NEXTVAL('SEQ_IF_50TG'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt50TG" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_50TG T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY BASE_DT, KODATACD ORDER BY SN DESC) as IDX
+		                 FROM IF_50TG
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 50TH -->
+    <!-- 등록 -->
+    <insert id="regi50TH" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_50th
+        VALUES
+             ( NEXTVAL('SEQ_IF_50TH'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt50TH" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_50TH T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY BASE_DT, KODATACD, IND_PPT_SEQ ORDER BY SN DESC) as IDX
+		                 FROM IF_50TH
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 50TI -->
+    <!-- 등록 -->
+    <insert id="regi50TI" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_50ti
+        VALUES
+             ( NEXTVAL('SEQ_IF_50TI'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt50TI" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_50TI T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY BASE_DT, BZNO ORDER BY SN DESC) as IDX
+		                 FROM IF_50TI
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 50TK -->
+    <!-- 등록 -->
+    <insert id="regi50TK" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_50tk
+        VALUES
+             ( NEXTVAL('SEQ_IF_50TK'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt50TK" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_50TK T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY BASE_DT, KODATACD ORDER BY SN DESC) as IDX
+		                 FROM IF_50TK
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 50TL -->
+    <!-- 등록 -->
+    <insert id="regi50TL" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_50tl
+        VALUES
+             ( NEXTVAL('SEQ_IF_50TL'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <!-- 삭제 -->
+    <delete id="delt50TL" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_50TL T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY BASE_DT, KODATACD, IND_PPT_SEQ, IPR_CD ORDER BY SN DESC) as IDX
+		                 FROM IF_50TL
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 50PA -->
+    <!-- 등록 -->
+    <insert id="regi50PA" parameterType="java.util.HashMap">
+        INSERT 
+          INTO if_50pa
+        VALUES
+             ( NEXTVAL('SEQ_IF_50PA'),
+               <foreach collection="data" item="item" separator=", ">
+			       #{item}
+               </foreach>
+               , NOW()
+               , #{linkStus}
+               , #{linkGrpNo}
+             )
+    </insert>
+    <delete id="delt50PA" parameterType="java.util.HashMap">
+    	DELETE 
+		  FROM IF_50PA T
+		 WHERE EXISTS (
+		         SELECT 1
+		           FROM (
+		               SELECT SN,
+		                      ROW_NUMBER() OVER(PARTITION BY KEDCD, DATA_CRE_YM ORDER BY SN DESC) as IDX
+		                 FROM IF_50PA
+		                ) A
+		          WHERE IDX <![CDATA[<>]]> 1
+		             AND SN = T.SN
+		              )
+    </delete>
+    
+    <!-- 프로시저 호출 -->
+    <select id="callSpBatchKodata" statementType="CALLABLE" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+    	CALL SP_BATCH_KODATA('B'::text, null::text, '0'::text, null::text)
+    </select>
+    
+    <!-- 위치 정보 수정이 필요한 업체 호출 -->
+    <select id="listEntNoGeometry" resultType="java.util.HashMap" parameterType="business.adm.invest.service.EntVO">
+    	SELECT bzenty_no		AS "bzentyNo",
+    		   bzenty_nm		AS "bzentyNm",
+    	       lctn_addr		AS "lctnAddr",
+    	       lctn_daddr		AS "lctnDaddr"
+    	  FROM tb_ent
+    	 WHERE lcinfo IS NULL
+    	    OR TO_CHAR(reg_ymd, 'YYYYMMDD') = TO_CHAR(NOW() - INTERVAL '1 day', 'YYYYMMDD')
+    </select>
+    <!-- 업체 위치 정보 수정 -->
+    <update id="updtEntNoGeometry" parameterType="business.adm.invest.service.EntVO">
+		UPDATE tb_ent 
+		   SET lcinfo = ST_SETSRID(ST_MAKEPOINT(#{long}::numeric, #{lat}::numeric), 4326)
+         WHERE bzenty_no = #{bzentyNo}
+    </update>
+
+</mapper>
