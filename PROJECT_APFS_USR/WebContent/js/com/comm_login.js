@@ -142,8 +142,6 @@ var Login = {
 	// 아이디 찾기 팝업
 	//--------------------------------------------------------//
 	doFindId: function() {
-		Login.doPopupLogin();
-		return false;
 		let options = {
 			title     		: '아이디 찾기',
 			icon      		: '<img src="'+getUrl('/images/sub/Tribute.svg')+'">',

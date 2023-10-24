@@ -49,13 +49,20 @@ $.gridUtils.FORMAT = {
 		}
 		return p;
 	},
-	// 투자자명 포맷 (대표홈페이지 링크처리)
+	// 투자자명 포맷 (대표홈페이지 링크처리) 2023.10.24 홈페이지 주소 http 없을경우 상대경로로 주소가 꼬여 http 추가 기능
 	//---------------------------------------
-	invtNm: function(v,o) {
-		let h = o['invtHmpgAddr'];
-		if (!$.commUtil.empty(h))
-			return '<a href="'+h+'" target="_blank">'+v+'</a>';
-		return v;
+	invtNm: function(v, o) {
+	    let h = o['invtHmpgAddr'];
+	    
+	    if (!$.commUtil.empty(h)) {
+	        // 만약 http:// 또는 https://가 앞에 없으면 http:// 추가
+	        if (!h.startsWith('http://') && !h.startsWith('https://')) {
+	            h = 'http://' + h;
+	        }
+	        return '<a href="'+h+'" target="_blank">'+v+'</a>';
+	    }
+	    
+	    return v;
 	},
 	// 투자기간 포맷
 	//---------------------------------------
