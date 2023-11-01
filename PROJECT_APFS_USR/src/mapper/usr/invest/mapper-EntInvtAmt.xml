@@ -15,10 +15,7 @@
         FN_GET_CODENM('CT.INVT_SE', A.invt_se_cd)      AS "invtSeNm",
         A.invt_yr                                      AS "invtYr",
         A.invt_amt                                     AS "invtAmt",
-        (SELECT SUM(COALESCE(invt_amt,0))
-           FROM tb_ent_invt_amt
-          WHERE ir_no = A.ir_no
-            AND invt_yr <![CDATA[<=]]> A.invt_yr)      AS "summAmt",
+        SUM(A.INVT_AMT) OVER(ORDER BY A.INVT_YR, A.invt_se_cd, A.invt_amt, A.sn)      AS "summAmt",
         FN_GET_INVTSTEP(
 	        (SELECT SUM(COALESCE(invt_amt,0))
 	           FROM tb_ent_invt_amt

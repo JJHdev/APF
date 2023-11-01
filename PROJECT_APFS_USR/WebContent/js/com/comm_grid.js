@@ -314,10 +314,12 @@
 
 				
 				// 열병합칼럼이 있는 경우
+				var mgo;
 				if (opts.listOptions.mergeColumn &&
 					opts.listOptions.mergeColumn == c.name) {
 					col.addClass(opts.listOptions.mergeCls);
-					var mgo = opts._state_variables['_merge_column'];
+					mgo = opts._state_variables['_merge_column'];
+					console.log(mgo.value, json[c.name], mgo.value == json[c.name]);
 					if (mgo.value != json[c.name]) {
 						if (mgo.count > 1) {
 							// 이전 열에 대해 rowspan을 추가한다.
@@ -329,6 +331,10 @@
 					}
 					else {
 						mgo['count']++;
+						if (mgo.count > 1) {
+							// 이전 열에 대해 rowspan을 추가한다.
+							elm.find('tbody > tr.'+opts.listOptions.rowCls).eq(mgo.index).find('td.'+opts.listOptions.mergeCls).prop('rowspan', mgo.count);
+						}
 						return true;
 					}
 				}
